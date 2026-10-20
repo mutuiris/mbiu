@@ -1,0 +1,11 @@
+# Public sources of reviewed standard templates, statutes and guidance.
+# Every field is required. The pipeline rejects entries without licence or reviewing body.
+#
+# Example:
+# - url: https://example.org/templates/recording-agreement
+#   licence: CC BY 4.0
+#   reviewing_body: Example Musicians' Union
+#   contract_type: recording
+#   jurisdiction: KE
+
+sources: []
