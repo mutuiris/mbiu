@@ -1,0 +1,42 @@
+name: mbiu
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17-bookworm
+    environment:
+      POSTGRES_USER: mbiu
+      POSTGRES_PASSWORD: mbiu
+      POSTGRES_DB: mbiu
+    ports:
+      - "5432:5432"   # direct connection: migrations and corpus pipeline (DATABASE_DIRECT_URL)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mbiu -d mbiu"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.26.0-p0
+    environment:
+      DATABASE_URL: postgres://mbiu:mbiu@postgres:5432/mbiu
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_PREPARED_STATEMENTS: 0
+      LISTEN_PORT: 6432
+    ports:
+      - "6432:6432"   # pooled connection: the API (DATABASE_URL)
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP (OTEL_EXPORTER_OTLP_ENDPOINT)
+
+volumes:
+  pgdata:
