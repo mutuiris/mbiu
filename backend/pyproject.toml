@@ -1,0 +1,49 @@
+[project]
+name = "mbiu"
+version = "0.1.0"
+requires-python = "==3.14.*"
+dependencies = [
+    "django==6.1.2",
+    "opentelemetry-exporter-otlp-proto-http==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "psycopg[binary]==3.3.6",
+    "pydantic-settings==2.15.0",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs==6.1.2",
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-django==4.14.0",
+    "ruff==0.17.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "T20", "D101", "D102", "D103"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+django_find_project = false
+pythonpath = ["."]
