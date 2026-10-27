@@ -1,5 +1,8 @@
 # Mbiu
 
+[![CI](https://github.com/mutuiris/mbiu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/mutuiris/mbiu/actions/workflows/ci.yml)
+[![Coverage](https://coveralls.io/repos/github/mutuiris/mbiu/badge.svg?branch=develop)](https://coveralls.io/github/mutuiris/mbiu?branch=develop)
+
 **Understand a music contract before you sign it.**
 
 Mbiu helps independent and early-career Kenyan musicians understand English-language music contracts. An artist uploads a PDF, and Mbiu compares every clause with reviewed standard contract templates. It then explains, in plain language, what each clause means for their **money**, their **music**, their **time** and their **freedom to take other work**, and what to ask the other party to change.
