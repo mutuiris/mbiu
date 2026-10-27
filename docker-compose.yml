@@ -4,15 +4,15 @@ services:
   postgres:
     image: pgvector/pgvector:0.8.7-pg17-bookworm
     environment:
-      POSTGRES_USER: mbiu
-      POSTGRES_PASSWORD: mbiu
-      POSTGRES_DB: mbiu
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
     ports:
-      - "5432:5432"   # direct connection: migrations and corpus pipeline (DATABASE_DIRECT_URL)
+      - "127.0.0.1:5432:5432"   # direct connection: migrations and corpus pipeline (DATABASE_DIRECT_URL)
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mbiu -d mbiu"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -20,13 +20,13 @@ services:
   pgbouncer:
     image: edoburu/pgbouncer:v1.26.0-p0
     environment:
-      DATABASE_URL: postgres://mbiu:mbiu@postgres:5432/mbiu
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AUTH_TYPE: scram-sha-256
       POOL_MODE: transaction
       MAX_PREPARED_STATEMENTS: 0
       LISTEN_PORT: 6432
     ports:
-      - "6432:6432"   # pooled connection: the API (DATABASE_URL)
+      - "127.0.0.1:6432:6432"   # pooled connection: the API (DATABASE_URL)
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,9 +34,32 @@ services:
   jaeger:
     image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
     ports:
-      - "16686:16686" # UI
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP (OTEL_EXPORTER_OTLP_ENDPOINT)
+      - "127.0.0.1:16686:16686" # UI
+      - "127.0.0.1:4317:4317"   # OTLP gRPC
+      - "127.0.0.1:4318:4318"   # OTLP HTTP (OTEL_EXPORTER_OTLP_ENDPOINT)
+
+  api:
+    build: ./backend
+    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend/config:/app/config
+      - ./backend/mbiu:/app/mbiu
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      jaeger:
+        condition: service_started
 
 volumes:
   pgdata:

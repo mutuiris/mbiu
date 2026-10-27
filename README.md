@@ -227,7 +227,12 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-`.env.example` lists every setting with a comment explaining it. For local development, the defaults work without any API keys, except for features that call AI providers. **Never commit `.env`.** It is already in `.gitignore`.
+`.env.example` lists every setting with a comment explaining it. Before the first run, fill in two values in `.env`:
+
+- `DJANGO_SECRET_KEY`: generate one with `uv run python -c "import secrets; print(secrets.token_urlsafe(50))"`
+- `POSTGRES_PASSWORD`: choose any local password (letters and digits), and put the same password in place of `PASSWORD` in `DATABASE_URL` and `DATABASE_DIRECT_URL`
+
+Everything else works with its default, except features that call AI providers. **Never commit `.env`.** It is already in `.gitignore`.
 
 ### 3. Run it
 
