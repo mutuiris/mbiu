@@ -1,6 +1,6 @@
-FROM ghcr.io/astral-sh/uv:0.12.24 AS uv
+FROM ghcr.io/astral-sh/uv:0.12.24@sha256:3af4716e991d6956a41e573eab705d0ee08500cd829ed30293eb8472f372c65a AS uv
 
-FROM python:3.14.8-slim-trixie AS build
+FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6d0ea3da3aec724f50eed4a AS build
 COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
@@ -9,8 +9,9 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY config ./config
 COPY mbiu ./mbiu
 
-FROM python:3.14.8-slim-trixie
-RUN useradd --system --uid 10001 --no-create-home mbiu
+FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6d0ea3da3aec724f50eed4a
+# pip is not needed at runtime; removing it also removes its bundled, often outdated libraries
+RUN python -m pip uninstall --yes --quiet pip && useradd --system --uid 10001 --no-create-home mbiu
 WORKDIR /app
 COPY --from=build /app /app
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
