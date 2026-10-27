@@ -1,0 +1,14 @@
+# Only install versions published at least 14 days ago (in minutes)
+minimumReleaseAge: 20160
+saveExact: true
+engineStrict: true
+# Security exception: next 16.4.0 has critical advisories (GHSA-2464-fhr4-w9xw,
+# GHSA-673q-mjm6-r5xr, GHSA-p3m5-59mp-jv5r) fixed in 16.4.1. Remove after 2026-10-29.
+minimumReleaseAgeExclude:
+  - next
+  - "@next/*"
+  - eslint-config-next
+# Dependency install scripts are blocked unless listed. unrs-resolver's script is only a
+# fallback downloader; its prebuilt binary installs normally.
+allowBuilds:
+  unrs-resolver: false

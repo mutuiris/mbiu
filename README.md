@@ -197,7 +197,8 @@ mbiu/
 | -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Git            | `winget install Git.Git`                                   | `brew install git`                                         |
 | Docker Desktop | [docker.com](https://www.docker.com/products/docker-desktop/) | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| Node.js (LTS)  | `winget install OpenJS.NodeJS.LTS`                         | `brew install node`                                        |
+| Node.js 24 LTS | `winget install OpenJS.NodeJS.LTS`                         | `brew install node@24`                                     |
+| pnpm           | `winget install pnpm.pnpm`                                 | `brew install pnpm`                                        |
 | uv (Python)    | `winget install astral-sh.uv`                              | `brew install uv`                                          |
 | just           | `winget install Casey.Just`                                | `brew install just`                                        |
 
@@ -236,6 +237,12 @@ Everything else works with its default, except features that call AI providers. 
 
 ### 3. Run it
 
+Install the frontend dependencies once (and again whenever `frontend/package.json` changes):
+
+```bash
+just install
+```
+
 In one terminal, start the backend services (Postgres, PgBouncer, Jaeger and the API):
 
 ```bash
@@ -263,15 +270,16 @@ Run `just --list` to see every command. The common ones:
 
 | Command            | What it does                                                        |
 | ------------------ | ------------------------------------------------------------------- |
+| `just install`   | Install frontend dependencies                                       |
 | `just dev`       | Start Postgres, PgBouncer, Jaeger and the API                       |
 | `just web`       | Start the frontend dev server                                       |
-| `just test`      | Run backend and frontend tests                                      |
+| `just test`      | Run backend tests                                                   |
 | `just lint`      | Lint and format-check backend and frontend                          |
 | `just typecheck` | mypy for the backend, `tsc` for the frontend                      |
-| `just types`     | Regenerate TypeScript types and Zod schemas from the backend models |
 | `just down`      | Stop all local services                                             |
+| `just reset`     | Stop local services and delete the local database                   |
 
-`just` is only a shortcut. Each recipe in the `justfile` is a plain `docker`, `uv` or `npm` command that you can also run directly.
+`just` is only a shortcut. Each recipe in the `justfile` is a plain `docker`, `uv` or `pnpm` command that you can also run directly.
 
 ## Configuration
 
