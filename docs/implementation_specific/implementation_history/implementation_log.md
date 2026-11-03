@@ -479,6 +479,81 @@ This document serves as the chronological audit trail and engineering log for al
 - Downstream ticket `MB-21` (Full result card & shillings calculator) will use `ClauseEvaluationResult.impact_inputs` (`rate`, `money_basis`, `deductions`, `quote`) to run client-side Kenyan Shillings calculations on user-provided sample revenues.
 - Downstream ticket `MB-25` (PDF report & sharing) will consume `EvaluationSummary` (`top_asks`, `good_news`, `missing_protections`, `ask_list`) to format client-side exportable PDF reports and WhatsApp share messages.
 
+---
+
+## [MB-26] — Refresh protection and resuming unfinished clauses
+
+- **Date:** 2026-11-03
+- **Owner:** Steve
+- **Branch:** `feat/mbiu-build`
+- **Status:** Approved
+- **Review Document:** [MB-26 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-26-refresh-protection.md)
+
+### What Was Done
+- **Stateless Clause Evaluation Endpoint (`backend/mbiu/evaluation/views.py`):**
+  - Created `POST /api/v1/clause-evaluations` view mounted in `config/urls.py` (`api/v1/clause-evaluations` and `api/v1/clause-evaluations/`).
+  - Accepts a JSON payload containing `clauses` resent by the browser (each with `clause_id`, `text`, `pages`, optional `title` and `section`), optional `contract_type`, and optional `defined_terms`.
+  - Evaluates clauses statelessly using the MB-18 comparison and MB-17 verification engines.
+  - Streams newline-delimited JSON (NDJSON) events (`progress`, `clause_result`, `clause_failed`, `done`) with `Cache-Control: no-store, no-cache, must-revalidate` and `Content-Type: application/x-ndjson`.
+  - Supports non-streaming JSON mode when requested via `Accept: application/json` and `stream != true`.
+  - Enforces input validation: returns 400 Bad Request for malformed JSON, empty clauses list, missing clauses, or missing clause_id/text.
+  - Enforces HTTP method restrictions: returns 405 Method Not Allowed for non-POST requests.
+  - Enforces reviewed standard check: emits `cannot_compare` (⚪ Couldn't compare) with `NO_STANDARD_FOR_TYPE_MESSAGE` for contract types without reviewed standards (e.g. podcast_host).
+  - Performs Reverse Check (`check_missing_protections`) and outputs consolidated `EvaluationSummary` in the final `done` event.
+- **Tab-only sessionStorage Management (`frontend/src/lib/keep-tab.ts`):**
+  - Implemented tab-only `sessionStorage` management for evaluation state (`TabEvaluationState`).
+  - Explicit opt-in toggle, off by default: `"Keep my results if this page reloads. Leave this off on a shared phone."`
+  - 60-minute TTL: cached results older than 60 minutes automatically expire and are purged upon access.
+  - Explicit clearing: `clearTabResults()` immediately purges stored results. Disabling opt-in via `setKeepTabOptIn(false)` also purges stored results.
+  - No opt-in restore behavior: returns `saved: false, optedIn: false` with the exact required message: `"Your results weren't saved on this device. Upload the contract again to see them."`
+  - Complete TypeScript interfaces: `TabClause`, `TabEvaluationCard`, `TabEvaluationSummary`, `TabEvaluationState`, `TabRestoreResult`.
+  - Safe for SSR: defensive environment checks prevent errors in non-browser/server environments.
+- **Refresh Protection & Clause Resumption (`frontend/src/lib/refresh-protection.ts`):**
+  - Accidental reload protection: `beforeunload` confirmation dialog handler and `useRefreshProtection(isActive)` React hook.
+  - Accidental pull-to-refresh protection on mobile: CSS `overscroll-behavior-y: contain` helper (`getOverscrollContainmentStyle` and `applyOverscrollContainment`).
+  - Resuming unfinished clauses: `resumeUnfinishedClauses(options)` computes unfinished or failed clauses from the document clause list (`getUnfinishedClauses`), sends only those clauses to `POST /api/v1/clause-evaluations`, and parses the streaming NDJSON response.
+  - Stream drop resilience: if the connection drops or fails mid-stream, preserves all cards arrived so far and saves updated state to `sessionStorage` (if opted in).
+- **Backend Tests (`backend/tests/test_clause_evaluations_endpoint.py`):**
+  - 11 comprehensive tests verifying NDJSON streaming, JSON response mode, URL routing with/without trailing slash, unreviewed contract type handling, empty clauses list (400), missing clauses field (400), malformed JSON (400), invalid clause structure (400), method not allowed (405), and zero contract storage with no database rows or temporary files created.
+- **Frontend Tests (`frontend/tests/keep-tab.test.ts` & `frontend/tests/refresh-protection.test.ts`):**
+  - 16 unit tests running natively via Node.js 24 test runner (`node --test --experimental-strip-types`), testing opt-in default, opt-in toggling, saving/restoring, 60-minute TTL expiration, explicit clearing, beforeunload handling, overscroll styling, unfinished clause filtering, NDJSON line parsing, and streaming resumption with network drop resilience.
+- **Build & Quality Gates (`justfile` & `frontend/package.json`):**
+  - Updated `justfile` test recipe to run both backend pytest and frontend test suite: `just test`.
+  - Added `"test": "node --test --experimental-strip-types tests/**/*.test.ts"` to `frontend/package.json`.
+  - Enabled `"allowImportingTsExtensions": true` in `frontend/tsconfig.json` for seamless TypeScript typechecking with ESM.
+
+### Key Technical Details & Architecture References
+- **Architecture References:** Lines 160-162 ("Retries use POST /api/v1/clause-evaluations: the browser resends only the clause texts it holds for failed or unchecked clauses, and the server evaluates them statelessly"), Lines 388-403 ("If the page is refreshed by mistake: Prevent it, Make saving easy, Keep for this tab"), and Ticket MB-26 in `Mbiu Build Tickets.md`.
+- **Non-Negotiable Project Invariants Enforced:**
+  - *Zero Contract Storage Invariant:* Operates strictly in memory. Verified via `test_clause_evaluations_zero_contract_storage` that no database rows (ReferenceChunk, CorpusVersion) or temp files are created during evaluation, and `Cache-Control: no-store, no-cache, must-revalidate` is strictly returned.
+  - *Stateless Backend:* No database job tables, sessions, or queues on the request path. Retries resend clause text; the browser retains state in tab sessionStorage when opted in.
+  - *Storage Off at AI Providers:* Stateless comparison architecture conforms to `store=False`.
+  - *Decisions From Reviewed Templates Only:* Comparisons strictly ground against reviewed standards; unreviewed types return `cannot_compare` (⚪ Couldn't compare).
+  - *Model Output is a Proposal, Not a Result:* All quotes are verified exact substrings; labels adhere strictly to the 4 valid labels with no green label.
+  - *Synthetic Contracts Only:* All tests and fixtures use synthetic music agreements.
+
+### Verification & Test Results
+- Quality commands run:
+  - `just test`:
+    - Backend: 183 passed in 43.13s (100% pass rate).
+    - Frontend: 16 passed in 0.51s (100% pass rate).
+  - `just lint`:
+    - Backend: `ruff check .` (all checks passed) and `ruff format --check .` (49 files already formatted).
+    - Frontend: `eslint` (all checks passed).
+  - `just typecheck`:
+    - Backend: `mypy .` (success: no issues found in 49 source files).
+    - Frontend: `tsc --noEmit` (success: 0 errors).
+
+### Code Review & Refinements
+- **Review Date:** 2026-11-03
+- **Reviewer:** Mbiu Code Reviewer
+- **Outcome:** Approved (Score: 5/5)
+- **Review Document:** [MB-26 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-26-refresh-protection.md)
+- **Changes Implemented:** Cleaned up `backend/mbiu/evaluation/views.py#L487` exception handler to wrap exception types as a tuple `except (json.JSONDecodeError, UnicodeDecodeError):`. All acceptance criteria and invariants are rigorously satisfied.
+
+### Next Developer / Maintenance Guide
+- Downstream frontend tickets `MB-07` (Live results page), `MB-21` (Full result card & shillings calculator), and `MB-27` (Phone layouts, accessibility, e2e tests) can import `useRefreshProtection`, `getOverscrollContainmentStyle`, `restoreTabResults`, and `resumeUnfinishedClauses` to handle page refreshes, mobile swipe-to-refresh prevention, and dropped stream recovery seamlessly.
+
 
 
 

@@ -58,6 +58,10 @@ from mbiu.evaluation.verify import (
     repair_and_verify,
     verify_proposal,
 )
+from mbiu.evaluation.views import (
+    clause_evaluations_view,
+    generate_clause_evaluation_events,
+)
 
 __all__ = [
     # Budgets & batching
@@ -109,4 +113,7 @@ __all__ = [
     "MoneyExampleInputs",
     "repair_and_verify",
     "verify_proposal",
+    # Views & events
+    "clause_evaluations_view",
+    "generate_clause_evaluation_events",
 ]

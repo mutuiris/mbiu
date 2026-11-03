@@ -29,9 +29,10 @@ types:
     uv run --directory backend python -m mbiu.api.openapi ../frontend/src/lib/api/openapi.json
     pnpm --dir frontend generate:api
 
-# Run backend tests
+# Run backend and frontend tests
 test:
     uv run --directory backend pytest
+    pnpm --dir frontend test
 
 # Lint and format-check backend and frontend
 lint:
