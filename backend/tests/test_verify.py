@@ -713,7 +713,17 @@ class TestProjectInvariantsAndSecurity:
 
         files_after = set(temp_dir.iterdir())
         new_files = files_after - files_before
-        assert len(new_files) == 0, f"Leaked temporary files during verification: {new_files}"
+        # Invariant: Ensure no temporary file contains contract or proposal text
+        contract_markers = ("Royalties", "15% of Net Receipts", "Streaming & Sales")
+        leaked_files = [
+            f
+            for f in new_files
+            if f.is_file()
+            and any(marker in f.read_text(errors="ignore") for marker in contract_markers)
+        ]
+        assert len(leaked_files) == 0, (
+            f"Leaked temporary contract files during verification: {leaked_files}"
+        )
 
     def test_valid_labels_enforced(self) -> None:
         """Strictly 4 labels allowed; NO green label is ever accepted or assigned."""

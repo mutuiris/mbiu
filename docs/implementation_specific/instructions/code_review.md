@@ -134,7 +134,7 @@ Update the corresponding ticket row in the [Review Index](#review-index) table b
 | **MB-13** | Corpus pipeline II: tag, check, embed | backend, ai | [MB-13 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-13-corpus-pipeline-enrichment.md) | 2026-11-03 | Approved |
 | **MB-17** | Verification rules | backend | [MB-17 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-17-verification-rules.md) | 2026-11-03 | Approved |
 | **MB-18** | Comparison, budgets, missing protections & summary | backend, ai | [MB-18 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-18-comparison-summary.md) | 2026-11-03 | Approved |
-| **MB-26** | Refresh protection & resuming unfinished clauses | frontend, backend | `docs/implementation_specific/code_reviews/MB-26-refresh-protection.md` | — | Pending |
+| **MB-26** | Refresh protection & resuming unfinished clauses | frontend, backend | [MB-26 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-26-refresh-protection.md) | 2026-11-03 | Approved |
 
 #### Addy's Tickets
 | Ticket | Title | Area | Review File | Date | Status |

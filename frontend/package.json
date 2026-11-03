@@ -2,6 +2,7 @@
   "name": "mbiu-web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@12.12.1",
   "engines": {
     "node": ">=24"
@@ -12,7 +13,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "generate:api": "openapi-ts"
+    "generate:api": "openapi-ts",
+    "test": "node --test --experimental-strip-types tests/**/*.test.ts"
   },
   "dependencies": {
     "next": "16.4.2",
