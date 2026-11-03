@@ -1,5 +1,8 @@
 # Mbiu
 
+[![CI](https://github.com/mutuiris/mbiu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/mutuiris/mbiu/actions/workflows/ci.yml)
+[![Coverage](https://coveralls.io/repos/github/mutuiris/mbiu/badge.svg?branch=develop)](https://coveralls.io/github/mutuiris/mbiu?branch=develop)
+
 **Understand a music contract before you sign it.**
 
 Mbiu helps independent and early-career Kenyan musicians understand English-language music contracts. An artist uploads a PDF, and Mbiu compares every clause with reviewed standard contract templates. It then explains, in plain language, what each clause means for their **money**, their **music**, their **time** and their **freedom to take other work**, and what to ask the other party to change.
@@ -197,7 +200,8 @@ mbiu/
 | -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Git            | `winget install Git.Git`                                   | `brew install git`                                         |
 | Docker Desktop | [docker.com](https://www.docker.com/products/docker-desktop/) | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| Node.js (LTS)  | `winget install OpenJS.NodeJS.LTS`                         | `brew install node`                                        |
+| Node.js 24 LTS | `winget install OpenJS.NodeJS.LTS`                         | `brew install node@24`                                     |
+| pnpm           | `winget install pnpm.pnpm`                                 | `brew install pnpm`                                        |
 | uv (Python)    | `winget install astral-sh.uv`                              | `brew install uv`                                          |
 | just           | `winget install Casey.Just`                                | `brew install just`                                        |
 
@@ -227,9 +231,20 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-`.env.example` lists every setting with a comment explaining it. For local development, the defaults work without any API keys, except for features that call AI providers. **Never commit `.env`.** It is already in `.gitignore`.
+`.env.example` lists every setting with a comment explaining it. Before the first run, fill in two values in `.env`:
+
+- `DJANGO_SECRET_KEY`: generate one with `uv run python -c "import secrets; print(secrets.token_urlsafe(50))"`
+- `POSTGRES_PASSWORD`: choose any local password (letters and digits), and put the same password in place of `PASSWORD` in `DATABASE_URL` and `DATABASE_DIRECT_URL`
+
+Everything else works with its default, except features that call AI providers. **Never commit `.env`.** It is already in `.gitignore`.
 
 ### 3. Run it
+
+Install the frontend dependencies once (and again whenever `frontend/package.json` changes):
+
+```bash
+just install
+```
 
 In one terminal, start the backend services (Postgres, PgBouncer, Jaeger and the API):
 
@@ -258,15 +273,16 @@ Run `just --list` to see every command. The common ones:
 
 | Command            | What it does                                                        |
 | ------------------ | ------------------------------------------------------------------- |
+| `just install`   | Install frontend dependencies                                       |
 | `just dev`       | Start Postgres, PgBouncer, Jaeger and the API                       |
 | `just web`       | Start the frontend dev server                                       |
-| `just test`      | Run backend and frontend tests                                      |
+| `just test`      | Run backend tests                                                   |
 | `just lint`      | Lint and format-check backend and frontend                          |
 | `just typecheck` | mypy for the backend, `tsc` for the frontend                      |
-| `just types`     | Regenerate TypeScript types and Zod schemas from the backend models |
 | `just down`      | Stop all local services                                             |
+| `just reset`     | Stop local services and delete the local database                   |
 
-`just` is only a shortcut. Each recipe in the `justfile` is a plain `docker`, `uv` or `npm` command that you can also run directly.
+`just` is only a shortcut. Each recipe in the `justfile` is a plain `docker`, `uv` or `pnpm` command that you can also run directly.
 
 ## Configuration
 

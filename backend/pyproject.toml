@@ -1,0 +1,54 @@
+[project]
+name = "mbiu"
+version = "0.1.0"
+requires-python = "==3.14.*"
+dependencies = [
+    "django==6.1.2",
+    "opentelemetry-exporter-otlp-proto-http==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "psycopg[binary]==3.3.6",
+    "pydantic-settings==2.15.0",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs==6.1.2",
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "pytest-django==4.14.0",
+    "ruff==0.17.0",
+]
+
+[tool.uv]
+package = false
+# Only resolve versions published at least 14 days ago
+exclude-newer = "14 days"
+# Security exception: certifi < 2026.10.19 has PYSEC-2026-4320 (compromised CA roots). Remove after 2026-11-03.
+exclude-newer-package = { certifi = "2026-10-21T00:00:00Z" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "T20", "D101", "D102", "D103"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+django_find_project = false
+pythonpath = ["."]
