@@ -1,0 +1,48 @@
+name: Corpus Pipeline
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sundays at midnight to keep Supabase free tier active
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: "Corpus release version tag"
+        required: true
+        default: "v1.0.0-scheduled"
+      dry_run:
+        description: "Dry run (validate without writing to database)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_ALLOWED_HOSTS: localhost
+      DATABASE_URL: ${{ secrets.DATABASE_DIRECT_URL || 'sqlite:///tmp/corpus.db' }}
+      DATABASE_DIRECT_URL: ${{ secrets.DATABASE_DIRECT_URL || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.24"
+      - run: uv sync --locked
+      - name: Generate a Django secret key
+        run: echo "DJANGO_SECRET_KEY=$(uv run python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+      - name: Run corpus pipeline
+        run: |
+          VERSION_TAG="${{ github.event.inputs.version_tag || 'v1.0.0-scheduled' }}"
+          IS_DRY_RUN="${{ github.event.inputs.dry_run }}"
+          if [ "$IS_DRY_RUN" = "false" ]; then
+            uv run python -m mbiu.corpus.pipeline --version-tag "$VERSION_TAG"
+          else
+            uv run python -m mbiu.corpus.pipeline --version-tag "$VERSION_TAG" --dry-run
+          fi

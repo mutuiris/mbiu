@@ -131,7 +131,7 @@ Update the corresponding ticket row in the [Review Index](#review-index) table b
 | **MB-02** | Upload checks & safe PDF text extraction | backend | [MB-02 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-02-upload-checks.md) | 2026-11-03 | Approved |
 | **MB-03** | Clause splitter with property tests | backend | [MB-03 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-03-clause-splitter.md) | 2026-11-03 | Approved |
 | **MB-10** | Corpus database & startup snapshot | backend | [MB-10 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-10-corpus-database.md) | 2026-11-03 | Approved |
-| **MB-13** | Corpus pipeline II: tag, check, embed | backend, ai | `docs/implementation_specific/code_reviews/MB-13-corpus-pipeline-enrichment.md` | — | Pending |
+| **MB-13** | Corpus pipeline II: tag, check, embed | backend, ai | [MB-13 Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-13-corpus-pipeline-enrichment.md) | 2026-11-03 | Approved |
 | **MB-17** | Verification rules | backend | `docs/implementation_specific/code_reviews/MB-17-verification-rules.md` | — | Pending |
 | **MB-18** | Comparison, budgets, missing protections & summary | backend, ai | `docs/implementation_specific/code_reviews/MB-18-comparison-summary.md` | — | Pending |
 | **MB-26** | Refresh protection & resuming unfinished clauses | frontend, backend | `docs/implementation_specific/code_reviews/MB-26-refresh-protection.md` | — | Pending |
