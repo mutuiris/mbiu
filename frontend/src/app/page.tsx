@@ -1,27 +1,146 @@
-import { Suspense } from "react";
+"use client";
 
+import React, { useState } from "react";
+
+import { FileDropzone } from "@/components/FileDropzone";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { Turnstile } from "@/components/Turnstile";
 import { API_URL } from "@/lib/env";
+import { validateContractFile } from "@/lib/validation";
 
-async function apiStatus(): Promise<string> {
-  try {
-    const response = await fetch(`${API_URL}/healthz`, { cache: "no-store" });
-    return response.ok ? "ok" : `error ${response.status}`;
-  } catch {
-    return `unreachable at ${API_URL}`;
-  }
-}
-
-async function ApiStatus() {
-  return <p>API: {await apiStatus()}</p>;
-}
+type UploadState = "idle" | "validating" | "uploading" | "error" | "done";
 
 export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [uploadState, setUploadState] = useState<UploadState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const isSubmitEnabled =
+    selectedFile !== null &&
+    consentChecked &&
+    Boolean(turnstileToken) &&
+    uploadState === "idle";
+
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+    setErrorMessage(null);
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !consentChecked || !turnstileToken) return;
+
+    setUploadState("validating");
+    setErrorMessage(null);
+
+    const validation = validateContractFile(selectedFile);
+    if (!validation.valid) {
+      setErrorMessage(validation.error);
+      setUploadState("idle");
+      return;
+    }
+
+    setUploadState("uploading");
+    setStatusMessage("Connecting to evaluation stream...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("turnstile_token", turnstileToken);
+
+      const response = await fetch(`${API_URL}/api/v1/evaluations`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 502) {
+          // Backend API is not yet running or MB-05 is pending: show friendly message
+          setStatusMessage(
+            "Evaluation pipeline skeleton ready. Waiting for live stream endpoint (MB-05)."
+          );
+          setUploadState("done");
+          return;
+        }
+
+        const errData = await response.json().catch(() => null);
+        throw new Error(
+          errData?.detail ||
+            `Upload error (${response.status}): Mbiu could not process this contract right now.`
+        );
+      }
+
+      setStatusMessage("Contract received! Evaluation stream starting...");
+      setUploadState("done");
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "An unexpected error occurred."
+      );
+      setUploadState("error");
+    }
+  };
+
   return (
-    <main>
-      <h1>Mbiu</h1>
-      <Suspense fallback={<p>API: checking…</p>}>
-        <ApiStatus />
-      </Suspense>
+    <main className="page-wrapper">
+      <header className="header-section">
+        <h1 className="brand-title">Mbiu</h1>
+        <p className="brand-tagline">
+          Understand a music contract before you sign it.
+        </p>
+      </header>
+
+      <form onSubmit={handleUpload}>
+        <PrivacyNotice
+          consentChecked={consentChecked}
+          onConsentChange={setConsentChecked}
+        />
+
+        <FileDropzone
+          selectedFile={selectedFile}
+          onFileSelect={handleFileSelect}
+          onError={setErrorMessage}
+          disabled={uploadState === "uploading"}
+        />
+
+        <div className="turnstile-wrapper">
+          <Turnstile
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => {
+              setErrorMessage("Bot verification failed. Please refresh the page.");
+            }}
+            onExpire={() => setTurnstileToken(null)}
+          />
+        </div>
+
+        {errorMessage && (
+          <div className="status-alert error" role="alert">
+            <strong>Error: </strong>
+            {errorMessage}
+          </div>
+        )}
+
+        {statusMessage && uploadState === "done" && (
+          <div className="status-alert success" role="status">
+            {statusMessage}
+          </div>
+        )}
+
+        <div className="action-section">
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={!isSubmitEnabled}
+          >
+            {uploadState === "uploading" && <span className="spinner" />}
+            {uploadState === "uploading"
+              ? "Uploading contract…"
+              : "Check my contract"}
+          </button>
+        </div>
+      </form>
     </main>
   );
 }
