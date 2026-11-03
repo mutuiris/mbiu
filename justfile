@@ -24,6 +24,11 @@ install:
 web:
     pnpm --dir frontend dev
 
+# Regenerate the frontend's API types and Zod schemas from the backend models
+types:
+    uv run --directory backend python -m mbiu.api.openapi ../frontend/src/lib/api/openapi.json
+    pnpm --dir frontend generate:api
+
 # Run backend tests
 test:
     uv run --directory backend pytest
