@@ -33,4 +33,4 @@ env.sh
 #implementation/architecture docs
 docs/implementation_specific/
 docs/problem_architecture_planning/
-
+.agents/
