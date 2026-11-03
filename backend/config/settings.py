@@ -19,6 +19,7 @@ class Env(BaseSettings):
     django_secret_key: str = Field(min_length=50)
     django_allowed_hosts: str = Field(min_length=1)
     database_url: str = Field(min_length=1)
+    database_direct_url: str = ""
     otel_exporter_otlp_endpoint: str = ""
     otel_exporter_otlp_headers: str = ""
     otel_service_name: str = "mbiu-api"
@@ -33,6 +34,12 @@ env = Env()  # pyright: ignore[reportCallIssue]  The values come from the enviro
 
 def _database(url: str) -> dict[str, object]:
     parts = urlsplit(url)
+    if parts.scheme in ("sqlite", "sqlite3"):
+        name = parts.path.lstrip("/") if parts.path.startswith("/:") else (parts.path or ":memory:")
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": name,
+        }
     return {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": parts.path.lstrip("/"),
@@ -43,7 +50,10 @@ def _database(url: str) -> dict[str, object]:
         # Required by transaction-mode poolers (PgBouncer, Supavisor). Don't change this
         "CONN_MAX_AGE": 0,
         "DISABLE_SERVER_SIDE_CURSORS": True,
-        "OPTIONS": {"prepare_threshold": None},
+        "OPTIONS": {
+            "prepare_threshold": None,
+            "connect_timeout": 3,
+        },
     }
 
 
@@ -51,9 +61,14 @@ SECRET_KEY = env.django_secret_key
 DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in env.django_allowed_hosts.split(",") if h.strip()]
 ROOT_URLCONF = "config.urls"
-INSTALLED_APPS: list[str] = []
+INSTALLED_APPS: list[str] = [
+    "pgvector.django",
+    "mbiu.corpus",
+]
 MIDDLEWARE = ["django.middleware.security.SecurityMiddleware"]
-DATABASES = {"default": _database(env.database_url)}
+DATABASES: dict[str, dict[str, object]] = {"default": _database(env.database_url)}
+if env.database_direct_url:
+    DATABASES["direct"] = _database(env.database_direct_url)
 USE_TZ = True
 
 OTEL_EXPORTER_OTLP_ENDPOINT = env.otel_exporter_otlp_endpoint

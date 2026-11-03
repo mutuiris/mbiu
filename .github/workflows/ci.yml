@@ -21,10 +21,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: mbiu
+          POSTGRES_PASSWORD: localdevpassword
+          POSTGRES_DB: mbiu
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DJANGO_ALLOWED_HOSTS: localhost
-      # Tests don't use a database yet; this only satisfies the settings check
-      DATABASE_URL: postgresql://localhost/unused
+      DATABASE_URL: postgresql://mbiu:localdevpassword@localhost:5432/mbiu
+      DATABASE_DIRECT_URL: postgresql://mbiu:localdevpassword@localhost:5432/mbiu
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
