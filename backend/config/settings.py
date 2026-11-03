@@ -22,6 +22,10 @@ class Env(BaseSettings):
     otel_exporter_otlp_endpoint: str = ""
     otel_exporter_otlp_headers: str = ""
     otel_service_name: str = "mbiu-api"
+    max_upload_mb: int = 10
+    max_pages: int = 40
+    turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
+    turnstile_verify_url: str = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 
 env = Env()  # pyright: ignore[reportCallIssue]  The values come from the environment
@@ -55,3 +59,8 @@ USE_TZ = True
 OTEL_EXPORTER_OTLP_ENDPOINT = env.otel_exporter_otlp_endpoint
 OTEL_EXPORTER_OTLP_HEADERS = env.otel_exporter_otlp_headers
 OTEL_SERVICE_NAME = env.otel_service_name
+
+MAX_UPLOAD_MB = env.max_upload_mb
+MAX_PAGES = env.max_pages
+TURNSTILE_SECRET_KEY = env.turnstile_secret_key
+TURNSTILE_VERIFY_URL = env.turnstile_verify_url
