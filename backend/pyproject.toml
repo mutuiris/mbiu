@@ -25,8 +25,6 @@ dev = [
 package = false
 # Only resolve versions published at least 14 days ago
 exclude-newer = "14 days"
-# Security exception: certifi < 2026.10.19 has PYSEC-2026-4320 (compromised CA roots). Remove after 2026-11-03.
-exclude-newer-package = { certifi = "2026-10-21T00:00:00Z" }
 
 [tool.ruff]
 line-length = 100

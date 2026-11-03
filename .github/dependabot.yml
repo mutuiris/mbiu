@@ -21,15 +21,16 @@ updates:
     cooldown: { default-days: 14 }
     commit-message: { prefix: build, include: scope }
     groups: { frontend: { update-types: [minor, patch] } }
+    ignore:
+      # Types must match our Node 24 runtime
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /backend
     schedule: { interval: weekly }
     cooldown: { default-days: 14 }
     commit-message: { prefix: build, include: scope }
-
-  - package-ecosystem: docker-compose
-    directory: /
-    schedule: { interval: weekly }
-    cooldown: { default-days: 14 }
-    commit-message: { prefix: build, include: scope }
+    ignore:
+      # uv is pinned in both the Dockerfile and ci.yml; update them together by hand
+      - dependency-name: "astral-sh/uv"
