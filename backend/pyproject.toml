@@ -9,6 +9,7 @@ dependencies = [
     "opentelemetry-sdk==1.45.1",
     "psycopg[binary]==3.3.6",
     "pybreaker==1.4.1",
+    "pydantic==2.14.1",
     "pydantic-settings==2.15.0",
     "tenacity==9.1.4",
     "uvicorn==0.54.0",

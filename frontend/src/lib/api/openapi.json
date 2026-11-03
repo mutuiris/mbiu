@@ -1,0 +1,1250 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "additionalProperties": false,
+        "description": "An error returned instead of a stream, with a message for the artist.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "description": "Plain-language message to show the artist",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ApiError",
+        "type": "object"
+      },
+      "Ask": {
+        "additionalProperties": false,
+        "description": "One question for the artist to put to the other party.",
+        "properties": {
+          "clause_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None for a missing protection",
+            "title": "Clause Id"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clause_id",
+          "question"
+        ],
+        "title": "Ask",
+        "type": "object"
+      },
+      "Clause": {
+        "additionalProperties": false,
+        "description": "One clause exactly as extracted, with its pages and character offsets.",
+        "properties": {
+          "clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "end": {
+            "description": "Character offset just after the clause ends",
+            "minimum": 0,
+            "title": "End",
+            "type": "integer"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As written in the contract, e.g. '7.2' or '(b)'",
+            "title": "Number"
+          },
+          "pages": {
+            "items": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Pages",
+            "type": "array"
+          },
+          "section_id": {
+            "title": "Section Id",
+            "type": "string"
+          },
+          "start": {
+            "description": "Character offset where the clause starts",
+            "minimum": 0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "text": {
+            "description": "Exact text as extracted, never rewritten",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clause_id",
+          "section_id",
+          "number",
+          "heading",
+          "text",
+          "pages",
+          "start",
+          "end"
+        ],
+        "title": "Clause",
+        "type": "object"
+      },
+      "ClauseFailedEvent": {
+        "additionalProperties": false,
+        "description": "Sent when one clause couldn't be checked.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/ClauseFailure"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "clause_failed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "ClauseFailedEvent",
+        "type": "object"
+      },
+      "ClauseFailure": {
+        "additionalProperties": false,
+        "description": "A clause that couldn't be checked; retryable ones get a Retry button.",
+        "properties": {
+          "clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/FailureReason"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "clause_id",
+          "reason",
+          "retryable"
+        ],
+        "title": "ClauseFailure",
+        "type": "object"
+      },
+      "ClauseLink": {
+        "additionalProperties": false,
+        "description": "A link from one clause to another found in the contract map.",
+        "properties": {
+          "from_clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "From Clause Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "cross_reference",
+              "override",
+              "defined_term",
+              "same_topic"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "to_clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "To Clause Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_clause_id",
+          "to_clause_id",
+          "kind"
+        ],
+        "title": "ClauseLink",
+        "type": "object"
+      },
+      "ClauseNote": {
+        "additionalProperties": false,
+        "description": "A short note about one clause, such as good news.",
+        "properties": {
+          "clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clause_id",
+          "text"
+        ],
+        "title": "ClauseNote",
+        "type": "object"
+      },
+      "ClauseResult": {
+        "additionalProperties": false,
+        "description": "Everything one result card shows, already verified by code.",
+        "properties": {
+          "ask_them": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ask Them"
+          },
+          "clause_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "comparison_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison Note"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "evidence_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Quote"
+          },
+          "fairer_wording": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The template clause, unchanged",
+            "title": "Fairer Wording"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "impact_inputs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactInputs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "linked_clauses": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Linked Clauses",
+            "type": "array"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "original_text": {
+            "title": "Original Text",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Pages",
+            "type": "array"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Provider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "standard_excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standard Excerpt"
+          },
+          "standard_template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standard Template Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClauseStatus"
+          },
+          "what_it_means": {
+            "title": "What It Means",
+            "type": "string"
+          },
+          "what_it_says": {
+            "title": "What It Says",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clause_id",
+          "pages",
+          "original_text",
+          "status",
+          "comparison",
+          "headline",
+          "what_it_says",
+          "what_it_means",
+          "comparison_note",
+          "impact_inputs",
+          "linked_clauses",
+          "fairer_wording",
+          "ask_them",
+          "standard_template_id",
+          "standard_excerpt",
+          "evidence",
+          "evidence_ids",
+          "evidence_quote",
+          "provider",
+          "model_version"
+        ],
+        "title": "ClauseResult",
+        "type": "object"
+      },
+      "ClauseResultEvent": {
+        "additionalProperties": false,
+        "description": "Sent when one clause's result is ready.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/ClauseResult"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "clause_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "ClauseResultEvent",
+        "type": "object"
+      },
+      "ClauseStatus": {
+        "description": "Whether a clause was checked, and with what result.",
+        "enum": [
+          "evaluated",
+          "cannot_compare",
+          "evaluation_failed",
+          "not_checked"
+        ],
+        "title": "ClauseStatus",
+        "type": "string"
+      },
+      "ClauseUpdatedEvent": {
+        "additionalProperties": false,
+        "description": "Sent when a later finding changes a result already shown.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/ClauseResult"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "clause_updated",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "ClauseUpdatedEvent",
+        "type": "object"
+      },
+      "ContractIssue": {
+        "additionalProperties": false,
+        "description": "Two clauses that contradict each other, or where one claims to override the other.\nMbiu reports what each says; it never decides which one a court would apply.",
+        "properties": {
+          "clause_ids": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              }
+            ],
+            "title": "Clause Ids",
+            "type": "array"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "conflict",
+              "override"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Pages",
+            "type": "array"
+          },
+          "quotes": {
+            "description": "Exact wording from each clause, in order",
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quotes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "clause_ids",
+          "pages",
+          "explanation",
+          "quotes"
+        ],
+        "title": "ContractIssue",
+        "type": "object"
+      },
+      "ContractMapEvent": {
+        "additionalProperties": false,
+        "description": "Sent once the whole contract is mapped.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/ContractMapPayload"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "contract_map",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "ContractMapEvent",
+        "type": "object"
+      },
+      "ContractMapPayload": {
+        "additionalProperties": false,
+        "description": "Links and contract-wide issues found by mapping the whole contract.",
+        "properties": {
+          "contract_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None when no reviewed standard covers it",
+            "title": "Contract Type"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ContractIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/ClauseLink"
+            },
+            "title": "Links",
+            "type": "array"
+          }
+        },
+        "required": [
+          "contract_type",
+          "links",
+          "issues"
+        ],
+        "title": "ContractMapPayload",
+        "type": "object"
+      },
+      "DocumentEvent": {
+        "additionalProperties": false,
+        "description": "Sent once the contract is split into clauses.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/DocumentPayload"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "document",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "DocumentEvent",
+        "type": "object"
+      },
+      "DocumentPayload": {
+        "additionalProperties": false,
+        "description": "The contract as Mbiu split it, sent before any checks finish.",
+        "properties": {
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/Clause"
+            },
+            "title": "Clauses",
+            "type": "array"
+          },
+          "page_count": {
+            "minimum": 1,
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/Section"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "skipped_pages": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedPage"
+            },
+            "title": "Skipped Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "page_count",
+          "sections",
+          "clauses",
+          "skipped_pages"
+        ],
+        "title": "DocumentPayload",
+        "type": "object"
+      },
+      "DoneEvent": {
+        "additionalProperties": false,
+        "description": "Sent last, with the summary and ask list.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/Summary"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "done",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "DoneEvent",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "description": "Why an upload was refused before the stream started.",
+        "enum": [
+          "invalid_file_type",
+          "file_too_large",
+          "too_many_pages",
+          "encrypted_pdf",
+          "scanned_pdf",
+          "mostly_not_english",
+          "bot_check_failed",
+          "rate_limited",
+          "service_unavailable"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "Evidence": {
+        "additionalProperties": false,
+        "description": "A reviewed template excerpt sent to the model for one clause.",
+        "properties": {
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "title": "Jurisdiction",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "template_id": {
+            "title": "Template Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "template_id",
+          "source_title",
+          "jurisdiction",
+          "excerpt"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "FailureReason": {
+        "description": "Why a clause couldn't be checked; not_checked means the budget ran out first.",
+        "enum": [
+          "rate_limited",
+          "timeout",
+          "refused",
+          "schema_invalid",
+          "unavailable",
+          "not_checked"
+        ],
+        "title": "FailureReason",
+        "type": "string"
+      },
+      "Heartbeat": {
+        "additionalProperties": false,
+        "description": "Empty payload sent every 10 seconds to keep the connection open.",
+        "properties": {},
+        "title": "Heartbeat",
+        "type": "object"
+      },
+      "HeartbeatEvent": {
+        "additionalProperties": false,
+        "description": "Sent every 10 seconds; carries nothing.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/Heartbeat"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "heartbeat",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "HeartbeatEvent",
+        "type": "object"
+      },
+      "ImpactInputs": {
+        "additionalProperties": false,
+        "description": "Inputs for the worked example in shillings. The frontend does the arithmetic; the\nmodel never does. Each value carries the exact wording it was read from.",
+        "properties": {
+          "deductions": {
+            "items": {
+              "$ref": "#/components/schemas/QuotedText"
+            },
+            "title": "Deductions",
+            "type": "array"
+          },
+          "money_basis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotedBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "royalty_rate_percent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotedNumber"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "royalty_rate_percent",
+          "money_basis",
+          "deductions"
+        ],
+        "title": "ImpactInputs",
+        "type": "object"
+      },
+      "MissingProtection": {
+        "additionalProperties": false,
+        "description": "A protection in the reviewed standard that the contract lacks.",
+        "properties": {
+          "ask_them": {
+            "title": "Ask Them",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "template_id": {
+            "title": "Template Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "template_id",
+          "title",
+          "excerpt",
+          "ask_them"
+        ],
+        "title": "MissingProtection",
+        "type": "object"
+      },
+      "MoneyBasis": {
+        "description": "Whether a percentage applies before costs (gross) or after them (net).",
+        "enum": [
+          "gross",
+          "net"
+        ],
+        "title": "MoneyBasis",
+        "type": "string"
+      },
+      "Outcome": {
+        "description": "How a clause compares with the reviewed standard.",
+        "enum": [
+          "matches_standard",
+          "better_for_you",
+          "worse_for_you",
+          "not_in_standard",
+          "missing_from_contract",
+          "cannot_compare"
+        ],
+        "title": "Outcome",
+        "type": "string"
+      },
+      "Progress": {
+        "additionalProperties": false,
+        "description": "How far the evaluation has got.",
+        "properties": {
+          "done": {
+            "minimum": 0,
+            "title": "Done",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/Stage"
+          },
+          "total": {
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stage",
+          "done",
+          "total"
+        ],
+        "title": "Progress",
+        "type": "object"
+      },
+      "ProgressEvent": {
+        "additionalProperties": false,
+        "description": "Sent as the evaluation moves through its stages.",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "schema_version": {
+            "const": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "type": {
+            "const": "progress",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema_version",
+          "payload"
+        ],
+        "title": "ProgressEvent",
+        "type": "object"
+      },
+      "Provider": {
+        "description": "The AI provider that produced a result.",
+        "enum": [
+          "gemini",
+          "openai"
+        ],
+        "title": "Provider",
+        "type": "string"
+      },
+      "QuotedBasis": {
+        "additionalProperties": false,
+        "description": "A gross or net basis with the exact contract wording it was read from.",
+        "properties": {
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/MoneyBasis"
+          }
+        },
+        "required": [
+          "value",
+          "quote"
+        ],
+        "title": "QuotedBasis",
+        "type": "object"
+      },
+      "QuotedNumber": {
+        "additionalProperties": false,
+        "description": "A number with the exact contract wording it was read from.",
+        "properties": {
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value",
+          "quote"
+        ],
+        "title": "QuotedNumber",
+        "type": "object"
+      },
+      "QuotedText": {
+        "additionalProperties": false,
+        "description": "A value with the exact contract wording it was read from.",
+        "properties": {
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "quote"
+        ],
+        "title": "QuotedText",
+        "type": "object"
+      },
+      "Section": {
+        "additionalProperties": false,
+        "description": "A part of the contract: the main body, a schedule or an annex.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "body",
+              "schedule",
+              "annex"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "section_id": {
+            "title": "Section Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "section_id",
+          "title",
+          "kind"
+        ],
+        "title": "Section",
+        "type": "object"
+      },
+      "SkippedPage": {
+        "additionalProperties": false,
+        "description": "A page Mbiu could not read, and why.",
+        "properties": {
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "no_text_layer",
+              "not_english"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "reason"
+        ],
+        "title": "SkippedPage",
+        "type": "object"
+      },
+      "Stage": {
+        "description": "A step of the evaluation, reported in progress events.",
+        "enum": [
+          "extract",
+          "segment",
+          "map",
+          "retrieve",
+          "compare",
+          "verify",
+          "summarise"
+        ],
+        "title": "Stage",
+        "type": "string"
+      },
+      "StreamEvent": {
+        "discriminator": {
+          "mapping": {
+            "clause_failed": "#/components/schemas/ClauseFailedEvent",
+            "clause_result": "#/components/schemas/ClauseResultEvent",
+            "clause_updated": "#/components/schemas/ClauseUpdatedEvent",
+            "contract_map": "#/components/schemas/ContractMapEvent",
+            "document": "#/components/schemas/DocumentEvent",
+            "done": "#/components/schemas/DoneEvent",
+            "heartbeat": "#/components/schemas/HeartbeatEvent",
+            "progress": "#/components/schemas/ProgressEvent"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DocumentEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ContractMapEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ProgressEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ClauseResultEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ClauseUpdatedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ClauseFailedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/HeartbeatEvent"
+          },
+          {
+            "$ref": "#/components/schemas/DoneEvent"
+          }
+        ]
+      },
+      "Summary": {
+        "additionalProperties": false,
+        "description": "The end-of-evaluation summary, also used for the PDF report.",
+        "properties": {
+          "ask_list": {
+            "items": {
+              "$ref": "#/components/schemas/Ask"
+            },
+            "title": "Ask List",
+            "type": "array"
+          },
+          "contract_issues": {
+            "items": {
+              "$ref": "#/components/schemas/ContractIssue"
+            },
+            "title": "Contract Issues",
+            "type": "array"
+          },
+          "good_news": {
+            "items": {
+              "$ref": "#/components/schemas/ClauseNote"
+            },
+            "title": "Good News",
+            "type": "array"
+          },
+          "matches_count": {
+            "minimum": 0,
+            "title": "Matches Count",
+            "type": "integer"
+          },
+          "missing_protections": {
+            "items": {
+              "$ref": "#/components/schemas/MissingProtection"
+            },
+            "title": "Missing Protections",
+            "type": "array"
+          },
+          "skipped_pages": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedPage"
+            },
+            "title": "Skipped Pages",
+            "type": "array"
+          },
+          "top_asks": {
+            "items": {
+              "$ref": "#/components/schemas/Ask"
+            },
+            "maxItems": 3,
+            "title": "Top Asks",
+            "type": "array"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/Versions"
+          }
+        },
+        "required": [
+          "top_asks",
+          "contract_issues",
+          "missing_protections",
+          "good_news",
+          "matches_count",
+          "skipped_pages",
+          "ask_list",
+          "versions"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "Versions": {
+        "additionalProperties": false,
+        "description": "Versions behind a report, so results can be traced and reproduced.",
+        "properties": {
+          "corpus": {
+            "title": "Corpus",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "prompt",
+          "model",
+          "corpus"
+        ],
+        "title": "Versions",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Mbiu API",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {}
+}
