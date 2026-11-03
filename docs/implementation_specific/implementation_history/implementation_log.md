@@ -345,5 +345,63 @@ This document serves as the chronological audit trail and engineering log for al
 - Downstream ticket `MB-16` (Retrieval and impact order) will consume `get_active_corpus_snapshot()` to perform vector search over `snapshot.embeddings` (768 float32 dimensions) and retrieve chunks by `topic`, `contract_type`, and `jurisdiction`.
 - Downstream ticket `MB-18` (Comparison and summary) will use reference chunks and their commonality scores (`chunk.metadata["commonality"]`) to evaluate whether user contract clauses adhere to common or unusual patterns.
 
+---
+
+## [MB-17] — Verification rules
+
+- **Date:** 2026-11-03
+- **Owner:** Steve
+- **Branch:** `feat/mbiu-build`
+- **Status:** Approved
+- **Review Document:** [MB-17 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-17-verification-rules.md)
+
+### What Was Done
+- **Dedicated Verification Rules Engine (`backend/mbiu/evaluation/verify.py`):**
+  - Built dedicated verification functions for all eight non-negotiable rules:
+    1. `verify_verbatim_quotes`: Enforces that `key_quote` and all cited `evidence` quotes are exact substrings (whitespace-normalized) of the sent clause text and reference template texts. Rejects altered or hallucinated quotations.
+    2. `verify_grounded_ids`: Validates that target clause IDs, linked clause IDs, evidence chunk IDs, and pattern IDs strictly belong to the request context. Rejects untyped norm words ("industry standard", "customary") in comparison notes unless code placeholders (e.g. `{{freq:PXX}}`) are used.
+    3. `verify_grounded_numbers`: Audits every number, percentage, and duration cited in proposal fields (`title`, `plain_language`, `why_it_matters`, `comparison_note`, `questions`) against the sent clause text, linked clauses, and cited evidence excerpts. Excludes code-calculated Kenyan Shilling illustrative examples when explicitly labelled.
+    4. `verify_no_legal_conclusions`: Blocks forbidden legal validity, advice, and evaluative phrases ("illegal", "unlawful", "unenforceable", "void", "fair", "unfair", "safe", "guaranteed", "you should sign", "don't sign", "valid in court", etc.). Enforces objective modal tone in `why_it_matters` (must include "may" or "could") and rejects imperative commands ("you must", "demand", "refuse").
+    5. `verify_plain_language`: Computes Flesch-Kincaid Grade Level via pure-Python deterministic syllable analysis. Enforces that industry legal/music jargon terms ("net receipts", "recoupable", "in perpetuity", "cross-collateralization", "indemnity", etc.) must be defined either in `jargon_definitions` or inline on the card.
+    6. `verify_phone_friendly_length`: Enforces strict character limits per card section: `title` (<= 45), `plain_language` (<= 200), `why_it_matters` (<= 280), `comparison_note` (<= 280), and each question (<= 120).
+    7. `verify_usable_questions`: Enforces that suggested questions end with "?", are at least 15 characters, and ask for specific, actionable terms (caps, rates, reversion windows, accounting frequencies). Rejects vague boilerplate questions ("What does this mean?", "Is this good?"). Limits questions to at most 3 per card.
+    8. `verify_comparable_money`: Enforces that monetary comparisons explicitly specify calculation basis ("gross" or "net") on both sides; incompatible or missing bases fail, triggering fallback to `cannot_compare`.
+- **Orchestration, Repair Feedback, & Fallback Workflow (`repair_and_verify`):**
+  - `verify_proposal`: Executes all 8 rules, aggregates `RuleViolation` items, and assigns deterministic labels (`typical`, `unusual`, `worth_asking_about`, `cannot_compare`) when all rules pass.
+  - `generate_repair_feedback`: Produces structured feedback naming failed rules specifically and providing clear repair instructions for the model.
+  - `repair_and_verify`: Executes initial verification; allows exactly one repair attempt with feedback; if verification fails after repair, deterministically falls back to outcome `cannot_compare` (⚪ Couldn't compare) with a safe fallback card. Never falls back to `matches_standard` or `typical`.
+  - Observability Counters: Thread-safe failure counters per rule (`get_rule_failure_counts`, `reset_rule_failure_counters`, `record_rule_failure`) ready for export to metrics (MB-29).
+- **Comprehensive Colocated Test Suite (`backend/tests/test_verify.py`):**
+  - 65 comprehensive tests covering all 8 rules (passing and failing fixtures), hallucinated numbers/IDs/quotes, forbidden legal advice, missing question marks, ungrounded jargon, phone length limits, single-attempt repair success, double-failure fallback, failure counters, and the zero-contract-storage invariant.
+
+### Key Technical Details & Architecture References
+- **Architecture doc reference:** Lines 333-345 ("Table: Verification Rules", "Model output is a proposal, not a result") and Ticket MB-17.
+- **Non-Negotiable Project Invariants Enforced:**
+  - *Zero Contract Storage Invariant:* Operates strictly in memory on strings and dataclasses. Verified via `test_zero_contract_storage_during_verification` that 0 files are written to temp directory or disk.
+  - *Decisions From Reviewed Templates Only:* Model cannot invent outside norms. Any ungrounded comparison or second verification failure defaults to `cannot_compare`.
+  - *Model Output is a Proposal, Not a Result:* All quotes are verified by code as exact substrings before reaching the musician. Arithmetic and shillings examples are computed by code.
+  - *The Four Labels (No Green Label):* Strictly enforces `typical`, `unusual`, `worth_asking_about`, and `cannot_compare`. "Typical" never implies safe.
+  - *Synthetic Contracts Only:* All test fixtures utilize synthetic contract clauses.
+
+### Verification & Test Results
+- Quality commands run:
+  - `just test`: 150 passed in 35.83s (100% pass across all tests, zero regressions).
+  - `just lint`: 100% pass across backend (`ruff check`, `ruff format --check` over 42 files) and frontend (`eslint`).
+  - `just typecheck`: 100% pass across backend (`mypy` strict over 42 files) and frontend (`tsc --noEmit`).
+
+### Code Review & Refinements
+- **Review Date:** 2026-11-03
+- **Reviewer:** Mbiu Code Reviewer
+- **Outcome:** Approved (Score: 5/5)
+- **Review Document:** [MB-17 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-17-verification-rules.md)
+- **Changes Implemented:**
+  - Removed ticket ID reference from inline comment in `verify.py#L334` per repository hygiene rules.
+  - Marked Issue 1 `[x] Fixed` in review file.
+
+### Next Developer / Maintenance Guide
+- Downstream ticket `MB-18` (Comparison, budgets, missing protections and summary) will invoke `repair_and_verify` or `verify_proposal` on candidate batches produced by the Gemini adapter (MB-04) and OpenAI failover (MB-20).
+- Downstream ticket `MB-29` (Observability) will expose `get_rule_failure_counts()` as OpenTelemetry metric counters (`mbiu_verification_failures_total{rule="..."}`).
+
+
 
 
