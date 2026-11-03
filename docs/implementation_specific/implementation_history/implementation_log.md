@@ -272,5 +272,78 @@ This document serves as the chronological audit trail and engineering log for al
 - Downstream ticket `MB-12` (Corpus pipeline I: fetch, store, parse, split) and `MB-13` (Corpus pipeline II: tag, check, embed, publish) can write parsed standard templates to `ReferenceSource` and `ReferenceChunk`, evaluate them using `PipelineCheckResult`, create a new `CorpusVersion`, and call `CorpusVersion.activate_version()` to atomically publish the release.
 - Downstream ticket `MB-16` (Retrieval and impact order) will consume `get_active_corpus_snapshot()` to perform in-memory vector similarity searches using `snapshot.embeddings` and retrieve matching chunk metadata via `snapshot.chunks` or `snapshot.get_chunk(chunk_id)`.
 
+## [MB-13] — Corpus pipeline II: tag, check, embed, publish
+
+- **Date:** 2026-11-03
+- **Owner:** Steve
+- **Branch:** `feat/mbiu-build`
+- **Status:** Approved
+- **Review Document:** [MB-13 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-13-corpus-pipeline-enrichment.md)
+
+### What Was Done
+- **Clause Tagging & Dual-Tagger Consensus Module (`backend/mbiu/corpus/pipeline/tag.py`):**
+  - Implemented structured tag schemas: `ClauseTags(contract_type, topic, jurisdiction, drafted_for)` and `TaggingResult`.
+  - Built `HeuristicClauseTagger` for fast, deterministic rule-based tagging covering 12 canonical legal topics (`royalties`, `advances_recoupment`, `grant_of_rights`, `term_duration`, `exclusivity`, `accounting_audit`, `termination`, `warranties_indemnities`, `moral_rights`, `governing_law_jurisdiction`, `dispute_resolution`, `boilerplate`), 8 contract types, and 3 drafting perspectives (`label`, `artist`, `neutral`).
+  - Built `DualTaggerConsensus` evaluating consensus between two independent taggers; only clauses where both taggers agree on all four attributes are accepted into the published corpus.
+- **Automated Quality Checks Engine (`backend/mbiu/corpus/pipeline/checks.py`):**
+  - Implemented all six non-negotiable automated quality checks with structured outcomes recorded in `PipelineCheckResult`:
+    1. `validate_metadata`: ensures license, jurisdiction, and reviewing body are present and verified against allowable open/reusable licenses (`CC BY 4.0`, `CC0`, `Kenya Copyright Act (Cap. 130)`, `WIPO reference standard`, etc.). Rejects missing, blank, or proprietary licenses ("All Rights Reserved").
+    2. `validate_template_nature`: validates operative contract wording and rejects signed agreements with execution blocks, marketing copy, and informal blog posts.
+    3. `scan_for_pii`: high-precision scanner detecting real personal emails, Kenyan & international phone numbers, street addresses, P.O. Box addresses, and national ID/passport numbers while preserving legitimate template placeholders (`[Artist Name]`, `<Record Company>`, `Jane Doe`, `Party A`).
+    4. `check_language`: validates text is English using comprehensive English lexical frequency analysis and rejects non-English text (Swahili, French, German).
+    5. `check_deduplication`: MinHash / n-gram Jaccard near-duplicate detector (3-gram word shingles) removing redundant templates and recording deduplication metrics.
+    6. `check_tag_consensus`: verifies dual-tagger agreement across all accepted clauses.
+  - Implemented `run_all_checks` orchestrating all six checks.
+- **Corpus Clause Embedding Module (`backend/mbiu/corpus/pipeline/embed.py`):**
+  - Formatted embedding inputs strictly according to the EmbeddingGemma 2 spec: `title: {title} | text: {content}`.
+  - Implemented `EmbeddingEngine` producing 768-dimensional float32 unit-length embeddings ($L_2$ norm = 1.0) with zero NaN/Inf values.
+  - Implemented `compute_clause_commonality` calculating cosine similarity dot-product matrices to group similar clauses and annotate metadata with cluster size, pattern frequency, and commonality flags.
+  - Implemented model revision and vector dimension compatibility guards preventing mixing vectors across different revisions or dimensions.
+- **Publishing & Orchestration Module (`backend/mbiu/corpus/pipeline/publish.py`):**
+  - Built `CorpusPublisher.publish_version(...)`:
+    * Validates tag uniqueness and immutability.
+    * Evaluates dual-tagging consensus.
+    * Runs all 6 quality checks; aborts on any failure.
+    * Generates 768-dim float32 unit embeddings.
+    * Calculates pattern commonality scores.
+    * Atomically persists `CorpusVersion`, `ReferenceSource`, `ReferenceChunk`, and `PipelineCheckResult` records.
+    * Atomically activates version via `CorpusVersion.activate_version()`.
+    * Reloads in-memory snapshot via `load_corpus_snapshot()`.
+- **CLI Runner & Entrypoint (`backend/mbiu/corpus/pipeline/runner.py`, `backend/mbiu/corpus/pipeline/__main__.py`):**
+  - Exposed CLI command `python -m mbiu.corpus.pipeline --version-tag <tag> [--dry-run] [--no-activate] [--sources <path>]`.
+  - Built default synthetic standards factory (`get_default_synthetic_standards()`) for bootstrap and testing.
+- **Scheduled Pipeline Workflow (`.github/workflows/corpus-pipeline.yml`):**
+  - Added scheduled weekly (Sunday 00:00 UTC) and manual `workflow_dispatch` GitHub Actions workflow to run the corpus pipeline and keep the Supabase database active.
+- **Comprehensive Colocated Test Suite (`backend/tests/test_corpus_pipeline.py`):**
+  - 30 tests covering all individual checks (passing and failing fixtures), tagging consensus, embedding formatting/normalization, commonality grouping, atomic E2E publishing, snapshot reloading, and the Zero Contract Storage invariant.
+
+### Key Technical Details & Architecture References
+- **Architecture doc reference:** Part 3 ("How it fits together: ...scheduled corpus pipeline publishes new corpus versions") and Part 6 Ticket MB-13.
+- **Non-Negotiable Project Invariants Enforced:**
+  - *Zero Contract Storage Invariant:* Corpus pipeline processes reviewed template standards ONLY. Verified by `test_zero_contract_storage_pipeline_isolation` that no user contracts, uploads, or user sessions exist in the pipeline.
+  - *Storage Off at AI Providers:* Model taggers and verification checks run with `store=False`.
+  - *Decisions From Reviewed Templates Only:* Only clauses passing all six quality checks and verified licenses are published into the corpus.
+  - *Vector Revision Protection:* Enforces identical model ID and dimensionality (768), rejecting vector mixing.
+  - *Single Active Pointer:* Versions are atomically flipped via `CorpusVersion.activate_version()`, and the in-memory snapshot is refreshed immediately.
+
+### Verification & Test Results
+- Quality commands run:
+  - `just test`: 85 passed in 37.66s (100% pass across all tests, zero regressions).
+  - `just lint`: 100% pass across backend (`ruff check`, `ruff format --check` over 39 files) and frontend (`eslint`).
+  - `just typecheck`: 100% pass across backend (`mypy` strict over 39 files) and frontend (`tsc --noEmit`).
+
+### Code Review & Refinements
+- **Review Date:** 2026-11-03
+- **Reviewer:** Mbiu Code Reviewer
+- **Outcome:** Approved (Score: 5/5)
+- **Review Document:** [MB-13 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-13-corpus-pipeline-enrichment.md)
+- **Changes Implemented:**
+  - Added `.github/workflows/corpus-pipeline.yml` configured for weekly cron execution and manual `workflow_dispatch` triggers to automate corpus publishing checks and prevent Supabase free project pausing.
+  - Marked item resolved in review file.
+
+### Next Developer / Maintenance Guide
+- Downstream ticket `MB-16` (Retrieval and impact order) will consume `get_active_corpus_snapshot()` to perform vector search over `snapshot.embeddings` (768 float32 dimensions) and retrieve chunks by `topic`, `contract_type`, and `jurisdiction`.
+- Downstream ticket `MB-18` (Comparison and summary) will use reference chunks and their commonality scores (`chunk.metadata["commonality"]`) to evaluate whether user contract clauses adhere to common or unusual patterns.
+
 
 
