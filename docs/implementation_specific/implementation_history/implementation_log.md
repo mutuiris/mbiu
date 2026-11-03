@@ -402,6 +402,83 @@ This document serves as the chronological audit trail and engineering log for al
 - Downstream ticket `MB-18` (Comparison, budgets, missing protections and summary) will invoke `repair_and_verify` or `verify_proposal` on candidate batches produced by the Gemini adapter (MB-04) and OpenAI failover (MB-20).
 - Downstream ticket `MB-29` (Observability) will expose `get_rule_failure_counts()` as OpenTelemetry metric counters (`mbiu_verification_failures_total{rule="..."}`).
 
+---
+
+## [MB-18] — Comparison, budgets, missing protections and summary
+
+- **Date:** 2026-11-03
+- **Owner:** Steve
+- **Branch:** `feat/mbiu-build`
+- **Status:** Approved
+- **Review Document:** [MB-18 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-18-comparison-summary.md)
+
+### What Was Done
+- **Batching & Concurrency Engine (`backend/mbiu/evaluation/budgets.py`):**
+  - Topic classification and impact ordering: Prioritizes clauses by impact: Money (100) and Ownership (90) first, followed by Term (80), Exclusivity (70), and Termination (60); Boilerplate (10) evaluated last. Stable sorting preserves original document order within identical priority tiers.
+  - Clause Batching: Partitions clauses into balanced batches of 4-8 clauses (default `settings.BATCH_SIZE = 6`), dynamically balancing items to eliminate orphan batches when total clauses >= 4.
+  - Concurrency Control: Implements `run_evaluation_batches` using `asyncio.Semaphore(settings.LLM_CONCURRENCY)` (default 4).
+  - Time & Token Budgets: `EvaluationBudgetTracker` enforces per-batch time limits (`settings.BATCH_TIMEOUT_S = 30.0s`), incremental contract deadline scaling with clause count (`settings.DEADLINE_PER_CLAUSE_S = 3.0s`, capped at `settings.DEADLINE_CAP_S = 300.0s`), and overall contract token ceilings (`settings.TOKEN_BUDGET_PER_CONTRACT = 400,000`).
+  - Budget Exhaustion Handling: When token or time budgets expire, remaining clauses are safely converted into status `not_checked` with the artist-friendly plain language message:
+    `"Mbiu checked the most important clauses first. N clauses aren't checked yet."`
+- **Comparison & Reverse Check Engine (`backend/mbiu/evaluation/comparison.py`):**
+  - Result Card Model: `ClauseEvaluationResult` carrying clause provenance (`clause_id`, `pages`, `original_text`), evaluation status, 6 comparison outcomes, 4 non-negotiable labels, phone-friendly plain-language text, impact inputs, fairer wording, and evidence citations.
+  - Missing Reviewed Standard Guard: If the detected contract type lacks a reviewed standard in the corpus snapshot, emits outcome `cannot_compare` (⚪ Couldn't compare) with kind explanation:
+    `"Mbiu doesn't have a reviewed standard for this kind of contract yet, so it can explain these clauses but not compare them."`
+  - Template Disagreements: `format_template_disagreement` formats clear evidence differences:
+    `"Standard templates differ here: one gives X, another Y. Your contract gives Z."`
+  - Impact Inputs (Shillings Calculation): `validate_impact_inputs` extracts `rate`, `money_basis`, `deductions`, and exact verbatim `quote` for frontend arithmetic. Strictly enforces that the model never does arithmetic in shillings.
+  - Fairer Wording Extraction: `extract_fairer_wording` validates that fairer wording matches an exact substring of a reviewed template chunk, unchanged.
+  - Verification Orchestration: `evaluate_clause_with_verification` routes every candidate proposal through MB-17 `repair_and_verify` to guarantee zero hallucinations, grounded numbers, and phone-friendly plain language.
+  - Reverse Check (Missing Protections): `check_missing_protections` scans the contract for standard protective clauses present in reviewed templates (annual audit rights, accounting statement frequency, termination for uncured breach/non-payment, prior written approval for deductions, rights reversion). Emits outcome `missing_from_contract` and label `worth_asking_about` (🟠 Worth asking about) with objective, cautious phrasing ("We didn't find...").
+- **Evaluation Summary Generator (`backend/mbiu/evaluation/summary.py`):**
+  - `EvaluationSummary` dataclass and `generate_evaluation_summary`:
+    - `top_asks`: Top 3 negotiation questions ranked by impact on money and ownership.
+    - `contract_issues`: Contract-wide overrides and conflicts passed from contract map.
+    - `missing_protections`: Protections detected as absent by the reverse check.
+    - `good_news`: Clauses that match or exceed the standard (`matches_standard` or `better_for_you`).
+    - `matches_count`: Count of clauses matching reference standards.
+    - `skipped_pages`: Pages skipped during PDF extraction.
+    - `ask_list`: Consolidated, deduplicated checklist of all negotiation questions.
+    - `clauses_not_checked`: Count of clauses left unchecked upon budget exhaustion.
+    - `label_counts`: Grand totals for `typical`, `unusual`, `worth_asking_about`, and `cannot_compare`.
+    - `versions`: `EvaluationVersions` (`schema_version="1.0.0"`, `prompt_version="2026.1"`, `model_version="gemini-3.8-flash"`, `corpus_version="v2026.10"`).
+  - Backwards-compatible aliases: `top_questions`, `contract_wide_issues`, `not_found_items`, `all_questions`.
+- **Settings & Config (`backend/config/settings.py`):**
+  - Added `BATCH_SIZE`, `LLM_CONCURRENCY`, `TOKEN_BUDGET_PER_CONTRACT`, `BATCH_TIMEOUT_S`, `DEADLINE_PER_CLAUSE_S`, and `DEADLINE_CAP_S` to `Env` and module exports.
+- **Test Suite (`backend/tests/test_comparison.py` & `test_summary.py`):**
+  - 22 comprehensive colocated tests verifying impact ordering, batch sizing, token/time exhaustion, async batch runner timeouts, impact inputs without model arithmetic, exact template fairer wording, template disagreement formatting, missing standard handling, reverse check missing protection detection, summary generation with top 3 asks, and zero contract storage.
+
+### Key Technical Details & Architecture References
+- **Architecture References:** Lines 143-175 ("Evaluation request flow", "Long contracts"), Lines 280-332 ("Comparison outcomes", "Fields per clause result", "Summary fields"), and Ticket MB-18 in `Mbiu Build Tickets.md`.
+- **Non-Negotiable Project Invariants Enforced:**
+  - *Zero Contract Storage Invariant:* Operates strictly in memory. Verified via `test_zero_contract_storage_during_comparison` and `test_zero_contract_storage_summary` that 0 files are written to disk, databases, or temporary directories.
+  - *Storage Off at AI Providers:* All evaluation structures and runner adapters adhere to `store=False`.
+  - *Decisions From Reviewed Templates Only:* Comparisons are made exclusively against reference template chunks in the corpus snapshot; missing standard emits `cannot_compare`.
+  - *Model Output is a Proposal, Not a Result:* All quotes and deductions are validated as exact substrings; model arithmetic is strictly blocked from the request path.
+  - *The Four Labels (No Green Label):* Strictly maps results to `typical`, `unusual`, `worth_asking_about`, and `cannot_compare`.
+  - *Synthetic Contracts Only:* All tests and fixtures use synthetic music agreements.
+
+### Verification & Test Results
+- Quality commands run:
+  - `just test`: 172 passed in 37.84s (100% pass across all tests, zero regressions).
+  - `just lint`: 100% pass across backend (`ruff check`, `ruff format --check` over 47 files) and frontend (`eslint`).
+  - `just typecheck`: 100% pass across backend (`mypy` strict over 47 files) and frontend (`tsc --noEmit`).
+
+### Code Review & Refinements
+- **Review Date:** 2026-11-03
+- **Reviewer:** Mbiu Code Reviewer
+- **Outcome:** Approved (Score: 5/5)
+- **Review Document:** [MB-18 Code Review](file:///c:/git/mbiu/docs/implementation_specific/code_reviews/MB-18-comparison-summary.md)
+- **Changes Implemented:**
+  - Replaced in-place list mutation during deduction pruning in `validate_impact_inputs` with list comprehension filtering to avoid skipping adjacent ungrounded terms.
+  - Converted `run_evaluation_batches` from sequential loop into true concurrent worker queue execution with token reservations, enabling concurrent batch evaluation under `settings.LLM_CONCURRENCY` while preserving budget limits and batch ordering.
+  - Removed orphaned dead code expression `total_clauses - processed_count` from `budgets.py`.
+  - Marked all 3 review items `[x] Fixed` in review file.
+
+### Next Developer / Maintenance Guide
+- Downstream ticket `MB-21` (Full result card & shillings calculator) will use `ClauseEvaluationResult.impact_inputs` (`rate`, `money_basis`, `deductions`, `quote`) to run client-side Kenyan Shillings calculations on user-provided sample revenues.
+- Downstream ticket `MB-25` (PDF report & sharing) will consume `EvaluationSummary` (`top_asks`, `good_news`, `missing_protections`, `ask_list`) to format client-side exportable PDF reports and WhatsApp share messages.
+
 
 
 

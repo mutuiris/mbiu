@@ -27,6 +27,12 @@ class Env(BaseSettings):
     max_pages: int = 40
     turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
     turnstile_verify_url: str = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    batch_size: int = 6
+    llm_concurrency: int = 4
+    token_budget_per_contract: int = 400000
+    batch_timeout_s: float = 30.0
+    deadline_per_clause_s: float = 3.0
+    deadline_cap_s: float = 300.0
 
 
 env = Env()  # pyright: ignore[reportCallIssue]  The values come from the environment
@@ -79,3 +85,10 @@ MAX_UPLOAD_MB = env.max_upload_mb
 MAX_PAGES = env.max_pages
 TURNSTILE_SECRET_KEY = env.turnstile_secret_key
 TURNSTILE_VERIFY_URL = env.turnstile_verify_url
+
+BATCH_SIZE = env.batch_size
+LLM_CONCURRENCY = env.llm_concurrency
+TOKEN_BUDGET_PER_CONTRACT = env.token_budget_per_contract
+BATCH_TIMEOUT_S = env.batch_timeout_s
+DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s
+DEADLINE_CAP_S = env.deadline_cap_s
