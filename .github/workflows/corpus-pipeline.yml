@@ -38,9 +38,10 @@ jobs:
       - name: Generate a Django secret key
         run: echo "DJANGO_SECRET_KEY=$(uv run python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
       - name: Run corpus pipeline
+        env:
+          VERSION_TAG: ${{ github.event.inputs.version_tag || 'v1.0.0-scheduled' }}
+          IS_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          VERSION_TAG="${{ github.event.inputs.version_tag || 'v1.0.0-scheduled' }}"
-          IS_DRY_RUN="${{ github.event.inputs.dry_run }}"
           if [ "$IS_DRY_RUN" = "false" ]; then
             uv run python -m mbiu.corpus.pipeline --version-tag "$VERSION_TAG"
           else
