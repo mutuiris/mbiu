@@ -4,17 +4,20 @@ version = "0.1.0"
 requires-python = "==3.14.*"
 dependencies = [
     "django==6.1.2",
+    "httpx>=0.28.1",
     "opentelemetry-exporter-otlp-proto-http==1.45.1",
     "opentelemetry-sdk==1.45.1",
     "psycopg[binary]==3.3.6",
     "pydantic==2.14.1",
     "pydantic-settings==2.15.0",
+    "pymupdf>=2.0",
     "uvicorn==0.54.0",
 ]
 
 [dependency-groups]
 dev = [
     "django-stubs==6.1.2",
+    "hypothesis==6.170.5",
     "mypy==2.4.0",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
@@ -43,6 +46,15 @@ convention = "google"
 [tool.mypy]
 strict = true
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pymupdf", "pymupdf.*", "psutil", "psutil.*"]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_calls = false
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
