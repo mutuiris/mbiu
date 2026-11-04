@@ -20,11 +20,6 @@ export interface PdfViewerProps {
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({ fileUrl, activeClause }) => {
   const [numPages, setNumPages] = useState<number>(0);
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (activeClause?.page) {
@@ -34,14 +29,6 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ fileUrl, activeClause }) =
       }
     }
   }, [activeClause]);
-
-  if (!isMounted) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-[#5C666B] text-sm font-medium">
-        Loading PDF Engine...
-      </div>
-    );
-  }
 
   if (!fileUrl) {
     return (
