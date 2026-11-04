@@ -26,6 +26,10 @@ class Env(BaseSettings):
     gemini_model_main: str = "gemini-3.8-flash"
     gemini_model_light: str = "gemini-3.5-flash-lite"
     batch_timeout_s: float = Field(default=30, gt=0)
+    batch_size: int = Field(default=6, gt=0)
+    deadline_per_clause_s: float = Field(default=3.0, gt=0)
+    deadline_cap_s: float = Field(default=300.0, gt=0)
+    cors_allowed_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
     max_pages: int = 40
     turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
@@ -68,6 +72,10 @@ GEMINI_API_KEY = env.gemini_api_key.get_secret_value()
 GEMINI_MODEL_MAIN = env.gemini_model_main
 GEMINI_MODEL_LIGHT = env.gemini_model_light
 BATCH_TIMEOUT_S = env.batch_timeout_s
+BATCH_SIZE = env.batch_size
+DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s
+DEADLINE_CAP_S = env.deadline_cap_s
+CORS_ALLOWED_ORIGINS = [o.strip() for o in env.cors_allowed_origins.split(",") if o.strip()]
 MAX_UPLOAD_MB = env.max_upload_mb
 MAX_PAGES = env.max_pages
 TURNSTILE_SECRET_KEY = env.turnstile_secret_key
