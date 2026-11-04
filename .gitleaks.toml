@@ -1,11 +1,8 @@
-[allowlist]
-description = "Allowlist false positives on corpus chunk identifiers"
-regexTarget = "line"
-regexes = [
-    '''chunk_key\s*=\s*["'](KE-[A-Z0-9\-]+|DUPLICATE-\d+|DISTINCT-\d+)["']''',
-]
-paths = [
-    '''backend/mbiu/corpus/pipeline/runner\.py''',
-    '''backend/tests/test_corpus_pipeline\.py''',
-]
+# Extends gitleaks' default rules.
+[extend]
+useDefault = true
 
+[[allowlists]]
+description = "Corpus chunk keys are readable IDs like KE-RECORDING-01, not secrets"
+regexTarget = "line"
+regexes = ['''chunk_key\s*=\s*["'][A-Z0-9]+(?:-[A-Z0-9]+)+["']''']
