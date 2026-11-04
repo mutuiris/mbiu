@@ -12,7 +12,6 @@ from django.http import (
     StreamingHttpResponse,
 )
 from django.http.response import HttpResponseBase
-from django.views.decorators.csrf import csrf_exempt
 
 from mbiu.api.schemas import ApiError, ErrorCode
 from mbiu.documents.errors import (
@@ -91,7 +90,6 @@ def _apply_cors[T: HttpResponseBase](response: T, origin: str | None) -> T:
     return response
 
 
-@csrf_exempt
 async def evaluations(request: HttpRequest) -> HttpResponseBase:
     """Handle contract upload and stream back NDJSON evaluation events.
 
