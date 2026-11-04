@@ -66,6 +66,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.24"
+      - name: Generated API types match the backend models
+        run: |
+          uv run --directory ../backend python -m mbiu.api.openapi ../frontend/src/lib/api/openapi.json
+          pnpm generate:api
+          git diff --exit-code -- src/lib/api || {
+            echo "::error::API types are out of date. Run 'just types' and commit the result."
+            exit 1
+          }
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm audit --audit-level high
@@ -84,7 +95,7 @@ jobs:
           docker run --rm -v "$PWD:/repo"
           -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo
           ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
-          git /repo --redact --no-banner
+          git /repo --log-opts=HEAD --redact --no-banner
       - name: Code (Semgrep)
         run: >
           docker run --rm -v "$PWD:/src" -w /src
