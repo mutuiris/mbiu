@@ -26,6 +26,10 @@ class Env(BaseSettings):
     gemini_model_main: str = "gemini-3.8-flash"
     gemini_model_light: str = "gemini-3.5-flash-lite"
     batch_timeout_s: float = Field(default=30, gt=0)
+    max_upload_mb: int = 10
+    max_pages: int = 40
+    turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
+    turnstile_verify_url: str = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 
 env = Env()  # pyright: ignore[reportCallIssue]  The values come from the environment
@@ -64,3 +68,7 @@ GEMINI_API_KEY = env.gemini_api_key.get_secret_value()
 GEMINI_MODEL_MAIN = env.gemini_model_main
 GEMINI_MODEL_LIGHT = env.gemini_model_light
 BATCH_TIMEOUT_S = env.batch_timeout_s
+MAX_UPLOAD_MB = env.max_upload_mb
+MAX_PAGES = env.max_pages
+TURNSTILE_SECRET_KEY = env.turnstile_secret_key
+TURNSTILE_VERIFY_URL = env.turnstile_verify_url
