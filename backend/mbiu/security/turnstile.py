@@ -1,8 +1,7 @@
 """Cloudflare Turnstile token verification.
 
 Verifies Cloudflare Turnstile bot-detection tokens server-side before initiating
-any expensive evaluation or AI provider calls. Supports standard Cloudflare test
-keys for local development without external network requirements.
+any expensive evaluation or AI provider calls.
 """
 
 from typing import Any
@@ -10,9 +9,15 @@ from typing import Any
 import httpx
 from django.conf import settings
 
-CLOUDFLARE_TEST_SECRET_ALWAYS_PASS = "1x0000000000000000000000000000000AA"
-CLOUDFLARE_TEST_SECRET_ALWAYS_FAIL = "2x0000000000000000000000000000000AA"
 DEFAULT_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+__all__ = [
+    "DEFAULT_VERIFY_URL",
+    "TurnstileError",
+    "async_verify_turnstile_token",
+    "validate_turnstile_token",
+    "verify_turnstile_token",
+]
 
 
 class TurnstileError(Exception):
@@ -64,22 +69,16 @@ def verify_turnstile_token(
         return False
 
     effective_secret = (
-        secret_key
-        if secret_key is not None
-        else getattr(settings, "TURNSTILE_SECRET_KEY", CLOUDFLARE_TEST_SECRET_ALWAYS_PASS)
+        secret_key if secret_key is not None else getattr(settings, "TURNSTILE_SECRET_KEY", "")
     )
+    if not effective_secret:
+        return False
+
     effective_url = (
         verify_url
         if verify_url is not None
         else getattr(settings, "TURNSTILE_VERIFY_URL", DEFAULT_VERIFY_URL)
     )
-
-    # Fast-path for Cloudflare test keys in local dev when no custom client is injected
-    if effective_secret == CLOUDFLARE_TEST_SECRET_ALWAYS_FAIL:
-        return False
-    if effective_secret == CLOUDFLARE_TEST_SECRET_ALWAYS_PASS and client is None:
-        # Local development test key always succeeds without requiring live internet
-        return True
 
     payload: dict[str, Any] = {
         "secret": effective_secret,
@@ -132,22 +131,16 @@ async def async_verify_turnstile_token(
         return False
 
     effective_secret = (
-        secret_key
-        if secret_key is not None
-        else getattr(settings, "TURNSTILE_SECRET_KEY", CLOUDFLARE_TEST_SECRET_ALWAYS_PASS)
+        secret_key if secret_key is not None else getattr(settings, "TURNSTILE_SECRET_KEY", "")
     )
+    if not effective_secret:
+        return False
+
     effective_url = (
         verify_url
         if verify_url is not None
         else getattr(settings, "TURNSTILE_VERIFY_URL", DEFAULT_VERIFY_URL)
     )
-
-    # Fast-path for Cloudflare test keys in local dev when no custom client is injected
-    if effective_secret == CLOUDFLARE_TEST_SECRET_ALWAYS_FAIL:
-        return False
-    if effective_secret == CLOUDFLARE_TEST_SECRET_ALWAYS_PASS and client is None:
-        # Local development test key always succeeds without requiring live internet
-        return True
 
     payload: dict[str, Any] = {
         "secret": effective_secret,
