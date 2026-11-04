@@ -1,90 +1,83 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Ensure worker is configured safely
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 export interface ClauseLocation {
   clauseId: string;
   page: number;
-  startOffset?: number;
-  endOffset?: number;
-  text?: string;
 }
 
-interface PdfViewerProps {
-  fileUrl?: string | ArrayBuffer | File | null;
+export interface PdfViewerProps {
+  fileUrl: File | ArrayBuffer | string | null;
   activeClause?: ClauseLocation | null;
-  clauses?: ClauseLocation[];
-  onClauseSelect?: (clauseId: string) => void;
 }
 
-export const PdfViewer: React.FC<PdfViewerProps> = ({
-  fileUrl,
-  activeClause,
-  clauses = [],
-  onClauseSelect,
-}) => {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+export const PdfViewer: React.FC<PdfViewerProps> = ({ fileUrl, activeClause }) => {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-  }
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-  // Auto-scroll to page when active clause changes
   useEffect(() => {
     if (activeClause?.page) {
-      const pageElement = document.getElementById(`pdf-page-${activeClause.page}`);
-      if (pageElement) {
-        pageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      const pageEl = document.getElementById(`pdf-page-${activeClause.page}`);
+      if (pageEl) {
+        pageEl.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
   }, [activeClause]);
 
-  return (
-    <div 
-      ref={containerRef}
-      className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border h-[80vh] overflow-y-auto"
-    >
-      {fileUrl ? (
-        <Document
-          file={fileUrl}
-          onLoadSuccess={onDocumentLoadSuccess}
-          loading={<div className="p-8 text-gray-500 animate-pulse">Loading contract PDF...</div>}
-          error={<div className="p-8 text-red-500 font-medium">Unable to display PDF preview.</div>}
-        >
-          {Array.from(new Array(numPages || 0), (_, index) => {
-            const pageNum = index + 1;
-            const isCurrentPage = activeClause?.page === pageNum;
+  if (!isMounted) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-[#5C666B] text-sm font-medium">
+        Loading PDF Engine...
+      </div>
+    );
+  }
 
-            return (
-              <div
-                key={`page_${pageNum}`}
-                id={`pdf-page-${pageNum}`}
-                className={`mb-6 shadow-md border rounded relative transition-all duration-300 ${
-                  isCurrentPage ? "ring-4 ring-amber-500/50 border-amber-500" : "border-gray-200"
-                }`}
-              >
-                <Page
-                  pageNumber={pageNum}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={false}
-                  width={Math.min(typeof window !== "undefined" ? window.innerWidth - 64 : 600, 680)}
-                />
-              </div>
-            );
-          })}
-        </Document>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-full p-12 text-center text-gray-400">
-          <p className="text-lg font-medium">No contract loaded</p>
-          <p className="text-sm mt-1">Upload a PDF to view highlighted clauses</p>
-        </div>
-      )}
+  if (!fileUrl) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-[#E5E0D5] rounded-2xl p-8 text-center bg-[#F7F5EF]/30">
+        <h3 className="font-serif text-lg font-bold text-[#1A252C] mb-1">No contract loaded</h3>
+        <p className="text-xs text-[#5C666B]">Upload a PDF to view highlighted clauses</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto max-h-[750px] p-4 flex flex-col items-center gap-6 bg-[#E8E3D8]/40 rounded-2xl">
+      <Document
+        file={fileUrl}
+        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+        loading={
+          <div className="py-12 text-sm text-[#5C666B]">Loading PDF Document...</div>
+        }
+      >
+        {Array.from(new Array(numPages), (_, index) => {
+          const pageNum = index + 1;
+          const isActive = activeClause?.page === pageNum;
+
+          return (
+            <div
+              key={`page_${pageNum}`}
+              id={`pdf-page-${pageNum}`}
+              className={`transition-all duration-300 rounded-lg overflow-hidden shadow-md ${
+                isActive ? "ring-4 ring-[#EE6C4D] shadow-xl scale-[1.01]" : ""
+              }`}
+            >
+              <Page pageNumber={pageNum} renderTextLayer={false} renderAnnotationLayer={false} />
+            </div>
+          );
+        })}
+      </Document>
     </div>
   );
 };
