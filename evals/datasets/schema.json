@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mbiu synthetic golden-set contract expectation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generator_version",
+    "contract_id",
+    "title",
+    "contract_type",
+    "jurisdiction",
+    "standard_template_id",
+    "pdf",
+    "standard_clauses",
+    "clauses",
+    "risks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^mb19-[a-z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_type": {
+      "type": "string",
+      "const": "recording"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "const": "Kenya"
+    },
+    "standard_template_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pdf": {
+      "type": "string",
+      "pattern": "^pdfs/.+\\.pdf$"
+    },
+    "standard_clauses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/template_clause"
+      }
+    },
+    "clauses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/clause"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/risk"
+      }
+    }
+  },
+  "$defs": {
+    "template_clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clause_id",
+        "heading",
+        "text"
+      ],
+      "properties": {
+        "clause_id": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)*(?:\\([a-z0-9]+\\))?$"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clause_id",
+        "heading",
+        "pages",
+        "text",
+        "expected_outcome",
+        "planted_risk_ids",
+        "conflict_ids"
+      ],
+      "properties": {
+        "clause_id": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)*(?:\\([a-z0-9]+\\))?$"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_outcome": {
+          "type": "string",
+          "enum": [
+            "matches_standard",
+            "better_for_you",
+            "worse_for_you",
+            "not_in_standard",
+            "missing_from_contract",
+            "cannot_compare"
+          ]
+        },
+        "planted_risk_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "conflict_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk_id",
+        "kind",
+        "description",
+        "clause_ids",
+        "pages",
+        "expected_outcome",
+        "expected_issue_kind"
+      ],
+      "properties": {
+        "risk_id": {
+          "type": "string",
+          "enum": [
+            "perpetual_rights",
+            "exclusivity_beyond_term",
+            "missing_payment_dates",
+            "deductions_before_royalties",
+            "cross_clause_conflict"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "clause",
+            "cross_clause"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clause_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "expected_outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "matches_standard",
+            "better_for_you",
+            "worse_for_you",
+            "not_in_standard",
+            "missing_from_contract",
+            "cannot_compare",
+            null
+          ]
+        },
+        "expected_issue_kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}
