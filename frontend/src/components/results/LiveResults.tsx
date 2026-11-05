@@ -7,6 +7,7 @@ import type {
   ClauseResult,
   ClauseFailure,
   Summary,
+  ContractMapPayload,
 } from "@/lib/api/generated/types.gen";
 import {
   type EvaluationEvent,
@@ -15,11 +16,12 @@ import {
 } from "@/lib/api/stream";
 import { ProgressBar } from "./ProgressBar";
 import { ClauseList } from "./ClauseList";
-import { ClauseCard } from "./ClauseCard";
+import { ClauseCard, type LinkedClauseItem } from "./ClauseCard";
 import { CollapsedMatches } from "./CollapsedMatches";
 import { ClauseFailedCard } from "./ClauseFailedCard";
 import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
+import { ContractIssuesPanel } from "./ContractIssuesPanel";
 
 export interface LiveResultsProps {
   /**
@@ -47,10 +49,12 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   initialDocument = null,
 }) => {
   const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
+  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [results, setResults] = useState<ClauseResult[]>([]);
   const [matches, setMatches] = useState<ClauseResult[]>([]);
   const [failures, setFailures] = useState<ClauseFailure[]>([]);
+  const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
@@ -58,12 +62,15 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [retryingClauseId, setRetryingClauseId] = useState<string | null>(null);
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
 
-  // Fast clause lookup for numbering and headings
+  // Fast clause lookup for numbering, headings, and pages
   const clauseLookup = useMemo(() => {
-    const map = new Map<string, { number?: string | null; heading?: string | null }>();
+    const map = new Map<
+      string,
+      { number?: string | null; heading?: string | null; pages?: number[] }
+    >();
     if (document) {
       for (const c of document.clauses) {
-        map.set(c.clause_id, { number: c.number, heading: c.heading });
+        map.set(c.clause_id, { number: c.number, heading: c.heading, pages: c.pages });
       }
     }
     return map;
@@ -97,6 +104,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         setDocument(event.payload);
         break;
 
+      case "contract_map":
+        setContractMap(event.payload);
+        break;
+
       case "progress":
         setProgress(event.payload);
         break;
@@ -110,7 +121,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
             }
             return [...prev, item];
           });
-          // Remove from results if it was previously categorized differently
           setResults((prev) => prev.filter((r) => r.clause_id !== item.clause_id));
         } else {
           setResults((prev) => {
@@ -118,19 +128,18 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
             const updated = exists
               ? prev.map((r) => (r.clause_id === item.clause_id ? item : r))
               : [...prev, item];
-            // Immediately sort in impact order as cards arrive
             return sortByImpactOrder(updated);
           });
-          // Remove from matches if it was previously in matches
           setMatches((prev) => prev.filter((m) => m.clause_id !== item.clause_id));
         }
-        // If it was marked failed, clear failure now that result arrived
         setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
 
       case "clause_updated": {
         const item = event.payload;
+        setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
+
         if (item.comparison === "matches_standard") {
           setMatches((prev) => {
             const exists = prev.some((m) => m.clause_id === item.clause_id);
@@ -169,7 +178,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         break;
 
       default:
-        // Ignore unhandled events
         break;
     }
   }, []);
@@ -180,7 +188,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     let cancelled = false;
 
     const readStream = async () => {
-      // Yield execution so setState is called in the event loop, not synchronously in the effect
       await Promise.resolve();
       if (cancelled) return;
 
@@ -198,7 +205,9 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         if (err instanceof ServiceUnavailableError) {
           setIsServiceUnavailable(true);
         } else {
-          setErrorMessage(err instanceof Error ? err.message : "An error occurred during evaluation.");
+          setErrorMessage(
+            err instanceof Error ? err.message : "An error occurred during evaluation."
+          );
         }
       } finally {
         if (!cancelled) {
@@ -225,13 +234,57 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     }
   };
 
-  const handleSelectClause = (clauseId: string) => {
+  const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
-    const cardElement = window.document.getElementById(`card-${clauseId}`);
-    if (cardElement) {
-      cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (typeof window !== "undefined") {
+      const cardElement = window.document.getElementById(`card-${clauseId}`);
+      if (cardElement) {
+        cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      const listItem = window.document.getElementById(`clause-item-${clauseId}`);
+      if (listItem) {
+        listItem.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
-  };
+  }, []);
+
+  // Compute linked clauses metadata for each card
+  const getLinkedClausesFor = useCallback(
+    (clauseId: string, directLinks: string[] = []): LinkedClauseItem[] => {
+      const set = new Set<string>(directLinks);
+      if (contractMap?.links) {
+        for (const l of contractMap.links) {
+          if (l.from_clause_id === clauseId && l.to_clause_id !== clauseId) {
+            set.add(l.to_clause_id);
+          } else if (l.to_clause_id === clauseId && l.from_clause_id !== clauseId) {
+            set.add(l.from_clause_id);
+          }
+        }
+      }
+
+      const items: LinkedClauseItem[] = [];
+      for (const targetId of set) {
+        const extra = clauseLookup.get(targetId);
+        const label = extra?.number
+          ? `Clause ${extra.number}${extra.heading ? ` (${extra.heading})` : ""}`
+          : `Clause ${targetId}`;
+
+        const relatedIssue = contractMap?.issues.find(
+          (i) => i.clause_ids.includes(clauseId) && i.clause_ids.includes(targetId)
+        );
+
+        items.push({
+          clauseId: targetId,
+          label,
+          issueKind: relatedIssue?.kind ?? null,
+        });
+      }
+
+      return items;
+    },
+    [contractMap, clauseLookup]
+  );
 
   const totalEvaluated = results.length + matches.length + failures.length;
 
@@ -269,12 +322,24 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         />
       )}
 
+      {/* Contract-Wide Issues Panel (Sits above all cards, highest danger first) */}
+      {contractMap && contractMap.issues && contractMap.issues.length > 0 && (
+        <ContractIssuesPanel
+          issues={contractMap.issues}
+          clauseLookup={clauseLookup}
+          onSelectClause={handleSelectClause}
+        />
+      )}
+
       {/* Collapsed Standard Matches Banner */}
       <CollapsedMatches matches={matches} clauseLookup={clauseLookup} />
 
       {/* Failed Clauses (if any) */}
       {failures.length > 0 && (
-        <section className="failed-clauses-section" aria-label="Clauses that could not be checked">
+        <section
+          className="failed-clauses-section"
+          aria-label="Clauses that could not be checked"
+        >
           {failures.map((f) => {
             const extra = clauseLookup.get(f.clause_id);
             return (
@@ -292,7 +357,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
       )}
 
       {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
-      <section className="results-cards-feed" aria-label="Evaluated Clauses in Impact Order">
+      <section
+        className="results-cards-feed"
+        aria-label="Evaluated Clauses in Impact Order"
+      >
         {results.map((result) => {
           const extra = clauseLookup.get(result.clause_id);
           return (
@@ -302,6 +370,9 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
               clauseNumber={extra?.number}
               clauseHeading={extra?.heading}
               isHighlighted={selectedClauseId === result.clause_id}
+              isUpdated={updatedClauseIds.has(result.clause_id)}
+              linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
+              onSelectClause={handleSelectClause}
             />
           );
         })}

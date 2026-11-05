@@ -1,11 +1,22 @@
+"use client";
+
 import React from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
 
-interface ClauseCardProps {
+export interface LinkedClauseItem {
+  clauseId: string;
+  label: string;
+  issueKind?: "conflict" | "override" | null;
+}
+
+export interface ClauseCardProps {
   result: ClauseResult;
   clauseNumber?: string | null;
   clauseHeading?: string | null;
   isHighlighted?: boolean;
+  isUpdated?: boolean;
+  linkedClauses?: LinkedClauseItem[];
+  onSelectClause?: (clauseId: string) => void;
 }
 
 export const ClauseCard: React.FC<ClauseCardProps> = ({
@@ -13,6 +24,9 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   clauseNumber,
   clauseHeading,
   isHighlighted = false,
+  isUpdated = false,
+  linkedClauses = [],
+  onSelectClause,
 }) => {
   const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
     switch (comparison) {
@@ -57,9 +71,23 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   return (
     <article
       id={`card-${result.clause_id}`}
-      className={`result-card ${badge.className} ${isHighlighted ? "highlighted" : ""}`}
+      className={`result-card ${badge.className} ${isHighlighted ? "highlighted" : ""} ${
+        isUpdated ? "card-updated" : ""
+      }`}
       aria-labelledby={`headline-${result.clause_id}`}
+      data-testid={`card-${result.clause_id}`}
     >
+      {isUpdated && (
+        <div
+          className="card-updated-notice"
+          role="status"
+          data-testid="clause-updated-notice"
+        >
+          <span className="updated-dot" aria-hidden="true">●</span>
+          <span>Result updated based on whole-contract check</span>
+        </div>
+      )}
+
       <header className="card-header">
         <div className="card-meta">
           <span className={`status-badge ${badge.className}`}>{badge.label}</span>
@@ -96,6 +124,41 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
           <span className="meaning-title">What this means for you:</span>
           <p className="meaning-text">{result.what_it_means}</p>
         </div>
+
+        {result.comparison_note && (
+          <div className="card-comparison-note" data-testid="clause-comparison-note">
+            <span className="note-icon" aria-hidden="true">ℹ️</span>
+            <p className="note-text">{result.comparison_note}</p>
+          </div>
+        )}
+
+        {linkedClauses && linkedClauses.length > 0 && (
+          <div className="card-affected-by" data-testid="also-affected-by">
+            <span className="affected-label">Also affected by:</span>
+            <div className="affected-links">
+              {linkedClauses.map((link) => (
+                <button
+                  key={link.clauseId}
+                  type="button"
+                  onClick={() => onSelectClause?.(link.clauseId)}
+                  className={`affected-link-btn ${
+                    link.issueKind ? `kind-${link.issueKind}` : ""
+                  }`}
+                  aria-label={`Jump to ${link.label}`}
+                  title={`Jump to ${link.label}`}
+                >
+                  {link.issueKind === "conflict" && (
+                    <span className="kind-icon" aria-hidden="true">⚠️ </span>
+                  )}
+                  {link.issueKind === "override" && (
+                    <span className="kind-icon" aria-hidden="true">⚡ </span>
+                  )}
+                  <span>{link.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {result.ask_them && (
