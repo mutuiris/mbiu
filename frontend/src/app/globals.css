@@ -1589,3 +1589,707 @@ body {
     align-items: flex-start;
   }
 }
+
+/* ==========================================================================
+   Full Result Card & Shillings Calculator (MB-21)
+   ========================================================================== */
+
+/* Status, Topic, and Location */
+.card-status-topic-location {
+  margin-top: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.jump-to-pdf-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.jump-to-pdf-trigger:hover {
+  color: var(--accent-color);
+}
+
+.jump-to-pdf-trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.status-badge-inline {
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.meta-separator {
+  color: var(--border-color);
+  font-weight: bold;
+}
+
+.meta-topic {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.meta-location {
+  color: var(--text-muted);
+}
+
+.pdf-jump-icon {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+/* Comparison lines: Your contract vs Standard, one line each */
+.card-comparison-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.comparison-line {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.925rem;
+}
+
+.line-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.line-content {
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.line-content.text-contract {
+  font-style: italic;
+  background-color: var(--bg-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--border-color);
+}
+
+.line-content.text-standard {
+  color: var(--text-secondary);
+  padding-left: 0.25rem;
+}
+
+/* Shillings Calculator */
+.card-shillings-section {
+  margin: 1rem 0;
+}
+
+.shillings-calculator {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.calc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.calc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.calc-icon {
+  font-size: 1.15rem;
+}
+
+.calc-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.example-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.calc-disclaimer {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.calc-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calc-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.calc-input {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.calc-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.field-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.calc-terms-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.term-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.term-name {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.term-value {
+  color: var(--text-primary);
+}
+
+.basis-badge {
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.basis-net {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.basis-gross {
+  background-color: var(--better-bg);
+  color: var(--better-text);
+  border: 1px solid var(--better-border);
+}
+
+.term-quote {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.725rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.deductions-list-wrap {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deductions-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.deduction-tag {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-style: italic;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.calc-results-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.result-row.primary-payout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.payout-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.payout-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--better-badge);
+}
+
+.net-comparison-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+}
+
+.comparison-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.775rem;
+}
+
+.comparison-metric.loss-warning {
+  color: var(--worse-text);
+  font-weight: 700;
+}
+
+.calc-reset-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.calc-reset-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
+.calc-reset-btn:hover {
+  text-decoration: underline;
+}
+
+/* Fairer Wording Section */
+.card-fairer-section {
+  background-color: var(--better-bg);
+  border: 1px solid var(--better-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.fairer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fairer-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.fairer-badge-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--better-text);
+}
+
+.fairer-hint {
+  font-size: 0.75rem;
+  color: var(--better-text);
+  opacity: 0.85;
+}
+
+.copy-btn {
+  background-color: var(--better-badge);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.775rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  opacity: 0.9;
+}
+
+.copy-btn.copied {
+  background-color: #15803d;
+}
+
+.fairer-quote {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--better-text);
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--better-badge);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Ask Them Section with WhatsApp Share */
+.card-ask-them-section {
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.ask-them-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ask-them-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--warning-text);
+}
+
+.ask-them-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.action-btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.copy-action-btn {
+  background-color: var(--warning-border);
+  color: #ffffff;
+}
+
+.copy-action-btn.copied {
+  background-color: #b45309;
+}
+
+.whatsapp-action-btn {
+  background-color: #25d366;
+  color: #ffffff;
+}
+
+.action-btn:hover {
+  opacity: 0.9;
+}
+
+.ask-them-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--warning-text);
+  line-height: 1.45;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Exact Wording Section (Collapsed by default) */
+.card-exact-wording-section {
+  margin: 1rem 0 0.5rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.75rem;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.exact-wording-details {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.exact-wording-summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.exact-wording-summary:hover {
+  color: var(--text-primary);
+}
+
+.summary-hint {
+  font-size: 0.725rem;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.exact-wording-body {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.wording-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wording-sublabel {
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.exact-text-quote, .exact-template-quote {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Read Aloud Footer */
+.card-read-aloud-footer {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.read-aloud-btn {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+
+.read-aloud-btn:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.read-aloud-btn.speaking {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}
+
+.speaking-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #4ade80;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* ==========================================================================
+   Full Card 360px Mobile Viewport Safety Guarantee
+   ========================================================================== */
+@media (max-width: 480px) {
+  .result-card {
+    padding: 1rem 0.85rem;
+  }
+
+  .calc-controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-headline {
+    font-size: 1.05rem;
+  }
+
+  .payout-amount {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .result-card {
+    padding: 0.85rem 0.65rem;
+    border-radius: var(--radius-md);
+  }
+
+  .shillings-calculator,
+  .card-fairer-section,
+  .card-ask-them-section {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .fairer-header,
+  .ask-them-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ask-them-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .jump-to-pdf-trigger {
+    font-size: 0.775rem;
+  }
+}
+
