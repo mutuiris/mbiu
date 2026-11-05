@@ -1,19 +1,18 @@
 """Hermetic tests for the MB-19 golden set and quality gate.
 
 No test in this module reaches the network. The Gemini path is exercised with a
-fake urlopen response so standard ``pytest`` runs stay fast and offline.
+fake HTTP response so standard ``pytest`` runs stay fast and offline.
 """
 
 from __future__ import annotations
 
 import json
 import sys
-import urllib.request
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
-from typing import Self
 
+import httpx
 import pymupdf
 import pytest
 
@@ -245,31 +244,17 @@ def test_gate_cli_blocks_lenient_fixture_and_expect_fail(
     capsys.readouterr()
 
 
-class _FakeResponse:
-    def __init__(self, payload: str) -> None:
-        self._payload = payload
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        return None
-
-    def read(self) -> bytes:
-        return self._payload.encode("utf-8")
-
-
 def test_provider_reference_mode_never_calls_the_network(
     built: BuildResult, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def _explode(*args: object, **kwargs: object) -> _FakeResponse:
+    def _explode(*args: object, **kwargs: object) -> httpx.Response:
         del args, kwargs
         raise AssertionError("reference mode must not open the network")
 
     monkeypatch.setattr(provider_module, "DATASETS_DIR", built.dataset_dir)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-    monkeypatch.setattr(urllib.request, "urlopen", _explode)
+    monkeypatch.setattr(httpx.Client, "post", _explode)
 
     contract = _expectation(built, "mb19-combined-risks")
     result = call_api(
@@ -302,13 +287,14 @@ def test_provider_gemini_mode_uses_mocked_api(
         }
     )
 
-    def _respond(*args: object, **kwargs: object) -> _FakeResponse:
-        del args, kwargs
-        return _FakeResponse(payload)
+    def _respond(self: httpx.Client, url: str, **kwargs: object) -> httpx.Response:
+        del self, kwargs
+        request = httpx.Request("POST", url)
+        return httpx.Response(200, content=payload, request=request)
 
     monkeypatch.setattr(provider_module, "DATASETS_DIR", built.dataset_dir)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setattr(urllib.request, "urlopen", _respond)
+    monkeypatch.setattr(httpx.Client, "post", _respond)
 
     result = call_api(
         "rendered prompt",

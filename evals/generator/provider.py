@@ -15,17 +15,24 @@ import hashlib
 import json
 import os
 import sys
-import urllib.request
 from collections.abc import Mapping
 from pathlib import Path
+
+import httpx
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from evals.generator.jsonutil import as_list, as_mapping, as_str, load_json
-from evals.generator.models import ContractPrediction, GoldenContract
-from evals.generator.reference_evaluator import evaluate_contract, lenient_prediction
+from evals.generator.models import (
+    ContractPrediction,
+    GoldenContract,
+)
+from evals.generator.reference_evaluator import (
+    evaluate_contract,
+    lenient_prediction,
+)
 
 EVALS_DIR = Path(__file__).resolve().parent.parent
 DATASETS_DIR = EVALS_DIR / "datasets"
@@ -96,14 +103,14 @@ def _gemini_text(prompt: str, model: str, api_key: str) -> str:
             "responseMimeType": "application/json",
         },
     }
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        parsed: object = json.loads(response.read().decode("utf-8"))
+    with httpx.Client(timeout=120, follow_redirects=True) as client:
+        response = client.post(
+            url,
+            json=body,
+            headers={"Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        parsed: object = json.loads(response.content.decode("utf-8"))
     data = as_mapping(parsed, "$")
     candidates = as_list(data.get("candidates"), "$.candidates")
     if not candidates:
@@ -158,7 +165,7 @@ def call_api(
         if mode == "auto":
             mode = "gemini" if _api_key() is not None else "reference"
         prediction = _prediction_payload(mode, prompt, contract, config)
-    except (OSError, ValueError, TypeError) as error:
+    except (OSError, httpx.HTTPError, ValueError, TypeError) as error:
         return {"error": f"golden-set provider failed: {error}"}
 
     metadata: dict[str, object] = {
