@@ -12,7 +12,7 @@ import asyncio
 import time
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Final, Literal
+from typing import Any, Final, Literal
 
 from django.conf import settings
 from opentelemetry import trace
@@ -49,22 +49,33 @@ from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
 from mbiu.documents.segment import segment_document
 from mbiu.documents.upload import validate_upload
-from mbiu.llm import LLMError, as_data
+from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
+from mbiu.llm.openai import openai
 from mbiu.security.turnstile import validate_turnstile_token
 
 tracer: Final = trace.get_tracer("mbiu.orchestrator")
 PROMPT_PATH: Final = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_v1.md"
+OPENAI_PROMPT_PATH: Final = (
+    Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_openai_v1.md"
+)
 
 
 def load_compare_prompt() -> str:
-    """Load the versioned comparison prompt from disk."""
+    """Load the versioned Gemini comparison prompt from disk."""
     if PROMPT_PATH.exists():
         return PROMPT_PATH.read_text(encoding="utf-8")
     return (
         "You are Mbiu, comparing an English music contract clause against a reviewed template. "
         "Provide honest plain-language analysis, verbatim quotes, and a specific ask."
     )
+
+
+def load_compare_openai_prompt() -> str:
+    """Load the versioned OpenAI comparison prompt from disk."""
+    if OPENAI_PROMPT_PATH.exists():
+        return OPENAI_PROMPT_PATH.read_text(encoding="utf-8")
+    return load_compare_prompt()
 
 
 class ClauseComparisonProposal(BaseModel):
@@ -78,8 +89,60 @@ class ClauseComparisonProposal(BaseModel):
     evidence_quote: str | None = Field(
         default=None, description="Exact substring quoted from the template excerpt"
     )
+    evidence_id: str | None = Field(
+        default=None, description="The ID of the template excerpt cited, if any"
+    )
     ask_them: str | None = Field(
         default=None, description="A specific question to ask the other party"
+    )
+
+
+def _error_clause_result(
+    clause: SegmentedClause,
+    err: LLMError,
+    links: list[str],
+    provider: Provider,
+    model: str,
+    evidence: list[Any] | None = None,
+    standard_template_id: str | None = None,
+    standard_excerpt: str | None = None,
+) -> ClauseResult:
+    """Build a deterministic ClauseResult when an LLM call fails."""
+    if err.category == ErrorCategory.REFUSED:
+        status = ClauseStatus.EVALUATION_FAILED
+        headline = "AI evaluation refused by provider"
+        what_it_says = "The AI provider refused to evaluate this clause."
+        what_it_means = (
+            "The clause could not be evaluated due to provider refusal or content policy."
+        )
+    else:
+        status = ClauseStatus.CANNOT_COMPARE
+        headline = "Unable to complete AI comparison"
+        what_it_says = "Mbiu was unable to verify this clause against the standard at this moment."
+        what_it_means = f"The AI evaluation encountered an error: {err.category.value}"
+
+    ev_list = evidence or []
+    return ClauseResult(
+        clause_id=clause.clause_id,
+        pages=clause.pages,
+        original_text=clause.text,
+        status=status,
+        comparison=Outcome.CANNOT_COMPARE,
+        headline=headline,
+        what_it_says=what_it_says,
+        what_it_means=what_it_means,
+        comparison_note=None,
+        impact_inputs=None,
+        linked_clauses=links,
+        fairer_wording=None,
+        ask_them=None,
+        standard_template_id=standard_template_id,
+        standard_excerpt=standard_excerpt,
+        evidence=ev_list,
+        evidence_ids=[e.evidence_id for e in ev_list],
+        evidence_quote=None,
+        provider=provider,
+        model_version=model,
     )
 
 
@@ -97,10 +160,13 @@ def verify_quotes(
     evidence_text: str | None,
     clause_quote: str,
     evidence_quote: str | None,
+    *,
+    evidence_id: str | None = None,
+    allowed_evidence_ids: set[str] | None = None,
 ) -> bool:
-    """Verify that quotes in the proposal are exact verbatim substrings of what was sent.
+    """Verify that quotes and citations in the proposal are exact verbatim substrings and valid IDs.
 
-    Deterministic code verification ensuring the model never invents quotes.
+    Deterministic code verification ensuring the model never invents quotes or cites unsent IDs.
     """
     if not clause_quote or not clause_quote.strip():
         return False
@@ -108,6 +174,9 @@ def verify_quotes(
         return False
     if evidence_quote is not None and evidence_quote.strip():
         if evidence_text is None or evidence_quote not in evidence_text:
+            return False
+    if evidence_id is not None and evidence_id.strip():
+        if allowed_evidence_ids is None or evidence_id not in allowed_evidence_ids:
             return False
     return True
 
@@ -235,6 +304,7 @@ async def _run_evaluation_pipeline(
         )
 
         instructions = load_compare_prompt()
+        instructions_openai = load_compare_openai_prompt()
 
         results_list: list[ClauseResult] = []
         done_count = 0
@@ -280,20 +350,115 @@ async def _run_evaluation_pipeline(
                     )
                 break
 
-            for clause in batch:
-                c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
-                clause_res = await _evaluate_single_clause(
-                    clause=clause,
-                    llm=effective_llm,
-                    instructions=instructions,
-                    deadline=overall_deadline,
-                    linked_clauses=c_links,
-                    conflict_with=c_conflicts,
-                )
+            use_openai_for_batch = False
+            if settings.FAILOVER_ENABLED:
+                breaker = getattr(effective_llm, "_breaker", None)
+                if breaker is not None and getattr(breaker, "current_state", None) == "open":
+                    use_openai_for_batch = True
+
+            batch_results: list[ClauseResult] = []
+
+            if use_openai_for_batch:
+                try:
+                    openai_llm = openai()
+                    for clause in batch:
+                        c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                        c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
+                        clause_res = await _evaluate_single_clause(
+                            clause=clause,
+                            llm=openai_llm,
+                            instructions=instructions_openai,
+                            deadline=overall_deadline,
+                            linked_clauses=c_links,
+                            conflict_with=c_conflicts,
+                            provider=Provider.OPENAI,
+                            model=settings.OPENAI_MODEL,
+                        )
+                        batch_results.append(clause_res)
+                except LLMError as failover_err:
+                    for clause in batch:
+                        c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                        batch_results.append(
+                            _error_clause_result(
+                                clause=clause,
+                                err=failover_err,
+                                links=c_links,
+                                provider=Provider.OPENAI,
+                                model=settings.OPENAI_MODEL,
+                            )
+                        )
+            else:
+                failed_outage = False
+                temp_results: list[ClauseResult] = []
+                for clause in batch:
+                    c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                    c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
+                    try:
+                        clause_res = await _evaluate_single_clause(
+                            clause=clause,
+                            llm=effective_llm,
+                            instructions=instructions,
+                            deadline=overall_deadline,
+                            linked_clauses=c_links,
+                            conflict_with=c_conflicts,
+                            provider=Provider.GEMINI,
+                            model=settings.GEMINI_MODEL_MAIN,
+                            raise_on_error=settings.FAILOVER_ENABLED,
+                        )
+                        temp_results.append(clause_res)
+                    except LLMError as err:
+                        if settings.FAILOVER_ENABLED and err.category in (
+                            ErrorCategory.UNAVAILABLE,
+                            ErrorCategory.TIMEOUT,
+                        ):
+                            failed_outage = True
+                            break
+                        else:
+                            clause_res = _error_clause_result(
+                                clause=clause,
+                                err=err,
+                                links=c_links,
+                                provider=Provider.GEMINI,
+                                model=settings.GEMINI_MODEL_MAIN,
+                            )
+                            temp_results.append(clause_res)
+
+                if failed_outage:
+                    batch_results = []
+                    try:
+                        openai_llm = openai()
+                        for clause in batch:
+                            c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                            c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
+                            clause_res = await _evaluate_single_clause(
+                                clause=clause,
+                                llm=openai_llm,
+                                instructions=instructions_openai,
+                                deadline=overall_deadline,
+                                linked_clauses=c_links,
+                                conflict_with=c_conflicts,
+                                provider=Provider.OPENAI,
+                                model=settings.OPENAI_MODEL,
+                            )
+                            batch_results.append(clause_res)
+                    except LLMError as failover_err:
+                        for clause in batch:
+                            c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                            batch_results.append(
+                                _error_clause_result(
+                                    clause=clause,
+                                    err=failover_err,
+                                    links=c_links,
+                                    provider=Provider.GEMINI,
+                                    model=settings.GEMINI_MODEL_MAIN,
+                                )
+                            )
+                else:
+                    batch_results = temp_results
+
+            for clause_res in batch_results:
                 results_list.append(clause_res)
                 done_count += 1
-
                 await queue.put(
                     ClauseResultEvent(
                         type="clause_result",
@@ -346,6 +511,17 @@ async def _run_evaluation_pipeline(
             span.set_attribute("mbiu.matches_count", matches_count)
             span.set_attribute("mbiu.asks_count", len(ask_list))
 
+            providers_used = {r.provider for r in results_list if r.provider is not None}
+            if Provider.OPENAI in providers_used and Provider.GEMINI not in providers_used:
+                summary_prompt = "compare_openai_v1"
+                summary_model = settings.OPENAI_MODEL
+            elif Provider.OPENAI in providers_used and Provider.GEMINI in providers_used:
+                summary_prompt = "compare_v1,compare_openai_v1"
+                summary_model = f"{settings.GEMINI_MODEL_MAIN},{settings.OPENAI_MODEL}"
+            else:
+                summary_prompt = "compare_v1"
+                summary_model = settings.GEMINI_MODEL_MAIN
+
             summary = Summary(
                 top_asks=top_asks,
                 contract_issues=[],
@@ -356,8 +532,8 @@ async def _run_evaluation_pipeline(
                 ask_list=ask_list,
                 versions=Versions(
                     schema_version=SCHEMA_VERSION,
-                    prompt="compare_v1",
-                    model=settings.GEMINI_MODEL_MAIN,
+                    prompt=summary_prompt,
+                    model=summary_model,
                     corpus="synthetic-v0",
                 ),
             )
@@ -380,11 +556,15 @@ async def _run_evaluation_pipeline(
 
 async def _evaluate_single_clause(
     clause: SegmentedClause,
-    llm: Gemini,
+    llm: Any,
     instructions: str,
     deadline: float,
     linked_clauses: list[str] | None = None,
     conflict_with: list[str] | None = None,
+    *,
+    provider: Provider = Provider.GEMINI,
+    model: str = settings.GEMINI_MODEL_MAIN,
+    raise_on_error: bool = False,
 ) -> ClauseResult:
     """Evaluate one clause against retrieved synthetic template evidence."""
     links = linked_clauses or []
@@ -410,12 +590,15 @@ async def _evaluate_single_clause(
             )
         )
     content = "\n\n".join(content_parts)
+    allowed_ev_ids = {e.evidence_id for e in evidence}
+    if primary_ev:
+        allowed_ev_ids.add(primary_ev.template_id)
 
     try:
         with tracer.start_as_current_span("mbiu.compare") as span:
             span.set_attribute("mbiu.stage", "compare")
             llm_result = await llm.generate(
-                model=settings.GEMINI_MODEL_MAIN,
+                model=model,
                 instructions=instructions,
                 content=content,
                 output=ClauseComparisonProposal,
@@ -431,6 +614,8 @@ async def _evaluate_single_clause(
                 evidence_text=primary_ev.excerpt if primary_ev else None,
                 clause_quote=proposal.clause_quote,
                 evidence_quote=proposal.evidence_quote,
+                evidence_id=proposal.evidence_id,
+                allowed_evidence_ids=allowed_ev_ids,
             )
             span.set_attribute("mbiu.quotes_verified", quotes_valid)
 
@@ -454,7 +639,7 @@ async def _evaluate_single_clause(
                 evidence=evidence,
                 evidence_ids=[e.evidence_id for e in evidence],
                 evidence_quote=None,
-                provider=Provider.GEMINI,
+                provider=provider,
                 model_version=llm_result.model_version,
             )
 
@@ -487,34 +672,23 @@ async def _evaluate_single_clause(
             evidence=evidence,
             evidence_ids=[e.evidence_id for e in evidence],
             evidence_quote=proposal.evidence_quote,
-            provider=Provider.GEMINI,
+            provider=provider,
             model_version=llm_result.model_version,
         )
 
     except LLMError as err:
-        return ClauseResult(
-            clause_id=clause.clause_id,
-            pages=clause.pages,
-            original_text=clause.text,
-            status=ClauseStatus.CANNOT_COMPARE,
-            comparison=Outcome.CANNOT_COMPARE,
-            headline="Unable to complete AI comparison",
-            what_it_says=(
-                "Mbiu was unable to verify this clause against the standard at this moment."
-            ),
-            what_it_means=f"The AI evaluation encountered an error: {err.category.value}",
-            comparison_note=None,
-            impact_inputs=None,
-            linked_clauses=links,
-            fairer_wording=None,
-            ask_them=None,
+        if raise_on_error:
+            raise
+
+        return _error_clause_result(
+            clause=clause,
+            err=err,
+            links=links,
+            provider=provider,
+            model=model,
+            evidence=evidence,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,
-            evidence=evidence,
-            evidence_ids=[e.evidence_id for e in evidence],
-            evidence_quote=None,
-            provider=Provider.GEMINI,
-            model_version=settings.GEMINI_MODEL_MAIN,
         )
 
 
