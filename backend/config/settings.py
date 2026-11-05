@@ -1,7 +1,7 @@
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +22,10 @@ class Env(BaseSettings):
     otel_exporter_otlp_endpoint: str = ""
     otel_exporter_otlp_headers: str = ""
     otel_service_name: str = "mbiu-api"
+    gemini_api_key: SecretStr = SecretStr("")
+    gemini_model_main: str = "gemini-3.8-flash"
+    gemini_model_light: str = "gemini-3.5-flash-lite"
+    batch_timeout_s: float = Field(default=30, gt=0)
     max_upload_mb: int = 10
     max_pages: int = 40
     turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
@@ -60,6 +64,10 @@ OTEL_EXPORTER_OTLP_ENDPOINT = env.otel_exporter_otlp_endpoint
 OTEL_EXPORTER_OTLP_HEADERS = env.otel_exporter_otlp_headers
 OTEL_SERVICE_NAME = env.otel_service_name
 
+GEMINI_API_KEY = env.gemini_api_key.get_secret_value()
+GEMINI_MODEL_MAIN = env.gemini_model_main
+GEMINI_MODEL_LIGHT = env.gemini_model_light
+BATCH_TIMEOUT_S = env.batch_timeout_s
 MAX_UPLOAD_MB = env.max_upload_mb
 MAX_PAGES = env.max_pages
 TURNSTILE_SECRET_KEY = env.turnstile_secret_key
