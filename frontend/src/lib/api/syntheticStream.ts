@@ -198,7 +198,24 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       standard_template_id: "std-rec-kenya-2024",
       ask_them:
         "Can we remove general overhead from deductions and cap marketing recoupment at 50%?",
-      impact_inputs: null,
+      impact_inputs: {
+        royalty_rate_percent: {
+          quote: "royalty of 12%",
+          value: 12,
+        },
+        money_basis: {
+          quote: "Net Receipts",
+          value: "net",
+        },
+        deductions: [
+          { quote: "recording costs", value: "recording costs" },
+          { quote: "marketing", value: "marketing" },
+          { quote: "distribution fees", value: "distribution fees" },
+          { quote: "legal fees", value: "legal fees" },
+          { quote: "packaging charges", value: "packaging charges" },
+          { quote: "general overhead", value: "general overhead" },
+        ],
+      },
       provider: "gemini",
       model_version: "gemini-3.8-flash",
     },
