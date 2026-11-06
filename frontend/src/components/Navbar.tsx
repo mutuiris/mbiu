@@ -48,7 +48,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
         {/* Brand Logo */}
         <a
           href="#"
-          className="flex shrink-0 items-center gap-2 pl-1 transition hover:opacity-90"
+          className="flex shrink-0 items-center gap-1 sm:gap-1.5 pl-0.5 transition hover:opacity-90"
           aria-label="Mbiu home"
           onClick={closeMenu}
         >
@@ -58,9 +58,9 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             width={972}
             height={590}
             priority
-            className="h-7 w-auto sm:h-8 dark:invert"
+            className="h-9 w-auto sm:h-10.5 dark:invert object-contain"
           />
-          <span className="text-[1.4rem] font-extrabold tracking-[-0.06em] text-mbiu-ink sm:text-[1.6rem] dark:text-[#F6F2E9]">
+          <span className="text-[1.2rem] font-extrabold tracking-[-0.06em] leading-none text-mbiu-ink sm:text-[1.4rem] dark:text-[#F6F2E9]">
             mbiu
           </span>
         </a>
