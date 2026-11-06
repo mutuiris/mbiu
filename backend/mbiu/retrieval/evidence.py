@@ -23,6 +23,11 @@ tracer: Final = trace.get_tracer("mbiu.retrieval")
 
 # The model is sent one template per clause, so only the best match is kept
 EVIDENCE_PER_CLAUSE: Final = 1
+NO_STANDARD_NOTE: Final = (
+    "Mbiu doesn't have a reviewed standard for this kind of contract yet, "
+    "so it can explain these clauses but not compare them."
+)
+SYNTHETIC_CORPUS_VERSION: Final = "synthetic"
 
 _EXAMPLE_TOPICS: Final[tuple[str, ...]] = tuple(
     topic for topic, examples in TOPIC_EXAMPLES.items() for _ in examples
@@ -32,10 +37,14 @@ _example_vectors: npt.NDArray[np.float32] | None = None
 
 @dataclass(frozen=True)
 class ClausePlan:
-    """What a clause is compared with, and its topic (None when it couldn't be classified)."""
+    """What a clause is compared with, and its topic (None when it couldn't be classified).
+
+    note is set when there is nothing to compare with, and says why.
+    """
 
     evidence: list[Evidence]
     topic: str | None
+    note: str | None = None
 
 
 def _evidence(match: Match) -> Evidence:
@@ -78,6 +87,12 @@ async def plan_clauses(texts: Sequence[str], contract_type: str | None) -> list[
             span.set_attribute("mbiu.embedding_failed", True)
             vectors = examples = None
 
+        # A known contract type with no template of that type can't be compared fairly
+        has_standard = (
+            snapshot is None
+            or contract_type is None
+            or any(c.contract_type == contract_type for c in snapshot.chunks)
+        )
         plans = []
         for i, text in enumerate(texts):
             vector = None if vectors is None else vectors[i]
@@ -87,12 +102,19 @@ async def plan_clauses(texts: Sequence[str], contract_type: str | None) -> list[
                 else None
             )
             if snapshot is None:
-                evidence = retrieve_simple_evidence(text)
+                plans.append(ClausePlan(retrieve_simple_evidence(text), topic))
+            elif not has_standard:
+                plans.append(ClausePlan([], topic, note=NO_STANDARD_NOTE))
             else:
                 matches = search(
                     snapshot, text, vector, contract_type=contract_type, k=EVIDENCE_PER_CLAUSE
                 )
-                evidence = [_evidence(m) for m in matches]
-            plans.append(ClausePlan(evidence=evidence, topic=topic))
+                plans.append(ClausePlan([_evidence(m) for m in matches], topic))
         span.set_attribute("mbiu.corpus_loaded", snapshot is not None)
         return plans
+
+
+async def corpus_version() -> str:
+    """The version tag of the corpus results were compared with."""
+    snapshot = await asyncio.to_thread(active_snapshot)
+    return snapshot.version_tag if snapshot is not None else SYNTHETIC_CORPUS_VERSION
