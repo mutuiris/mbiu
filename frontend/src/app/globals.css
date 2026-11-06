@@ -1249,3 +1249,343 @@ body {
     gap: 0.2rem;
   }
 }
+
+/* Contract-wide issues panel */
+
+.contract-issues-panel {
+  background-color: var(--worse-bg);
+  border: 1.5px solid var(--worse-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.issues-panel-header {
+  border-bottom: 1px solid rgba(220, 38, 38, 0.2);
+  padding-bottom: 0.75rem;
+}
+
+.issues-title-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.issues-alert-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.issues-panel-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--worse-text);
+  line-height: 1.25;
+}
+
+.issues-panel-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.issue-item {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.issue-item.issue-conflict {
+  border-left: 4px solid var(--worse-badge);
+}
+
+.issue-item.issue-override {
+  border-left: 4px solid #7c3aed;
+}
+
+.issue-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.issue-kind-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-conflict {
+  background-color: var(--worse-bg);
+  color: var(--worse-text);
+  border: 1px solid var(--worse-border);
+}
+
+.badge-override {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+.issue-locations {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.clause-location-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  transition: background-color 0.15s ease;
+}
+
+.clause-location-btn:hover {
+  background-color: rgba(37, 99, 235, 0.08);
+}
+
+.locations-separator {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.issue-explanation {
+  font-size: 0.925rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.issue-quotes-wrapper {
+  margin-top: 0.25rem;
+}
+
+.toggle-quotes-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  font-weight: 500;
+  text-decoration: underline;
+  list-style: none;
+}
+
+.toggle-quotes-btn::-webkit-details-marker {
+  display: none;
+}
+
+.toggle-quotes-btn:hover {
+  color: var(--text-primary);
+}
+
+.issue-quotes-content {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background-color: var(--bg-color);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.825rem;
+}
+
+.quote-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.quote-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.775rem;
+}
+
+.quote-text {
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.issue-impartial-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+/* "Also affected by" and live-update notice on clause cards */
+
+.card-updated-notice {
+  background-color: #fefce8;
+  border: 1px solid #fde047;
+  color: #854d0e;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  animation: pulseNotice 2s ease-in-out infinite;
+}
+
+@keyframes pulseNotice {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.updated-dot {
+  color: #ca8a04;
+  font-size: 0.9rem;
+}
+
+.result-card.card-updated {
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
+}
+
+.card-comparison-note {
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.825rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.note-icon {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.card-affected-by {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.825rem;
+}
+
+.affected-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.affected-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.affected-link-btn {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.785rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.affected-link-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.affected-link-btn.kind-conflict {
+  background-color: var(--worse-bg);
+  border-color: var(--worse-border);
+  color: var(--worse-text);
+  font-weight: 600;
+}
+
+.affected-link-btn.kind-override {
+  background-color: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #6d28d9;
+  font-weight: 600;
+}
+
+/* Mobile Responsiveness down to 360px */
+@media (max-width: 400px) {
+  .contract-issues-panel {
+    padding: 0.85rem;
+  }
+
+  .issues-panel-title {
+    font-size: 1rem;
+  }
+
+  .issue-item {
+    padding: 0.75rem;
+  }
+
+  .issue-item-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .clause-location-btn {
+    padding: 0.25rem 0.2rem;
+    font-size: 0.825rem;
+  }
+
+  .card-affected-by {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -82,6 +82,38 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
     },
   },
   {
+    type: "contract_map",
+    schema_version: "1",
+    payload: {
+      contract_type: "recording_agreement",
+      links: [
+        {
+          from_clause_id: "c-1",
+          to_clause_id: "c-4",
+          kind: "override",
+        },
+        {
+          from_clause_id: "c-2",
+          to_clause_id: "c-3",
+          kind: "cross_reference",
+        },
+      ],
+      issues: [
+        {
+          clause_ids: ["c-1", "c-4"],
+          pages: [1, 5],
+          kind: "conflict",
+          explanation:
+            "Clause 1.1 grants perpetual ownership of masters, but clause 5.1 limits the term to one year after delivery without specifying post-term rights reversion.",
+          quotes: [
+            "throughout the Universe, in perpetuity",
+            "continue for a period of one (1) year following commercial delivery",
+          ],
+        },
+      ],
+    },
+  },
+  {
     type: "progress",
     schema_version: "1",
     payload: {
@@ -302,6 +334,48 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
     },
   },
   {
+    type: "clause_updated",
+    schema_version: "1",
+    payload: {
+      clause_id: "c-1",
+      status: "evaluated",
+      comparison: "worse_for_you",
+      headline: "You give up ownership of your master recordings forever (Conflicted by Clause 5.1)",
+      what_it_says:
+        "The Artist hereby irrevocably sells, assigns, and transfers to the Company all right, title, and interest in and to the Masters, throughout the Universe, in perpetuity.",
+      what_it_means:
+        "Even after your contract ends or the label recoups its money, the label owns your masters forever. Clause 5.1 indicates a 1-year term, but this clause overrides reversion.",
+      original_text:
+        "The Artist hereby irrevocably sells, assigns, and transfers to the Company all right, title, and interest in and to the Masters, throughout the Universe, in perpetuity.",
+      pages: [1, 2],
+      linked_clauses: ["c-4"],
+      evidence: [
+        {
+          evidence_id: "ev-1",
+          template_id: "std-rec-kenya-2024",
+          source_title: "Reviewed Standard Recording Agreement Kenya",
+          jurisdiction: "Kenya",
+          excerpt:
+            "Artist retains ownership of masters, licensing them exclusively to the Label for a term not exceeding 7 years from commercial release.",
+        },
+      ],
+      evidence_ids: ["ev-1"],
+      comparison_note:
+        "Perpetual assignment vs standard 7-year exclusive license. Conflicting term limits detected in contract map.",
+      evidence_quote: "Artist retains ownership of masters, licensing them exclusively to the Label",
+      fairer_wording:
+        "Artist grants Company an exclusive license to exploit the Masters for a term of five (5) years from release, after which all rights revert to Artist.",
+      standard_excerpt:
+        "Artist retains ownership of masters, licensing them exclusively to the Label for a term not exceeding 7 years.",
+      standard_template_id: "std-rec-kenya-2024",
+      ask_them:
+        "Can we clarify that rights revert upon conclusion of the Initial Contract Period in clause 5.1?",
+      impact_inputs: null,
+      provider: "gemini",
+      model_version: "gemini-3.8-flash",
+    },
+  },
+  {
     type: "done",
     schema_version: "1",
     payload: {
@@ -342,7 +416,19 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
           text: "You have a solid audit clause with expenses reimbursed if they owe you >10%.",
         },
       ],
-      contract_issues: [],
+      contract_issues: [
+        {
+          clause_ids: ["c-1", "c-4"],
+          pages: [1, 5],
+          kind: "conflict",
+          explanation:
+            "Clause 1.1 grants perpetual ownership of masters, but clause 5.1 limits the term to one year after delivery without specifying post-term rights reversion.",
+          quotes: [
+            "throughout the Universe, in perpetuity",
+            "continue for a period of one (1) year following commercial delivery",
+          ],
+        },
+      ],
       missing_protections: [],
       skipped_pages: [],
     },
