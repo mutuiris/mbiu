@@ -204,3 +204,53 @@ def test_plan_falls_back_to_synthetic_templates_without_a_corpus_or_embedder() -
     [plan] = asyncio.run(plan_clauses(["The royalty is 10% of net receipts."], None))
     assert plan.topic is None
     assert plan.evidence, "synthetic templates should still give evidence"
+
+
+def _topic_chunk(key: str, topic: str, jurisdiction: str = "KE") -> SnapshotChunk:
+    chunk = _chunk(key, f"Standard {topic} wording.", jurisdiction=jurisdiction)
+    return SnapshotChunk(**{**chunk.__dict__, "topic": topic, "title": topic.title()})
+
+
+def test_templates_that_disagree_are_named_with_the_contract_figure() -> None:
+    from mbiu.retrieval.evidence import disagreement
+
+    a = _chunk("KE-A", "Royalties are paid within thirty days of each quarter.")
+    b = _chunk("UK-B", "Royalties are paid within 60 days of each quarter.", jurisdiction="GB")
+    clause = "Royalties will be paid within 90 days."
+    assert disagreement(clause, [a, b]) == (
+        "Standard templates differ here: one gives 30 days, another 60 days. "
+        "Your contract gives 90 days."
+    )
+    assert disagreement(clause, [a, a]) is None
+    assert disagreement("Royalties are paid every quarter.", [a, b]) is None
+    assert disagreement(clause, [a]) is None
+
+
+def test_missing_protections_come_from_the_kenyan_standard_first() -> None:
+    from mbiu.retrieval.evidence import PROTECTIONS, _missing
+
+    snapshot = _snapshot(
+        [
+            _topic_chunk("UK-AUDIT", "accounting_audit", jurisdiction="GB"),
+            _topic_chunk("KE-AUDIT", "accounting_audit"),
+            _topic_chunk("KE-END", "termination"),
+        ],
+        [[1, 0], [1, 0], [1, 0]],
+        tag="missing",
+    )
+    missing = _missing(snapshot, ["royalties", "termination"], "recording")
+    assert [(m.template_id, m.ask_them) for m in missing] == [
+        ("KE-AUDIT", PROTECTIONS["accounting_audit"])
+    ]
+    assert _missing(snapshot, ["accounting_audit", "termination", "payment"], "recording") == []
+
+
+def test_missing_protections_say_nothing_without_known_topics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import mbiu.retrieval.evidence as ev
+
+    snapshot = _snapshot([_topic_chunk("KE-AUDIT", "accounting_audit")], [[1, 0]], tag="unknown")
+    monkeypatch.setattr(ev, "active_snapshot", lambda: snapshot)
+    assert asyncio.run(ev.missing_protections([None, None], "recording")) == []
+    assert asyncio.run(ev.missing_protections(["royalties"], "recording"))

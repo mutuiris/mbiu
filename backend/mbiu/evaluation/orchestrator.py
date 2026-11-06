@@ -56,7 +56,12 @@ from mbiu.evaluation.verify import ClauseComparisonProposal, Sent, verify
 from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
 from mbiu.llm.openai import openai
-from mbiu.retrieval.evidence import corpus_version, plan_clauses
+from mbiu.retrieval.evidence import (
+    ClausePlan,
+    corpus_version,
+    missing_protections,
+    plan_clauses,
+)
 from mbiu.retrieval.topics import impact_rank
 
 tracer: Final = trace.get_tracer("mbiu.orchestrator")
@@ -202,15 +207,12 @@ async def _compare_clauses(
     clause_links_map: dict[str, set[str]],
     conflicts_by_clause: dict[str, list[str]],
     contract_type: str | None = None,
+    clause_plans: list[ClausePlan] | None = None,
 ) -> list[ClauseResult]:
     """Check clauses in batches, most important first, streaming each result as it lands."""
-    plans = dict(
-        zip(
-            (c.clause_id for c in clauses),
-            await plan_clauses([c.text for c in clauses], contract_type),
-            strict=True,
-        )
-    )
+    if clause_plans is None:
+        clause_plans = await plan_clauses([c.text for c in clauses], contract_type)
+    plans = dict(zip((c.clause_id for c in clauses), clause_plans, strict=True))
     # Money, ownership, term, exclusivity and termination first; boilerplate last
     clauses = sorted(clauses, key=lambda c: impact_rank(plans[c.clause_id].topic))
     total_clauses = len(clauses)
@@ -268,6 +270,7 @@ async def _compare_clauses(
                         conflict_with=conflicts_by_clause.get(clause.clause_id, []),
                         evidence=plans[clause.clause_id].evidence,
                         note=plans[clause.clause_id].note,
+                        context=plans[clause.clause_id].context,
                         budget=budget,
                         provider=provider,
                         model=model,
@@ -465,6 +468,9 @@ async def _run_evaluation_pipeline(
             conflicts_by_clause.setdefault(id1, []).append(id2)
             conflicts_by_clause.setdefault(id2, []).append(id1)
 
+        clause_plans = await plan_clauses(
+            [c.text for c in segmented.clauses], contract_map_payload.contract_type
+        )
         results_list = await _compare_clauses(
             segmented.clauses,
             effective_llm,
@@ -473,6 +479,7 @@ async def _run_evaluation_pipeline(
             clause_links_map=clause_links_map,
             conflicts_by_clause=conflicts_by_clause,
             contract_type=contract_map_payload.contract_type,
+            clause_plans=clause_plans,
         )
 
         # Stage 5: Compile Summary and Done event
@@ -524,7 +531,9 @@ async def _run_evaluation_pipeline(
             summary = Summary(
                 top_asks=top_asks,
                 contract_issues=contract_map_payload.issues,
-                missing_protections=[],
+                missing_protections=await missing_protections(
+                    [p.topic for p in clause_plans], contract_map_payload.contract_type
+                ),
                 good_news=good_news[:10],
                 matches_count=matches_count,
                 skipped_pages=skipped_pages,
@@ -562,6 +571,7 @@ async def _evaluate_single_clause(
     *,
     evidence: list[Evidence] | None = None,
     note: str | None = None,
+    context: str | None = None,
     budget: _TokenBudget | None = None,
     provider: Provider = Provider.GEMINI,
     model: str = settings.GEMINI_MODEL_MAIN,
@@ -667,6 +677,8 @@ async def _evaluate_single_clause(
             # Nothing to compare with: keep the explanation, never a verdict
             outcome = Outcome.CANNOT_COMPARE
             notes.append(note)
+        if context is not None:
+            notes.append(context)
         if conflicts:
             notes.append(
                 f"This clause conflicts with clause(s) {', '.join(conflicts)} "
@@ -685,7 +697,8 @@ async def _evaluate_single_clause(
             what_it_says=proposal.what_it_says,
             what_it_means=proposal.what_it_means,
             comparison_note=comp_note,
-            impact_inputs=None,
+            # Verified quotes only; the frontend does the arithmetic
+            impact_inputs=proposal.impact_inputs,
             linked_clauses=links,
             fairer_wording=fairer,
             ask_them=proposal.ask_them,

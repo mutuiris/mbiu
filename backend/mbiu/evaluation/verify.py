@@ -16,7 +16,7 @@ from django.conf import settings
 from opentelemetry import metrics
 from pydantic import BaseModel, Field
 
-from mbiu.api.schemas import Evidence, Outcome
+from mbiu.api.schemas import Evidence, ImpactInputs, Outcome
 
 failures_counter: Final = metrics.get_meter("mbiu.verify").create_counter(
     "mbiu.verify.failures", description="Model proposals that failed a verification rule"
@@ -118,6 +118,10 @@ class ClauseComparisonProposal(BaseModel):
     )
     ask_them: str | None = Field(
         default=None, description="A specific question to ask the other party"
+    )
+    impact_inputs: ImpactInputs | None = Field(
+        default=None,
+        description="For money clauses: rate, gross or net, deductions, each with its exact quote",
     )
 
 
@@ -248,6 +252,27 @@ def _is_money_share(text: str) -> bool:
     return bool(PERCENT.search(text) and MONEY.search(text))
 
 
+def impact_inputs_grounded(proposal: ClauseComparisonProposal, sent: Sent) -> str | None:
+    """Every impact input quotes the contract exactly, and its value comes from its quote."""
+    inputs = proposal.impact_inputs
+    if inputs is None:
+        return None
+    quoted = [x for x in (inputs.royalty_rate_percent, inputs.money_basis) if x is not None]
+    for item in [*quoted, *inputs.deductions]:
+        if not item.quote.strip() or item.quote not in sent.clause_text:
+            return f"impact input quote is not exact contract wording: {item.quote!r}"
+    rate = inputs.royalty_rate_percent
+    if rate is not None:
+        if not 0 <= rate.value <= 100:
+            return "royalty_rate_percent must be a percentage between 0 and 100"
+        if rate.value not in _numbers(rate.quote, WORDS):
+            return "royalty_rate_percent is not the number in its quote"
+    basis = inputs.money_basis
+    if basis is not None and basis.value.value not in basis.quote.lower():
+        return "money_basis must say gross or net in its quote"
+    return None
+
+
 def money_is_comparable(proposal: ClauseComparisonProposal, sent: Sent) -> str | None:
     """A money comparison needs both sides to say gross or net."""
     if proposal.comparison not in (
@@ -276,6 +301,7 @@ RULES: Final[dict[str, Callable[[ClauseComparisonProposal, Sent], str | None]]] 
     "fits_a_phone": fits_a_phone,
     "usable_question": usable_question,
     "money_is_comparable": money_is_comparable,
+    "impact_inputs_grounded": impact_inputs_grounded,
 }
 
 
