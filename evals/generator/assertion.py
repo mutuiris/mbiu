@@ -1,4 +1,4 @@
-"""Promptfoo Python assertion that applies the MB-19 quality gate.
+"""Promptfoo Python assertion that applies the quality gate.
 
 The assertion loads the ground-truth sidecar named in the test's
 ``expected_file`` variable, so it does not trust the provider's own verdict.

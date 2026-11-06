@@ -19,12 +19,14 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import httpx
+from google import genai
+from google.genai import errors as genai_errors
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from evals.generator.jsonutil import as_list, as_mapping, as_str, load_json
+from evals.generator.jsonutil import as_mapping, as_str, load_json
 from evals.generator.models import (
     ContractPrediction,
     GoldenContract,
@@ -39,7 +41,7 @@ DATASETS_DIR = EVALS_DIR / "datasets"
 LENIENT_PROMPT_FILE = (
     Path(__file__).resolve().parent / "prompts" / "lenient_clause_eval.txt"
 )
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 
 
 def _config(options: Mapping[str, object]) -> Mapping[str, object]:
@@ -92,41 +94,20 @@ def _parse_model_output(text: str, contract_id: str) -> ContractPrediction:
 
 
 def _gemini_text(prompt: str, model: str, api_key: str) -> str:
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={api_key}"
+    # Same call shape as the app's adapter: Interactions API, storage off
+    client = genai.Client(api_key=api_key)
+    interaction = client.interactions.create(
+        model=model,
+        input=prompt,
+        response_format={"mime_type": "application/json"},
+        generation_config={"temperature": 0},
+        store=False,
+        timeout=120,
     )
-    body = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0,
-            "responseMimeType": "application/json",
-        },
-    }
-    with httpx.Client(timeout=120, follow_redirects=True) as client:
-        response = client.post(
-            url,
-            json=body,
-            headers={"Content-Type": "application/json"},
-        )
-        response.raise_for_status()
-        parsed: object = json.loads(response.content.decode("utf-8"))
-    data = as_mapping(parsed, "$")
-    candidates = as_list(data.get("candidates"), "$.candidates")
-    if not candidates:
-        raise ValueError("Gemini returned no candidates")
-    candidate = as_mapping(candidates[0], "$.candidates[0]")
-    content = as_mapping(candidate.get("content"), "$.candidates[0].content")
-    parts = as_list(content.get("parts"), "$.candidates[0].content.parts")
-    texts: list[str] = []
-    for index, part in enumerate(parts):
-        part_data = as_mapping(part, f"$.candidates[0].content.parts[{index}]")
-        text = part_data.get("text")
-        if isinstance(text, str):
-            texts.append(text)
-    if not texts:
-        raise ValueError("Gemini returned no text parts")
-    return "".join(texts)
+    text = getattr(interaction, "output_text", None)
+    if getattr(interaction, "status", "completed") != "completed" or not text:
+        raise ValueError("Gemini returned no completed output")
+    return str(text)
 
 
 def _prediction_payload(
@@ -165,7 +146,13 @@ def call_api(
         if mode == "auto":
             mode = "gemini" if _api_key() is not None else "reference"
         prediction = _prediction_payload(mode, prompt, contract, config)
-    except (OSError, httpx.HTTPError, ValueError, TypeError) as error:
+    except (
+        OSError,
+        httpx.HTTPError,
+        genai_errors.APIError,
+        ValueError,
+        TypeError,
+    ) as error:
         return {"error": f"golden-set provider failed: {error}"}
 
     metadata: dict[str, object] = {
