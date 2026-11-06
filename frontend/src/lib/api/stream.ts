@@ -150,7 +150,7 @@ export async function* parseNDJSONStream(
           parsedJson = JSON.parse(trimmed);
         } catch (err) {
           throw new StreamParseError(
-            `Failed to parse stream line as JSON: ${trimmed}`,
+            "Failed to parse stream line as JSON",
             trimmed,
             err
           );
@@ -183,7 +183,7 @@ export async function* parseNDJSONStream(
         parsedJson = JSON.parse(remainder);
       } catch (err) {
         throw new StreamParseError(
-          `Failed to parse trailing stream line as JSON: ${remainder}`,
+          "Failed to parse trailing stream line as JSON",
           remainder,
           err
         );

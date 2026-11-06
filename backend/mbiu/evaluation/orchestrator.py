@@ -120,7 +120,6 @@ async def _run_evaluation_pipeline(
         # Blocking stages run in threads so heartbeats and other streams keep going.
         with tracer.start_as_current_span("mbiu.upload") as span:
             span.set_attribute("mbiu.stage", "upload_check")
-            # ponytail: the view validated this too; pass page_count in if it shows in profiles
             upload_meta = await asyncio.to_thread(validate_upload, pdf_bytes)
             span.set_attribute("mbiu.page_count", upload_meta.page_count)
             span.set_attribute("mbiu.byte_size", upload_meta.total_bytes)

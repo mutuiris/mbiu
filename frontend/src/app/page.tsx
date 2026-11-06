@@ -36,7 +36,7 @@ export default function Home() {
 
       <section className="starter-panel" aria-label="Quick Actions">
         <div className="starter-card">
-          <h3>Live Results Stream (MB-07)</h3>
+          <h3>Live Results Stream</h3>
           <p>
             Inspect the live NDJSON streaming pipeline. View real-time clause extraction,
             progress tracking, and risk cards sorted in impact order.
