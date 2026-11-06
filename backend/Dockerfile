@@ -8,6 +8,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY config ./config
 COPY mbiu ./mbiu
+COPY manage.py ./
 
 FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6d0ea3da3aec724f50eed4a
 # Security updates for system packages (resolves CVE-2026-109518 in apt);
