@@ -30,6 +30,7 @@ class Env(BaseSettings):
     failover_enabled: bool = False
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
+    llm_concurrency: int = Field(default=4, gt=0)
     deadline_per_clause_s: float = Field(default=3.0, gt=0)
     deadline_cap_s: float = Field(default=300.0, gt=0)
     cors_allowed_origins: str = "http://localhost:3000"
@@ -80,6 +81,7 @@ OPENAI_MODEL = env.openai_model
 FAILOVER_ENABLED = env.failover_enabled
 BATCH_TIMEOUT_S = env.batch_timeout_s
 BATCH_SIZE = env.batch_size
+LLM_CONCURRENCY = env.llm_concurrency
 DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s
 DEADLINE_CAP_S = env.deadline_cap_s
 CORS_ALLOWED_ORIGINS = [o.strip() for o in env.cors_allowed_origins.split(",") if o.strip()]

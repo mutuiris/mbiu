@@ -8,6 +8,7 @@ import httpx
 import pybreaker
 from django.conf import settings
 from google import genai
+from google.genai import types
 from google.genai._gaos.lib import compat_errors as gemini_errors
 from opentelemetry import trace
 from pydantic import BaseModel, ValidationError
@@ -190,5 +191,10 @@ def gemini() -> Gemini:
     """The process-wide Gemini adapter (one circuit breaker per provider)."""
     if not settings.GEMINI_API_KEY:
         raise LLMError(ErrorCategory.UNAVAILABLE)
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        # The adapter retries within the deadline itself. The SDK's own retries would
+        # multiply every timeout and blow through the contract's time budget.
+        http_options=types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=0)),
+    )
     return Gemini(client, timeout_s=settings.BATCH_TIMEOUT_S)

@@ -322,6 +322,66 @@ async def _run_evaluation_pipeline(
         done_count = 0
         batch_size = max(1, settings.BATCH_SIZE)
 
+        # Clauses in a batch are checked in parallel, at most LLM_CONCURRENCY at a time
+        semaphore = asyncio.Semaphore(settings.LLM_CONCURRENCY)
+
+        def links_for(clause: SegmentedClause) -> list[str]:
+            return sorted(clause_links_map.get(clause.clause_id, set()))
+
+        def as_result(
+            clause: SegmentedClause,
+            outcome: ClauseResult | LLMError,
+            provider: Provider,
+            model: str,
+        ) -> ClauseResult:
+            if isinstance(outcome, ClauseResult):
+                return outcome
+            return _error_clause_result(
+                clause=clause, err=outcome, links=links_for(clause), provider=provider, model=model
+            )
+
+        async def run_batch(
+            batch: list[SegmentedClause],
+            batch_llm: Any,
+            batch_instructions: str,
+            provider: Provider,
+            model: str,
+            *,
+            raise_on_error: bool = False,
+        ) -> list[ClauseResult | LLMError]:
+            async def one(clause: SegmentedClause) -> ClauseResult | LLMError:
+                async with semaphore:
+                    try:
+                        return await _evaluate_single_clause(
+                            clause=clause,
+                            llm=batch_llm,
+                            instructions=batch_instructions,
+                            deadline=overall_deadline,
+                            linked_clauses=links_for(clause),
+                            conflict_with=conflicts_by_clause.get(clause.clause_id, []),
+                            provider=provider,
+                            model=model,
+                            raise_on_error=raise_on_error,
+                        )
+                    except LLMError as err:
+                        return err
+
+            return list(await asyncio.gather(*(one(c) for c in batch)))
+
+        async def run_openai(batch: list[SegmentedClause]) -> list[ClauseResult]:
+            try:
+                openai_llm = openai()
+            except LLMError as err:
+                outcomes: list[ClauseResult | LLMError] = [err] * len(batch)
+            else:
+                outcomes = await run_batch(
+                    batch, openai_llm, instructions_openai, Provider.OPENAI, settings.OPENAI_MODEL
+                )
+            return [
+                as_result(c, o, Provider.OPENAI, settings.OPENAI_MODEL)
+                for c, o in zip(batch, outcomes, strict=True)
+            ]
+
         for i in range(0, total_clauses, batch_size):
             batch = segmented.clauses[i : i + batch_size]
 
@@ -367,105 +427,32 @@ async def _run_evaluation_pipeline(
                 if breaker is not None and getattr(breaker, "current_state", None) == "open":
                     use_openai_for_batch = True
 
-            batch_results: list[ClauseResult] = []
-
+            batch_results: list[ClauseResult]
             if use_openai_for_batch:
-                try:
-                    openai_llm = openai()
-                    for clause in batch:
-                        c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                        c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
-                        clause_res = await _evaluate_single_clause(
-                            clause=clause,
-                            llm=openai_llm,
-                            instructions=instructions_openai,
-                            deadline=overall_deadline,
-                            linked_clauses=c_links,
-                            conflict_with=c_conflicts,
-                            provider=Provider.OPENAI,
-                            model=settings.OPENAI_MODEL,
-                        )
-                        batch_results.append(clause_res)
-                except LLMError as failover_err:
-                    for clause in batch:
-                        c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                        batch_results.append(
-                            _error_clause_result(
-                                clause=clause,
-                                err=failover_err,
-                                links=c_links,
-                                provider=Provider.OPENAI,
-                                model=settings.OPENAI_MODEL,
-                            )
-                        )
+                batch_results = await run_openai(batch)
             else:
-                failed_outage = False
-                temp_results: list[ClauseResult] = []
-                for clause in batch:
-                    c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                    c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
-                    try:
-                        clause_res = await _evaluate_single_clause(
-                            clause=clause,
-                            llm=effective_llm,
-                            instructions=instructions,
-                            deadline=overall_deadline,
-                            linked_clauses=c_links,
-                            conflict_with=c_conflicts,
-                            provider=Provider.GEMINI,
-                            model=settings.GEMINI_MODEL_MAIN,
-                            raise_on_error=settings.FAILOVER_ENABLED,
-                        )
-                        temp_results.append(clause_res)
-                    except LLMError as err:
-                        if settings.FAILOVER_ENABLED and err.category in (
-                            ErrorCategory.UNAVAILABLE,
-                            ErrorCategory.TIMEOUT,
-                        ):
-                            failed_outage = True
-                            break
-                        else:
-                            clause_res = _error_clause_result(
-                                clause=clause,
-                                err=err,
-                                links=c_links,
-                                provider=Provider.GEMINI,
-                                model=settings.GEMINI_MODEL_MAIN,
-                            )
-                            temp_results.append(clause_res)
-
-                if failed_outage:
-                    batch_results = []
-                    try:
-                        openai_llm = openai()
-                        for clause in batch:
-                            c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                            c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
-                            clause_res = await _evaluate_single_clause(
-                                clause=clause,
-                                llm=openai_llm,
-                                instructions=instructions_openai,
-                                deadline=overall_deadline,
-                                linked_clauses=c_links,
-                                conflict_with=c_conflicts,
-                                provider=Provider.OPENAI,
-                                model=settings.OPENAI_MODEL,
-                            )
-                            batch_results.append(clause_res)
-                    except LLMError as failover_err:
-                        for clause in batch:
-                            c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                            batch_results.append(
-                                _error_clause_result(
-                                    clause=clause,
-                                    err=failover_err,
-                                    links=c_links,
-                                    provider=Provider.OPENAI,
-                                    model=settings.OPENAI_MODEL,
-                                )
-                            )
-                else:
-                    batch_results = temp_results
+                outcomes = await run_batch(
+                    batch,
+                    effective_llm,
+                    instructions,
+                    Provider.GEMINI,
+                    settings.GEMINI_MODEL_MAIN,
+                    raise_on_error=settings.FAILOVER_ENABLED,
+                )
+                outage = settings.FAILOVER_ENABLED and any(
+                    isinstance(o, LLMError)
+                    and o.category in (ErrorCategory.UNAVAILABLE, ErrorCategory.TIMEOUT)
+                    for o in outcomes
+                )
+                # One provider per batch: on an outage the whole batch moves to OpenAI
+                batch_results = (
+                    await run_openai(batch)
+                    if outage
+                    else [
+                        as_result(c, o, Provider.GEMINI, settings.GEMINI_MODEL_MAIN)
+                        for c, o in zip(batch, outcomes, strict=True)
+                    ]
+                )
 
             for clause_res in batch_results:
                 results_list.append(clause_res)
