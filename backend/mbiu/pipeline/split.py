@@ -1,4 +1,4 @@
-"""Split parsed templates with the existing MB-03 clause segmenter."""
+"""Split parsed templates with the existing clause segmenter."""
 
 from mbiu.documents.segment import segment_text
 from mbiu.pipeline.models import ParsedDocument, StorageMetadata, TemplateClause

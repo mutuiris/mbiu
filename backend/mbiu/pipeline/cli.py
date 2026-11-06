@@ -13,7 +13,7 @@ from mbiu.pipeline.errors import ConfigurationError, SourceConfigError
 from mbiu.pipeline.fetch import DEFAULT_BASE_URL, USER_AGENT, FirecrawlFetcher, RobotsPolicy
 from mbiu.pipeline.logging_setup import configure_pipeline_logging
 from mbiu.pipeline.parse import DoclingParser
-from mbiu.pipeline.pipeline import CorpusPipeline
+from mbiu.pipeline.pipeline import CorpusPipeline, write_clauses
 from mbiu.pipeline.sources import load_sources
 from mbiu.pipeline.store import SupabaseS3Store
 
@@ -157,6 +157,10 @@ def main(
             return 2
 
     report = active_pipeline.run(sources)
+    out_dir: Path = args.out
+    for outcome in report.outcomes:
+        if outcome.clauses:
+            write_clauses(out_dir, outcome)
     logger.info(
         "Corpus fetch complete: %d created, %d skipped, %d rejected, %d clauses",
         report.created_count,
@@ -195,6 +199,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="Override the per-source job timeout in seconds.",
+    )
+    fetch.add_argument(
+        "--out",
+        type=Path,
+        default=_default_sources_path().parent / "clauses",
+        help="Directory for split clauses, one <sha256>.jsonl per document.",
     )
     return parser
 

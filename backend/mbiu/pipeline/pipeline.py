@@ -1,7 +1,10 @@
 """Orchestrate fetch, store, parse and split for every configured source."""
 
+import json
 import logging
 from collections.abc import Sequence
+from dataclasses import asdict
+from pathlib import Path
 
 from mbiu.pipeline.errors import (
     DocumentParseError,
@@ -150,6 +153,18 @@ class CorpusPipeline:
             ),
             None,
         )
+
+
+def write_clauses(out_dir: Path, outcome: DocumentOutcome) -> Path:
+    """Write one document's clauses as JSONL, keyed by its SHA-256, for the next stage.
+
+    Rewriting the same document gives the same file, so reruns are safe.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{outcome.sha256}.jsonl"
+    lines = (json.dumps(asdict(clause), sort_keys=True) + "\n" for clause in outcome.clauses)
+    path.write_text("".join(lines), encoding="utf-8")
+    return path
 
 
 def _metadata_for(source: Source, document: FetchedDocument) -> StorageMetadata:

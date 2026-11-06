@@ -1,4 +1,4 @@
-"""Configure pipeline logging with the MB-08 sanitizing filter."""
+"""Configure pipeline logging with the sanitizing log filter."""
 
 import logging
 from typing import TextIO
@@ -18,13 +18,13 @@ def configure_pipeline_logging(
     """Attach one sanitized stream handler to the pipeline logger.
 
     Child loggers such as ``mbiu.pipeline.fetch`` propagate here, so every pipeline
-    record passes through the MB-08 ``SanitizedLogFilter``.
+    record passes through the ``SanitizedLogFilter``.
 
     Args:
         level: Minimum level for the pipeline logger.
         logger: Optional logger override, mainly for tests.
         stream: Optional output stream, mainly for tests.
-        sanitized_filter: Optional filter override; defaults to MB-08's filter.
+        sanitized_filter: Optional filter override; defaults to the sanitizing filter.
 
     Returns:
         The configured logger.

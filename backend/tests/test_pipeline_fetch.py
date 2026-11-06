@@ -1,4 +1,4 @@
-"""Hermetic tests for the MB-12 corpus fetch, store, parse and split pipeline.
+"""Hermetic tests for the corpus fetch, store, parse and split pipeline.
 
 External systems (Firecrawl, Supabase S3, Docling) are replaced with
 ``httpx.MockTransport`` handlers or in-memory fakes, so nothing here touches the
@@ -33,6 +33,7 @@ from mbiu.pipeline.errors import (
 from mbiu.pipeline.fetch import FirecrawlFetcher, RobotsPolicy
 from mbiu.pipeline.logging_setup import configure_pipeline_logging
 from mbiu.pipeline.models import (
+    DocumentOutcome,
     DocumentParser,
     FetchedDocument,
     ObjectStore,
@@ -42,6 +43,7 @@ from mbiu.pipeline.models import (
     SourceFetcher,
     StorageMetadata,
     StoredObject,
+    TemplateClause,
 )
 from mbiu.pipeline.parse import DoclingParser, ParseQualityPolicy
 from mbiu.pipeline.pipeline import CorpusPipeline
@@ -220,9 +222,7 @@ def _write_sources(path: Path, body: str) -> Path:
     return path
 
 
-# ---------------------------------------------------------------------------
 # Source configuration
-# ---------------------------------------------------------------------------
 
 
 def test_load_sources_parses_required_fields_and_version(tmp_path: Path) -> None:
@@ -295,9 +295,7 @@ def test_load_sources_rejects_missing_file(tmp_path: Path) -> None:
         load_sources(tmp_path / "absent.yaml")
 
 
-# ---------------------------------------------------------------------------
 # Firecrawl fetching and robots.txt gate
-# ---------------------------------------------------------------------------
 
 
 def test_firecrawl_respects_page_cap_and_disables_robots_override() -> None:
@@ -465,9 +463,7 @@ def test_robots_policy_denies_unexpected_status() -> None:
         assert RobotsPolicy(client=client).allowed(SOURCE.url) is False
 
 
-# ---------------------------------------------------------------------------
 # Content-addressed Supabase S3 storage
-# ---------------------------------------------------------------------------
 
 
 def test_object_key_is_content_addressed_with_safe_suffix() -> None:
@@ -592,9 +588,7 @@ def test_store_wraps_network_failures() -> None:
             store.put_if_absent(PDF_BYTES, _metadata())
 
 
-# ---------------------------------------------------------------------------
 # Docling parsing and fail-closed quality gate
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -665,9 +659,7 @@ def test_parser_propagates_typed_parse_errors() -> None:
         parser.parse(_fetched_document())
 
 
-# ---------------------------------------------------------------------------
 # End-to-end orchestration and idempotency
-# ---------------------------------------------------------------------------
 
 
 def _pipeline(
@@ -805,9 +797,7 @@ def test_pipeline_reports_storage_and_fetch_failures() -> None:
     assert "fetch failed" in fetch_report.errors[0]
 
 
-# ---------------------------------------------------------------------------
 # Logging and CLI
-# ---------------------------------------------------------------------------
 
 
 def test_pipeline_logs_pass_through_the_sanitizing_filter() -> None:
@@ -960,3 +950,52 @@ def test_cli_returns_one_when_the_report_contains_errors(tmp_path: Path) -> None
         )
         == 1
     )
+
+
+def test_cli_writes_split_clauses_and_rerun_gives_same_file(tmp_path: Path) -> None:
+    path = _write_sources(
+        tmp_path / "sources.yaml",
+        """
+        sources:
+          - url: https://example.org/templates/
+            licence: CC BY 4.0
+            reviewing_body: Mbiu Legal Review
+            contract_type: recording
+            jurisdiction: KE
+        """,
+    )
+    clause = TemplateClause(
+        clause_id="1",
+        section="main",
+        title="Royalties",
+        text="The Label shall pay the Artist a royalty of 20% of net receipts.",
+        pages=[1],
+        source_url=SOURCE.url,
+        contract_type="recording",
+        jurisdiction="KE",
+        licence="CC BY 4.0",
+        reviewing_body="Mbiu Legal Review",
+        template_version="1",
+        document_sha256="a" * 64,
+    )
+    outcome = DocumentOutcome(
+        source_url=SOURCE.url,
+        document_url=SOURCE.url,
+        sha256="a" * 64,
+        storage_key=f"raw/{'a' * 64}.pdf",
+        created=True,
+        rejected_reason=None,
+        clauses=[clause],
+    )
+    stub = _StubPipeline(PipelineReport(outcomes=[outcome]))
+    out_dir = tmp_path / "clauses"
+    argv = ["fetch", "--sources", str(path), "--out", str(out_dir)]
+
+    assert main(argv, pipeline=cast(CorpusPipeline, stub), env={}) == 0
+    written = out_dir / f"{'a' * 64}.jsonl"
+    first = written.read_text(encoding="utf-8")
+    assert json.loads(first)["text"] == clause.text
+
+    assert main(argv, pipeline=cast(CorpusPipeline, stub), env={}) == 0
+    assert written.read_text(encoding="utf-8") == first
+    assert [p.name for p in out_dir.iterdir()] == [written.name]
