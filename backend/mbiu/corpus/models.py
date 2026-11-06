@@ -86,6 +86,9 @@ class ReferenceChunk(models.Model):
     contract_type = models.CharField(max_length=50)
     jurisdiction = models.CharField(max_length=50)
     drafted_for = models.CharField(max_length=20, help_text="label, artist or neutral")
+    pattern_count = models.PositiveIntegerField(
+        default=1, help_text="How many chunks in this version say much the same, itself included"
+    )
     embedding = VectorField(dimensions=EMBEDDING_DIM)
 
     class Meta:

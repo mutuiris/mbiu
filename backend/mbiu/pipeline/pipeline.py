@@ -10,6 +10,7 @@ from mbiu.pipeline.errors import (
     DocumentParseError,
     DocumentQualityError,
     FetchError,
+    PipelineError,
     StorageError,
 )
 from mbiu.pipeline.models import (
@@ -21,6 +22,7 @@ from mbiu.pipeline.models import (
     Source,
     SourceFetcher,
     StorageMetadata,
+    TemplateClause,
 )
 from mbiu.pipeline.split import split_document
 
@@ -165,6 +167,25 @@ def write_clauses(out_dir: Path, outcome: DocumentOutcome) -> Path:
     lines = (json.dumps(asdict(clause), sort_keys=True) + "\n" for clause in outcome.clauses)
     path.write_text("".join(lines), encoding="utf-8")
     return path
+
+
+def read_clauses(clauses_dir: Path) -> list[TemplateClause]:
+    """Read every ``<sha256>.jsonl`` file that ``write_clauses`` produced, in a stable order.
+
+    Raises:
+        PipelineError: If there are no clause files or a line is not a valid clause.
+    """
+    paths = sorted(clauses_dir.glob("*.jsonl"))
+    if not paths:
+        raise PipelineError(f"no clause files in {clauses_dir}; run the fetch command first")
+    clauses: list[TemplateClause] = []
+    for path in paths:
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            try:
+                clauses.append(TemplateClause(**json.loads(line)))
+            except (TypeError, ValueError) as exc:
+                raise PipelineError(f"{path.name} line {number} is not a valid clause") from exc
+    return clauses
 
 
 def _metadata_for(source: Source, document: FetchedDocument) -> StorageMetadata:
