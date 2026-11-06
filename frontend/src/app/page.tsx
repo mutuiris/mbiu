@@ -72,7 +72,7 @@ export default function Home() {
             Check another contract
           </button>
         </div>
-        <LiveResults eventStream={stream} onRetryAll={startOver} />
+        <LiveResults eventStream={stream} onRetryAll={startOver} file={selectedFile} />
       </main>
     );
   }

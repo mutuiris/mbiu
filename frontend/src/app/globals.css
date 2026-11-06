@@ -908,6 +908,8 @@ body {
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
 /* Feed & Cards */
 .results-cards-feed {
   display: flex;
@@ -1223,6 +1225,9 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
 .status-alert.success {
   background-color: var(--better-bg);
   border: 1px solid var(--better-border);
@@ -2289,3 +2294,88 @@ body {
   }
 }
 
+
+/* Contract viewer: beside the cards on wide screens, a full-screen sheet on phones */
+.results-page:has(.live-results-layout.has-viewer) {
+  max-width: 1200px;
+}
+
+.contract-viewer {
+  display: none;
+}
+
+.contract-viewer.is-open {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: var(--bg-color);
+}
+
+.contract-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+}
+
+.contract-viewer-title {
+  font-weight: 600;
+}
+
+.contract-viewer-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+.contract-viewer-page {
+  position: relative;
+  margin: 0 auto 0.75rem;
+  background-color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.contract-viewer-page.has-clause {
+  outline: 2px solid var(--accent-color);
+}
+
+.contract-viewer-message {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.clause-highlight {
+  background-color: rgba(250, 204, 21, 0.45);
+  color: transparent;
+}
+
+@media (min-width: 960px) {
+  .live-results-layout.has-viewer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .live-results-layout.has-viewer .contract-viewer {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    inset: auto;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .contract-viewer .contract-viewer-close {
+    display: none;
+  }
+}

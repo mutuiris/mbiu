@@ -208,6 +208,9 @@ export async function* parseNDJSONStream(
   }
 }
 
+// Shown before any clause has arrived, so it must not mention clauses below
+const PRE_STREAM_UNAVAILABLE = "Mbiu can't check contracts right now. Please try again in a few minutes.";
+
 export interface FetchEvaluationOptions {
   file: File | Blob;
   turnstileToken: string;
@@ -250,7 +253,7 @@ export async function fetchEvaluationStream(
       throw err;
     }
     throw new ServiceUnavailableError(
-      "Mbiu can't check contracts right now. Your clauses are listed below; try again in a few minutes."
+      PRE_STREAM_UNAVAILABLE
     );
   }
 
@@ -265,7 +268,7 @@ export async function fetchEvaluationStream(
     }
     throw new ServiceUnavailableError(
       apiError?.message ||
-        "Mbiu can't check contracts right now. Your clauses are listed below; try again in a few minutes.",
+        PRE_STREAM_UNAVAILABLE,
       apiError
     );
   }
