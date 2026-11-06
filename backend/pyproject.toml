@@ -31,6 +31,11 @@ dev = [
 ]
 pipeline = [
     "docling==2.142.1",
+    "en-core-web-lg==3.8.0",
+    "lingua-language-detector==2.2.0",
+    "presidio-analyzer==2.2.362",
+    "sentence-transformers==6.2.0",
+    "torch==2.14.1",
 ]
 
 [tool.uv]
@@ -41,6 +46,9 @@ exclude-newer = "14 days"
 # Remove both lines after 2026-11-10.
 constraint-dependencies = ["pyasn1>=0.6.5"]
 exclude-newer-package = { pyasn1 = "2026-10-28T00:00:00Z" }
+
+[tool.uv.sources]
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl" }
 
 [tool.ruff]
 line-length = 100

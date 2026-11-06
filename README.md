@@ -142,16 +142,18 @@ The comparison is only as good as the templates behind it. The corpus pipeline i
 2. **Store** each original file with its URL, fetch date, licence and reviewing body.
 3. **Parse** PDF and DOCX files into headings, clauses and tables (Docling).
 4. **Split** them with the same clause splitter used for artists' contracts.
-5. **Tag** each clause with contract type, topic, jurisdiction and who it favours.
-6. **Check automatically.** A source is published only if every check passes:
-   - licence and source details are present;
-   - it is a real template, not an article or a signed deal;
-   - it contains no personal data;
-   - it is in English;
-   - near-duplicates are removed;
-   - two independent models agree on every tag.
-7. **Embed** each clause with EmbeddingGemma 2 and count how common each pattern is.
-8. **Publish** a new numbered version. Published versions are never edited, and rolling back means pointing back to an earlier version.
+5. **Tag** each clause with contract type, topic, jurisdiction and who it favours, once by Gemini and once by OpenAI.
+6. **Check automatically.** A clause is published only if every check passes, and each version keeps the results:
+   - licence and source details are present (otherwise the whole document is dropped);
+   - the document contains no personal data, found with Presidio (otherwise the whole document is dropped);
+   - the document is in English (otherwise the whole document is dropped);
+   - near-duplicates are removed (MinHash);
+   - both models confirm it is standard template wording, not an article, a sales page or a signed deal;
+   - both models agree on every tag.
+7. **Embed** each clause with EmbeddingGemma 2 at a pinned revision and count how common each pattern is.
+8. **Publish** a new version and make it active. Published versions are never edited, and rolling back means pointing back to an earlier version.
+
+Steps 1 to 4 run with `python -m mbiu.pipeline fetch`, steps 5 to 8 with `python -m mbiu.pipeline publish` (install the extra tools with `uv sync --group pipeline`).
 
 The pipeline handles only public templates. It never sees an artist's contract.
 
@@ -163,7 +165,7 @@ The pipeline handles only public templates. It never sees an artist's contract.
 | Documents       | PyMuPDF (live requests), Docling (corpus pipeline)                                                   |
 | Search          | sentence-transformers with EmbeddingGemma 2, numpy, rank-bm25                                        |
 | AI models       | Gemini (primary), OpenAI (failover only), tenacity, pybreaker                                        |
-| Corpus pipeline | Firecrawl, Presidio, datasketch                                                                      |
+| Corpus pipeline | Firecrawl, Docling, Presidio, Lingua                                                                 |
 | Data            | Supabase Postgres + pgvector, Supabase Storage, psycopg 3                                            |
 | Frontend        | Next.js (App Router), TypeScript (strict), Zod, react-pdf, @react-pdf/renderer, Cloudflare Turnstile |
 | Observability   | OpenTelemetry, Grafana Cloud, Jaeger (local), Sentry, PostHog, GrowthBook                            |
