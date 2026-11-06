@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 
+import { TURNSTILE_SITE_KEY } from "@/lib/env";
+
 declare global {
   interface Window {
     turnstile?: {
@@ -28,72 +30,61 @@ interface TurnstileProps {
   onExpire?: () => void;
 }
 
-export function Turnstile({
-  // gitleaks:allow
-  siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
-  onSuccess,
-  onError,
-  onExpire,
-}: TurnstileProps) {
+const SCRIPT_ID = "cf-turnstile-script";
+
+export function Turnstile({ siteKey = TURNSTILE_SITE_KEY, onSuccess, onError, onExpire }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  // Callbacks live in a ref so a parent re-render doesn't reset the widget
+  const callbacks = useRef({ onSuccess, onError, onExpire });
+  useEffect(() => {
+    callbacks.current = { onSuccess, onError, onExpire };
+  });
 
   useEffect(() => {
-    const scriptId = "cf-turnstile-script";
+    // Fail closed: no key or no script means no token, so the form stays disabled
+    if (!siteKey) {
+      callbacks.current.onError?.("Turnstile site key is not set");
+      return;
+    }
 
     const renderWidget = () => {
       if (!window.turnstile || !containerRef.current || widgetIdRef.current) return;
-      try {
-        widgetIdRef.current = window.turnstile.render(containerRef.current, {
-          sitekey: siteKey,
-          callback: (token: string) => onSuccess(token),
-          "error-callback": (err?: string) => onError?.(err),
-          "expired-callback": () => onExpire?.(),
-          theme: "auto",
-        });
-      } catch (err) {
-        console.warn("Turnstile render warning:", err);
-      }
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        callback: (token) => callbacks.current.onSuccess(token),
+        "error-callback": (err) => callbacks.current.onError?.(err),
+        "expired-callback": () => callbacks.current.onExpire?.(),
+        theme: "auto",
+      });
     };
+    const failToLoad = () => callbacks.current.onError?.("Failed to load Turnstile bot check");
 
+    let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
     if (window.turnstile) {
       renderWidget();
+    } else if (script) {
+      script.addEventListener("load", renderWidget);
+      script.addEventListener("error", failToLoad);
     } else {
-      let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-      if (!script) {
-        script = document.createElement("script");
-        script.id = scriptId;
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-        script.async = true;
-        script.defer = true;
-        script.onload = () => renderWidget();
-        script.onerror = () => {
-          // If script fails (e.g. adblocker or offline dev with test key)
-  // gitleaks:allow
-          if (siteKey === "1x00000000000000000000AA") {
-  // gitleaks:allow
-            onSuccess("test-mock-token");
-          } else {
-            onError?.("Failed to load Turnstile bot check");
-          }
-        };
-        document.head.appendChild(script);
-      } else {
-        script.addEventListener("load", renderWidget);
-      }
+      script = document.createElement("script");
+      script.id = SCRIPT_ID;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.addEventListener("load", renderWidget);
+      script.addEventListener("error", failToLoad);
+      document.head.appendChild(script);
     }
 
     return () => {
+      script?.removeEventListener("load", renderWidget);
+      script?.removeEventListener("error", failToLoad);
       if (widgetIdRef.current && window.turnstile) {
-        try {
-          window.turnstile.remove(widgetIdRef.current);
-        } catch {
-          // Ignore removal errors on unmount
-        }
+        window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onSuccess, onError, onExpire]);
+  }, [siteKey]);
 
   return (
     <div className="turnstile-container">

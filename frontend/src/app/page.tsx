@@ -4,113 +4,103 @@ import React, { useState } from "react";
 
 import { FileDropzone } from "@/components/FileDropzone";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { LiveResults } from "@/components/results/LiveResults";
 import { Turnstile } from "@/components/Turnstile";
+import { fetchEvaluationStream, type EvaluationEvent } from "@/lib/api/stream";
 import { API_URL } from "@/lib/env";
 import { validateContractFile } from "@/lib/validation";
-
-type UploadState = "idle" | "validating" | "uploading" | "error" | "done";
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [uploadState, setUploadState] = useState<UploadState>("idle");
+  // Tokens are single use, so a new key remounts the widget for a fresh one
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [stream, setStream] = useState<AsyncGenerator<EvaluationEvent, void, unknown> | null>(
+    null
+  );
 
   const isSubmitEnabled =
-    selectedFile !== null &&
-    consentChecked &&
-    Boolean(turnstileToken) &&
-    uploadState === "idle";
+    selectedFile !== null && consentChecked && Boolean(turnstileToken) && !isUploading;
 
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
     setErrorMessage(null);
   };
 
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    setTurnstileKey((key) => key + 1);
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile || !consentChecked || !turnstileToken) return;
 
-    setUploadState("validating");
     setErrorMessage(null);
-
     const validation = validateContractFile(selectedFile);
     if (!validation.valid) {
       setErrorMessage(validation.error);
-      setUploadState("idle");
       return;
     }
 
-    setUploadState("uploading");
-    setStatusMessage("Connecting to evaluation stream...");
-
+    setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("turnstile_token", turnstileToken);
-
-      const response = await fetch(`${API_URL}/api/v1/evaluations`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 502) {
-          // Backend API is not yet running or MB-05 is pending: show friendly message
-          setStatusMessage(
-            "Evaluation pipeline skeleton ready. Waiting for live stream endpoint (MB-05)."
-          );
-          setUploadState("done");
-          return;
-        }
-
-        const errData = await response.json().catch(() => null);
-        throw new Error(
-          errData?.detail ||
-            `Upload error (${response.status}): Mbiu could not process this contract right now.`
-        );
-      }
-
-      setStatusMessage("Contract received! Evaluation stream starting...");
-      setUploadState("done");
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "An unexpected error occurred."
+      setStream(
+        await fetchEvaluationStream({ file: selectedFile, turnstileToken, apiUrl: API_URL })
       );
-      setUploadState("error");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
+      resetTurnstile();
+    } finally {
+      setIsUploading(false);
     }
   };
+
+  const startOver = () => {
+    setStream(null);
+    resetTurnstile();
+  };
+
+  if (stream) {
+    return (
+      <main className="page-wrapper results-page">
+        <div className="stream-controls">
+          <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
+            Check another contract
+          </button>
+        </div>
+        <LiveResults eventStream={stream} onRetryAll={startOver} />
+      </main>
+    );
+  }
 
   return (
     <main className="page-wrapper">
       <header className="header-section">
         <h1 className="brand-title">Mbiu</h1>
-        <p className="brand-tagline">
-          Understand a music contract before you sign it.
-        </p>
+        <p className="brand-tagline">Understand a music contract before you sign it.</p>
       </header>
 
       <form onSubmit={handleUpload}>
-        <PrivacyNotice
-          consentChecked={consentChecked}
-          onConsentChange={setConsentChecked}
-        />
+        <PrivacyNotice consentChecked={consentChecked} onConsentChange={setConsentChecked} />
 
         <FileDropzone
           selectedFile={selectedFile}
           onFileSelect={handleFileSelect}
           onError={setErrorMessage}
-          disabled={uploadState === "uploading"}
+          disabled={isUploading}
         />
 
         <div className="turnstile-wrapper">
           <Turnstile
-            onSuccess={(token) => setTurnstileToken(token)}
-            onError={() => {
-              setErrorMessage("Bot verification failed. Please refresh the page.");
-            }}
+            key={turnstileKey}
+            onSuccess={setTurnstileToken}
+            onError={() =>
+              setErrorMessage("The security check could not load. Please refresh the page.")
+            }
             onExpire={() => setTurnstileToken(null)}
           />
         </div>
@@ -122,22 +112,10 @@ export default function Home() {
           </div>
         )}
 
-        {statusMessage && uploadState === "done" && (
-          <div className="status-alert success" role="status">
-            {statusMessage}
-          </div>
-        )}
-
         <div className="action-section">
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={!isSubmitEnabled}
-          >
-            {uploadState === "uploading" && <span className="spinner" />}
-            {uploadState === "uploading"
-              ? "Uploading contract…"
-              : "Check my contract"}
+          <button type="submit" className="submit-btn" disabled={!isSubmitEnabled}>
+            {isUploading && <span className="spinner" />}
+            {isUploading ? "Uploading contract…" : "Check my contract"}
           </button>
         </div>
       </form>

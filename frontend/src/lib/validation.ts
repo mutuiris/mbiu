@@ -1,6 +1,6 @@
 /**
  * Client-side file validation rules for Mbiu uploads.
- * Matches backend MB-02 limits: max 10 MB, text-based PDF format.
+ * Matches the backend upload limits: max 10 MB, text-based PDF format.
  */
 
 export const MAX_UPLOAD_MB = 10;

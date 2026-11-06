@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mbiu golden-set evaluation prediction",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "contract_id",
+    "clause_results",
+    "contract_issues"
+  ],
+  "properties": {
+    "contract_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clause_results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/clause_result"
+      }
+    },
+    "contract_issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contract_issue"
+      }
+    }
+  },
+  "$defs": {
+    "clause_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "clause_id",
+        "status",
+        "comparison",
+        "risk_flags"
+      ],
+      "properties": {
+        "clause_id": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)*(?:\\([a-z0-9]+\\))?$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "evaluated",
+            "cannot_compare",
+            "evaluation_failed",
+            "not_checked"
+          ]
+        },
+        "comparison": {
+          "type": "string",
+          "enum": [
+            "matches_standard",
+            "better_for_you",
+            "worse_for_you",
+            "not_in_standard",
+            "missing_from_contract",
+            "cannot_compare"
+          ]
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "contract_issue": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "issue_id",
+        "kind",
+        "clause_ids"
+      ],
+      "properties": {
+        "issue_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clause_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

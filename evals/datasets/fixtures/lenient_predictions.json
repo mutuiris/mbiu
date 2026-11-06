@@ -1,0 +1,684 @@
+{
+  "description": "Output of the deliberately lenient prompt fixture; must be rejected.",
+  "contracts": [
+    {
+      "contract_id": "golden-clean-control",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-combined-risks",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-cross-clause-conflict",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-deductions-before-royalties",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-exclusivity-beyond-term",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-missing-payment-dates",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    },
+    {
+      "contract_id": "golden-perpetual-rights",
+      "clause_results": [
+        {
+          "clause_id": "1.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "2.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "3.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.2",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "4.3",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "5.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "6.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "7.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "8.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "9.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        },
+        {
+          "clause_id": "10.1",
+          "status": "evaluated",
+          "comparison": "matches_standard",
+          "risk_flags": [],
+          "note": "Similar topic to the standard."
+        }
+      ],
+      "contract_issues": []
+    }
+  ]
+}
