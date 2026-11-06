@@ -34,7 +34,7 @@ In order, stopping when spend levels off.
    gcloud run services update mbiu-api --region "$REGION" --update-env-vars MAX_PAGES=20
    ```
 
-3. **Bots are getting through.** In Cloudflare, add a rate-limiting rule on `POST /api/v1/evaluations`, for example 5 requests per IP per 10 minutes, with a managed challenge.
+3. **Bots are getting through.** In Cloudflare, add a rate-limiting rule on `POST /api/v1/evaluations` and `POST /api/v1/clause-evaluations`, for example 5 requests per IP per 10 minutes, with a managed challenge.
 
 4. **Last resort.** Scale the API to zero to stop all spend:
 

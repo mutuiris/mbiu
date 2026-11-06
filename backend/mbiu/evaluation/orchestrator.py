@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from pathlib import Path
 from typing import Any, Final, Literal
 
@@ -183,6 +183,214 @@ def verify_quotes(
     return True
 
 
+def _deadline(clause_count: int) -> float:
+    return time.monotonic() + min(
+        settings.DEADLINE_CAP_S,
+        10.0 + (clause_count * settings.DEADLINE_PER_CLAUSE_S),
+    )
+
+
+async def _provider(
+    llm: Gemini | None,
+    clauses: list[SegmentedClause],
+    queue: asyncio.Queue[StreamEvent | None],
+) -> Gemini | None:
+    """Return the model provider, or fail each clause and return None when none is usable."""
+    if llm is not None:
+        return llm
+    try:
+        return gemini()
+    except LLMError as err:
+        # No usable provider (for example a missing or revoked key). Say so per clause
+        # instead of breaking the stream, so the artist gets an honest retry.
+        for c in clauses:
+            await queue.put(
+                ClauseFailedEvent(
+                    payload=ClauseFailure(
+                        clause_id=c.clause_id,
+                        reason=FailureReason(err.category.value),
+                        retryable=True,
+                    )
+                )
+            )
+        return None
+
+
+async def _compare_clauses(
+    clauses: list[SegmentedClause],
+    effective_llm: Gemini,
+    queue: asyncio.Queue[StreamEvent | None],
+    *,
+    deadline: float,
+    clause_links_map: dict[str, set[str]],
+    conflicts_by_clause: dict[str, list[str]],
+) -> list[ClauseResult]:
+    """Check clauses in batches, streaming each result and progress as it lands."""
+    total_clauses = len(clauses)
+    await queue.put(
+        ProgressEvent(
+            type="progress",
+            payload=Progress(stage=Stage.COMPARE, done=0, total=total_clauses),
+        )
+    )
+
+    instructions = load_compare_prompt()
+    instructions_openai = load_compare_openai_prompt()
+
+    results_list: list[ClauseResult] = []
+    done_count = 0
+    batch_size = max(1, settings.BATCH_SIZE)
+
+    # Clauses in a batch are checked in parallel, at most LLM_CONCURRENCY at a time
+    semaphore = asyncio.Semaphore(settings.LLM_CONCURRENCY)
+
+    def links_for(clause: SegmentedClause) -> list[str]:
+        return sorted(clause_links_map.get(clause.clause_id, set()))
+
+    def as_result(
+        clause: SegmentedClause,
+        outcome: ClauseResult | LLMError,
+        provider: Provider,
+        model: str,
+    ) -> ClauseResult:
+        if isinstance(outcome, ClauseResult):
+            return outcome
+        return _error_clause_result(
+            clause=clause, err=outcome, links=links_for(clause), provider=provider, model=model
+        )
+
+    async def run_batch(
+        batch: list[SegmentedClause],
+        batch_llm: Any,
+        batch_instructions: str,
+        provider: Provider,
+        model: str,
+        *,
+        raise_on_error: bool = False,
+    ) -> list[ClauseResult | LLMError]:
+        async def one(clause: SegmentedClause) -> ClauseResult | LLMError:
+            async with semaphore:
+                try:
+                    return await _evaluate_single_clause(
+                        clause=clause,
+                        llm=batch_llm,
+                        instructions=batch_instructions,
+                        deadline=deadline,
+                        linked_clauses=links_for(clause),
+                        conflict_with=conflicts_by_clause.get(clause.clause_id, []),
+                        provider=provider,
+                        model=model,
+                        raise_on_error=raise_on_error,
+                    )
+                except LLMError as err:
+                    return err
+
+        return list(await asyncio.gather(*(one(c) for c in batch)))
+
+    async def run_openai(batch: list[SegmentedClause]) -> list[ClauseResult]:
+        try:
+            openai_llm = openai()
+        except LLMError as err:
+            outcomes: list[ClauseResult | LLMError] = [err] * len(batch)
+        else:
+            outcomes = await run_batch(
+                batch, openai_llm, instructions_openai, Provider.OPENAI, settings.OPENAI_MODEL
+            )
+        return [
+            as_result(c, o, Provider.OPENAI, settings.OPENAI_MODEL)
+            for c, o in zip(batch, outcomes, strict=True)
+        ]
+
+    for i in range(0, total_clauses, batch_size):
+        batch = clauses[i : i + batch_size]
+
+        # Check overall deadline
+        if time.monotonic() >= deadline:
+            for c in clauses[i:]:
+                c_links = sorted(list(clause_links_map.get(c.clause_id, set())))
+                await queue.put(
+                    ClauseResultEvent(
+                        type="clause_result",
+                        payload=ClauseResult(
+                            clause_id=c.clause_id,
+                            pages=c.pages,
+                            original_text=c.text,
+                            status=ClauseStatus.NOT_CHECKED,
+                            comparison=Outcome.CANNOT_COMPARE,
+                            headline="Not checked within time limit",
+                            what_it_says=(
+                                "This clause was not checked before the contract "
+                                "time budget ran out."
+                            ),
+                            what_it_means="Higher-priority clauses were evaluated first.",
+                            comparison_note=None,
+                            impact_inputs=None,
+                            linked_clauses=c_links,
+                            fairer_wording=None,
+                            ask_them=None,
+                            standard_template_id=None,
+                            standard_excerpt=None,
+                            evidence=[],
+                            evidence_ids=[],
+                            evidence_quote=None,
+                            provider=None,
+                            model_version=None,
+                        ),
+                    )
+                )
+            break
+
+        use_openai_for_batch = False
+        if settings.FAILOVER_ENABLED:
+            breaker = getattr(effective_llm, "_breaker", None)
+            if breaker is not None and getattr(breaker, "current_state", None) == "open":
+                use_openai_for_batch = True
+
+        batch_results: list[ClauseResult]
+        if use_openai_for_batch:
+            batch_results = await run_openai(batch)
+        else:
+            outcomes = await run_batch(
+                batch,
+                effective_llm,
+                instructions,
+                Provider.GEMINI,
+                settings.GEMINI_MODEL_MAIN,
+                raise_on_error=settings.FAILOVER_ENABLED,
+            )
+            outage = settings.FAILOVER_ENABLED and any(
+                isinstance(o, LLMError)
+                and o.category in (ErrorCategory.UNAVAILABLE, ErrorCategory.TIMEOUT)
+                for o in outcomes
+            )
+            # One provider per batch: on an outage the whole batch moves to OpenAI
+            batch_results = (
+                await run_openai(batch)
+                if outage
+                else [
+                    as_result(c, o, Provider.GEMINI, settings.GEMINI_MODEL_MAIN)
+                    for c, o in zip(batch, outcomes, strict=True)
+                ]
+            )
+
+        for clause_res in batch_results:
+            results_list.append(clause_res)
+            done_count += 1
+            await queue.put(
+                ClauseResultEvent(
+                    type="clause_result",
+                    payload=clause_res,
+                )
+            )
+            await queue.put(
+                ProgressEvent(
+                    type="progress",
+                    payload=Progress(stage=Stage.COMPARE, done=done_count, total=total_clauses),
+                )
+            )
+    return results_list
+
+
 async def _run_evaluation_pipeline(
     pdf_bytes: bytes,
     llm: Gemini | None,
@@ -248,27 +456,10 @@ async def _run_evaluation_pipeline(
         )
         await queue.put(document_event)
 
-        try:
-            effective_llm = llm if llm is not None else gemini()
-        except LLMError as err:
-            # No usable provider (for example a missing or revoked key). Say so per clause
-            # instead of breaking the stream, so the artist gets an honest retry.
-            for c in segmented.clauses:
-                await queue.put(
-                    ClauseFailedEvent(
-                        payload=ClauseFailure(
-                            clause_id=c.clause_id,
-                            reason=FailureReason(err.category.value),
-                            retryable=True,
-                        )
-                    )
-                )
+        effective_llm = await _provider(llm, segmented.clauses, queue)
+        if effective_llm is None:
             return
-        total_clauses = len(segmented.clauses)
-        overall_deadline = time.monotonic() + min(
-            settings.DEADLINE_CAP_S,
-            10.0 + (total_clauses * settings.DEADLINE_PER_CLAUSE_S),
-        )
+        overall_deadline = _deadline(len(segmented.clauses))
 
         # Stage 3.5: Whole-contract map
         with tracer.start_as_current_span("mbiu.map_contract") as span:
@@ -307,168 +498,14 @@ async def _run_evaluation_pipeline(
             conflicts_by_clause.setdefault(id1, []).append(id2)
             conflicts_by_clause.setdefault(id2, []).append(id1)
 
-        # Stage 4: Batched clause evaluations
-        await queue.put(
-            ProgressEvent(
-                type="progress",
-                payload=Progress(stage=Stage.COMPARE, done=0, total=total_clauses),
-            )
+        results_list = await _compare_clauses(
+            segmented.clauses,
+            effective_llm,
+            queue,
+            deadline=overall_deadline,
+            clause_links_map=clause_links_map,
+            conflicts_by_clause=conflicts_by_clause,
         )
-
-        instructions = load_compare_prompt()
-        instructions_openai = load_compare_openai_prompt()
-
-        results_list: list[ClauseResult] = []
-        done_count = 0
-        batch_size = max(1, settings.BATCH_SIZE)
-
-        # Clauses in a batch are checked in parallel, at most LLM_CONCURRENCY at a time
-        semaphore = asyncio.Semaphore(settings.LLM_CONCURRENCY)
-
-        def links_for(clause: SegmentedClause) -> list[str]:
-            return sorted(clause_links_map.get(clause.clause_id, set()))
-
-        def as_result(
-            clause: SegmentedClause,
-            outcome: ClauseResult | LLMError,
-            provider: Provider,
-            model: str,
-        ) -> ClauseResult:
-            if isinstance(outcome, ClauseResult):
-                return outcome
-            return _error_clause_result(
-                clause=clause, err=outcome, links=links_for(clause), provider=provider, model=model
-            )
-
-        async def run_batch(
-            batch: list[SegmentedClause],
-            batch_llm: Any,
-            batch_instructions: str,
-            provider: Provider,
-            model: str,
-            *,
-            raise_on_error: bool = False,
-        ) -> list[ClauseResult | LLMError]:
-            async def one(clause: SegmentedClause) -> ClauseResult | LLMError:
-                async with semaphore:
-                    try:
-                        return await _evaluate_single_clause(
-                            clause=clause,
-                            llm=batch_llm,
-                            instructions=batch_instructions,
-                            deadline=overall_deadline,
-                            linked_clauses=links_for(clause),
-                            conflict_with=conflicts_by_clause.get(clause.clause_id, []),
-                            provider=provider,
-                            model=model,
-                            raise_on_error=raise_on_error,
-                        )
-                    except LLMError as err:
-                        return err
-
-            return list(await asyncio.gather(*(one(c) for c in batch)))
-
-        async def run_openai(batch: list[SegmentedClause]) -> list[ClauseResult]:
-            try:
-                openai_llm = openai()
-            except LLMError as err:
-                outcomes: list[ClauseResult | LLMError] = [err] * len(batch)
-            else:
-                outcomes = await run_batch(
-                    batch, openai_llm, instructions_openai, Provider.OPENAI, settings.OPENAI_MODEL
-                )
-            return [
-                as_result(c, o, Provider.OPENAI, settings.OPENAI_MODEL)
-                for c, o in zip(batch, outcomes, strict=True)
-            ]
-
-        for i in range(0, total_clauses, batch_size):
-            batch = segmented.clauses[i : i + batch_size]
-
-            # Check overall deadline
-            if time.monotonic() >= overall_deadline:
-                for c in segmented.clauses[i:]:
-                    c_links = sorted(list(clause_links_map.get(c.clause_id, set())))
-                    await queue.put(
-                        ClauseResultEvent(
-                            type="clause_result",
-                            payload=ClauseResult(
-                                clause_id=c.clause_id,
-                                pages=c.pages,
-                                original_text=c.text,
-                                status=ClauseStatus.NOT_CHECKED,
-                                comparison=Outcome.CANNOT_COMPARE,
-                                headline="Not checked within time limit",
-                                what_it_says=(
-                                    "This clause was not checked before the contract "
-                                    "time budget ran out."
-                                ),
-                                what_it_means="Higher-priority clauses were evaluated first.",
-                                comparison_note=None,
-                                impact_inputs=None,
-                                linked_clauses=c_links,
-                                fairer_wording=None,
-                                ask_them=None,
-                                standard_template_id=None,
-                                standard_excerpt=None,
-                                evidence=[],
-                                evidence_ids=[],
-                                evidence_quote=None,
-                                provider=None,
-                                model_version=None,
-                            ),
-                        )
-                    )
-                break
-
-            use_openai_for_batch = False
-            if settings.FAILOVER_ENABLED:
-                breaker = getattr(effective_llm, "_breaker", None)
-                if breaker is not None and getattr(breaker, "current_state", None) == "open":
-                    use_openai_for_batch = True
-
-            batch_results: list[ClauseResult]
-            if use_openai_for_batch:
-                batch_results = await run_openai(batch)
-            else:
-                outcomes = await run_batch(
-                    batch,
-                    effective_llm,
-                    instructions,
-                    Provider.GEMINI,
-                    settings.GEMINI_MODEL_MAIN,
-                    raise_on_error=settings.FAILOVER_ENABLED,
-                )
-                outage = settings.FAILOVER_ENABLED and any(
-                    isinstance(o, LLMError)
-                    and o.category in (ErrorCategory.UNAVAILABLE, ErrorCategory.TIMEOUT)
-                    for o in outcomes
-                )
-                # One provider per batch: on an outage the whole batch moves to OpenAI
-                batch_results = (
-                    await run_openai(batch)
-                    if outage
-                    else [
-                        as_result(c, o, Provider.GEMINI, settings.GEMINI_MODEL_MAIN)
-                        for c, o in zip(batch, outcomes, strict=True)
-                    ]
-                )
-
-            for clause_res in batch_results:
-                results_list.append(clause_res)
-                done_count += 1
-                await queue.put(
-                    ClauseResultEvent(
-                        type="clause_result",
-                        payload=clause_res,
-                    )
-                )
-                await queue.put(
-                    ProgressEvent(
-                        type="progress",
-                        payload=Progress(stage=Stage.COMPARE, done=done_count, total=total_clauses),
-                    )
-                )
 
         # Stage 5: Compile Summary and Done event
         with tracer.start_as_current_span("mbiu.summarise") as span:
@@ -687,7 +724,28 @@ async def _evaluate_single_clause(
         )
 
 
-async def evaluate_contract(
+async def _run_clause_pipeline(
+    clauses: list[SegmentedClause],
+    llm: Gemini | None,
+    queue: asyncio.Queue[StreamEvent | None],
+) -> None:
+    """Check clauses the browser sent back, without re-reading or re-mapping the contract."""
+    try:
+        effective_llm = await _provider(llm, clauses, queue)
+        if effective_llm is not None:
+            await _compare_clauses(
+                clauses,
+                effective_llm,
+                queue,
+                deadline=_deadline(len(clauses)),
+                clause_links_map={},
+                conflicts_by_clause={},
+            )
+    finally:
+        await queue.put(None)
+
+
+def evaluate_contract(
     pdf_bytes: bytes,
     *,
     llm: Gemini | None = None,
@@ -699,14 +757,45 @@ async def evaluate_contract(
     all references upon completion, error, or client cancellation.
     Emits periodic HeartbeatEvent every heartbeat_interval_s seconds.
     """
-    queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
-    worker_task = asyncio.create_task(
-        _run_evaluation_pipeline(
-            pdf_bytes=pdf_bytes,
-            llm=llm,
-            queue=queue,
-        )
+    return _stream(
+        lambda queue: _run_evaluation_pipeline(pdf_bytes=pdf_bytes, llm=llm, queue=queue),
+        heartbeat_interval_s,
     )
+
+
+def evaluate_clauses(
+    clauses: list[Clause],
+    *,
+    llm: Gemini | None = None,
+    heartbeat_interval_s: float = 10.0,
+) -> AsyncGenerator[StreamEvent]:
+    """Stream results for clauses the browser already holds: retries and unfinished clauses.
+
+    Sends progress, clause_result and clause_failed events only. The browser keeps the
+    document, contract map and summary it already has.
+    """
+    segmented = [
+        SegmentedClause(
+            clause_id=c.clause_id,
+            section=c.section_id,
+            title=c.heading,
+            text=c.text,
+            pages=list(c.pages),
+            start_offset=c.start,
+            end_offset=c.end,
+        )
+        for c in clauses
+    ]
+    return _stream(lambda queue: _run_clause_pipeline(segmented, llm, queue), heartbeat_interval_s)
+
+
+async def _stream(
+    run: Callable[[asyncio.Queue[StreamEvent | None]], Coroutine[Any, Any, None]],
+    heartbeat_interval_s: float,
+) -> AsyncGenerator[StreamEvent]:
+    """Yield the worker's events, with a heartbeat whenever it is quiet for a while."""
+    queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
+    worker_task = asyncio.create_task(run(queue))
 
     try:
         while True:

@@ -380,7 +380,7 @@ stream_event = TypeAdapter[StreamEvent](StreamEvent)
 
 
 class ErrorCode(StrEnum):
-    """Why an upload was refused before the stream started."""
+    """Why a request was refused before the stream started."""
 
     INVALID_FILE_TYPE = "invalid_file_type"
     FILE_TOO_LARGE = "file_too_large"
@@ -391,6 +391,7 @@ class ErrorCode(StrEnum):
     BOT_CHECK_FAILED = "bot_check_failed"
     RATE_LIMITED = "rate_limited"
     SERVICE_UNAVAILABLE = "service_unavailable"
+    INVALID_REQUEST = "invalid_request"
 
 
 class ApiError(Contract):
@@ -398,3 +399,16 @@ class ApiError(Contract):
 
     code: ErrorCode
     message: str = Field(description="Plain-language message to show the artist")
+
+
+# Requests
+
+
+class ClauseEvaluationRequest(Contract):
+    """
+    Clauses the browser already holds, sent back to be checked again: a retry, the
+    clauses left unfinished when a stream dropped or the page reloaded, or "Check them".
+    """
+
+    turnstile_token: str = Field(min_length=1)
+    clauses: list[Clause] = Field(min_length=1)
