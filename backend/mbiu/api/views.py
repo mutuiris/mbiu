@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 
 from django.conf import settings
@@ -140,10 +141,10 @@ async def evaluations(request: HttpRequest) -> HttpResponseBase:
         or request.META.get("REMOTE_ADDR")
     )
 
-    # 3. Synchronous pre-flight checks (Turnstile and PDF validation) before opening stream
+    # 3. Pre-flight checks before opening the stream. Turnstile is checked only here.
     try:
-        validate_turnstile_token(turnstile_token, remote_ip=client_ip)
-        validate_upload(pdf_bytes)
+        await asyncio.to_thread(validate_turnstile_token, turnstile_token, remote_ip=client_ip)
+        await asyncio.to_thread(validate_upload, pdf_bytes)
     except Exception as exc:
         status, api_err = _map_error_to_api_error(exc)
         res = JsonResponse(api_err.model_dump(), status=status)
@@ -151,11 +152,7 @@ async def evaluations(request: HttpRequest) -> HttpResponseBase:
 
     # 4. Stream evaluation events as newline-delimited JSON (NDJSON)
     async def ndjson_stream() -> AsyncIterator[bytes]:
-        async for event in evaluate_contract(
-            pdf_bytes=pdf_bytes,
-            turnstile_token=turnstile_token,
-            client_ip=client_ip,
-        ):
+        async for event in evaluate_contract(pdf_bytes=pdf_bytes):
             yield (event.model_dump_json() + "\n").encode("utf-8")
 
     stream_response = StreamingHttpResponse(

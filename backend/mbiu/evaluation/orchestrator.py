@@ -49,7 +49,6 @@ from mbiu.documents.segment import segment_document
 from mbiu.documents.upload import validate_upload
 from mbiu.llm import LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
-from mbiu.security.turnstile import validate_turnstile_token
 
 tracer: Final = trace.get_tracer("mbiu.orchestrator")
 PROMPT_PATH: Final = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_v1.md"
@@ -112,32 +111,31 @@ def verify_quotes(
 
 async def _run_evaluation_pipeline(
     pdf_bytes: bytes,
-    turnstile_token: str,
-    client_ip: str | None,
     llm: Gemini | None,
     queue: asyncio.Queue[StreamEvent | None],
 ) -> None:
     """Core evaluation execution pipeline running concurrently with heartbeats."""
     try:
-        # Stage 1: Validation
+        # The view has already checked the Turnstile token. Tokens are single use.
+        # Blocking stages run in threads so heartbeats and other streams keep going.
         with tracer.start_as_current_span("mbiu.upload") as span:
             span.set_attribute("mbiu.stage", "upload_check")
-            validate_turnstile_token(turnstile_token, remote_ip=client_ip)
-            upload_meta = validate_upload(pdf_bytes)
+            # ponytail: the view validated this too; pass page_count in if it shows in profiles
+            upload_meta = await asyncio.to_thread(validate_upload, pdf_bytes)
             span.set_attribute("mbiu.page_count", upload_meta.page_count)
             span.set_attribute("mbiu.byte_size", upload_meta.total_bytes)
 
-        # Stage 2: In-memory text extraction (isolated subprocess)
         with tracer.start_as_current_span("mbiu.extract") as span:
             span.set_attribute("mbiu.stage", "extract")
-            extracted = extract_text_from_pdf(pdf_bytes, page_count=upload_meta.page_count)
+            extracted = await asyncio.to_thread(
+                extract_text_from_pdf, pdf_bytes, page_count=upload_meta.page_count
+            )
             span.set_attribute("mbiu.extracted_pages", extracted.total_pages)
             span.set_attribute("mbiu.skipped_pages_count", len(extracted.skipped_pages))
 
-        # Stage 3: Clause segmentation
         with tracer.start_as_current_span("mbiu.segment") as span:
             span.set_attribute("mbiu.stage", "segment")
-            segmented = segment_document(extracted)
+            segmented = await asyncio.to_thread(segment_document, extracted)
             span.set_attribute("mbiu.clause_count", segmented.total_clauses)
 
         # Build DocumentEvent payload
@@ -168,7 +166,6 @@ async def _run_evaluation_pipeline(
 
         document_event = DocumentEvent(
             type="document",
-            schema_version="1",
             payload=DocumentPayload(
                 page_count=extracted.total_pages,
                 sections=sections,
@@ -183,7 +180,6 @@ async def _run_evaluation_pipeline(
         await queue.put(
             ProgressEvent(
                 type="progress",
-                schema_version="1",
                 payload=Progress(stage=Stage.COMPARE, done=0, total=total_clauses),
             )
         )
@@ -209,7 +205,6 @@ async def _run_evaluation_pipeline(
                     await queue.put(
                         ClauseResultEvent(
                             type="clause_result",
-                            schema_version="1",
                             payload=ClauseResult(
                                 clause_id=c.clause_id,
                                 pages=c.pages,
@@ -252,14 +247,12 @@ async def _run_evaluation_pipeline(
                 await queue.put(
                     ClauseResultEvent(
                         type="clause_result",
-                        schema_version="1",
                         payload=clause_res,
                     )
                 )
                 await queue.put(
                     ProgressEvent(
                         type="progress",
-                        schema_version="1",
                         payload=Progress(stage=Stage.COMPARE, done=done_count, total=total_clauses),
                     )
                 )
@@ -320,7 +313,6 @@ async def _run_evaluation_pipeline(
             await queue.put(
                 DoneEvent(
                     type="done",
-                    schema_version="1",
                     payload=summary,
                 )
             )
@@ -465,9 +457,7 @@ async def _evaluate_single_clause(
 
 async def evaluate_contract(
     pdf_bytes: bytes,
-    turnstile_token: str,
     *,
-    client_ip: str | None = None,
     llm: Gemini | None = None,
     heartbeat_interval_s: float = 10.0,
 ) -> AsyncGenerator[StreamEvent]:
@@ -481,8 +471,6 @@ async def evaluate_contract(
     worker_task = asyncio.create_task(
         _run_evaluation_pipeline(
             pdf_bytes=pdf_bytes,
-            turnstile_token=turnstile_token,
-            client_ip=client_ip,
             llm=llm,
             queue=queue,
         )
@@ -502,7 +490,6 @@ async def evaluate_contract(
                 # Emit keepalive heartbeat
                 yield HeartbeatEvent(
                     type="heartbeat",
-                    schema_version="1",
                     payload=Heartbeat(),
                 )
                 continue
