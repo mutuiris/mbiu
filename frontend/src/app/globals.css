@@ -2,6 +2,11 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --font-fraunces: "Fraunces Variable";
+  --font-manrope: "Manrope Variable";
+}
+
 @theme inline {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), "Iowan Old Style", "Palatino Linotype", Palatino,
