@@ -20,6 +20,7 @@ from typing import Any
 
 import pytest
 from django.http import HttpResponse, StreamingHttpResponse
+from django.http.response import HttpResponseBase
 from django.test import AsyncRequestFactory
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -37,7 +38,7 @@ from mbiu.api.schemas import (
     StreamEvent,
     stream_event,
 )
-from mbiu.api.views import evaluations
+from mbiu.api.views import clause_evaluations, evaluations
 from mbiu.evaluation.orchestrator import evaluate_contract
 from mbiu.evaluation.verify import ClauseComparisonProposal
 from mbiu.llm.gemini import Gemini
@@ -437,3 +438,249 @@ def test_clauses_run_in_parallel_up_to_the_concurrency_limit(
 
     asyncio.run(run_test())
     assert peak == 2
+
+
+def _clause(clause_id: str, text: str) -> dict[str, Any]:
+    return {
+        "clause_id": clause_id,
+        "section_id": "main",
+        "number": clause_id,
+        "heading": None,
+        "text": text,
+        "pages": [1],
+        "start": 0,
+        "end": len(text),
+    }
+
+
+RESENT_CLAUSES = [
+    _clause("1", "The Company shall pay the Artist 10% of net receipts after costs."),
+    _clause("2", "The initial period shall be for a duration of two (2) years."),
+]
+
+
+async def _post_clauses(body: dict[str, Any]) -> tuple[HttpResponseBase, list[dict[str, Any]]]:
+    request = AsyncRequestFactory().post(
+        "/api/v1/clause-evaluations",
+        data=json.dumps(body),
+        content_type="application/json",
+        headers={"origin": "http://localhost:3000"},
+    )
+    response = await clause_evaluations(request)
+    lines: list[dict[str, Any]] = []
+    if isinstance(response, StreamingHttpResponse):
+        assert isinstance(response.streaming_content, AsyncIterator)
+        async for chunk in response.streaming_content:
+            lines.extend(json.loads(line) for line in chunk.decode().splitlines() if line)
+    return response, lines
+
+
+def test_resent_clauses_stream_only_their_results(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """POST /api/v1/clause-evaluations checks just the clauses sent, using the shared events."""
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.gemini", lambda: fake_llm)
+
+    async def run_test() -> None:
+        response, lines = await _post_clauses(
+            {"turnstile_token": "valid_token", "clauses": RESENT_CLAUSES}
+        )
+        assert response.status_code == 200
+        assert response["Content-Type"] == "application/x-ndjson"
+        assert response["Cache-Control"] == "no-store"
+        assert response["Access-Control-Allow-Origin"] == "http://localhost:3000"
+
+        events = [stream_event.validate_python(line) for line in lines]
+        assert all(line["schema_version"] == "1" for line in lines)
+        assert {e.type for e in events} <= {"progress", "clause_result", "heartbeat"}
+        results = [e for e in events if isinstance(e, ClauseResultEvent)]
+        assert [r.payload.clause_id for r in results] == ["1", "2"]
+        assert results[0].payload.status == "evaluated"
+        assert results[0].payload.original_text == RESENT_CLAUSES[0]["text"]
+
+    asyncio.run(run_test())
+
+
+def test_resent_clauses_fail_honestly_without_a_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With no usable provider, each resent clause gets a retryable clause_failed event."""
+    from mbiu.api.schemas import ClauseFailedEvent
+    from mbiu.llm import ErrorCategory, LLMError
+
+    def _no_provider() -> Gemini:
+        raise LLMError(ErrorCategory.UNAVAILABLE)
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.gemini", _no_provider)
+
+    async def run_test() -> None:
+        _, lines = await _post_clauses({"turnstile_token": "tok", "clauses": RESENT_CLAUSES})
+        events = [stream_event.validate_python(line) for line in lines]
+        failed = [e for e in events if isinstance(e, ClauseFailedEvent)]
+        assert [e.payload.clause_id for e in failed] == ["1", "2"]
+        assert all(e.payload.retryable for e in failed)
+
+    asyncio.run(run_test())
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"turnstile_token": "tok", "clauses": []},
+        {"turnstile_token": "tok"},
+        {"turnstile_token": "", "clauses": RESENT_CLAUSES},
+        {"turnstile_token": "tok", "clauses": [{"clause_id": "1", "text": "No pages"}]},
+        {"turnstile_token": "tok", "clauses": RESENT_CLAUSES, "contract": "extra field"},
+    ],
+)
+def test_resent_clauses_reject_invalid_requests(body: dict[str, Any]) -> None:
+    """A body that doesn't match the shared contract is refused before any model call."""
+
+    async def run_test() -> None:
+        response, _ = await _post_clauses(body)
+        assert isinstance(response, HttpResponse)
+        assert response.status_code == 400
+        assert json.loads(response.content)["code"] == "invalid_request"
+
+    asyncio.run(run_test())
+
+
+def test_resent_clauses_require_the_bot_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed Turnstile check refuses the request, as for uploads."""
+    from django.conf import settings
+
+    monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", CLOUDFLARE_TEST_SECRET_ALWAYS_FAIL)
+
+    async def run_test() -> None:
+        response, _ = await _post_clauses({"turnstile_token": "tok", "clauses": RESENT_CLAUSES})
+        assert isinstance(response, HttpResponse)
+        assert response.status_code == 400
+        assert json.loads(response.content)["code"] == "bot_check_failed"
+
+    asyncio.run(run_test())
+
+
+def test_resent_clauses_preflight() -> None:
+    """OPTIONS /api/v1/clause-evaluations answers the browser's CORS preflight."""
+
+    async def run_test() -> None:
+        request = AsyncRequestFactory().options(
+            "/api/v1/clause-evaluations", headers={"origin": "http://localhost:3000"}
+        )
+        response = await clause_evaluations(request)
+        assert response.status_code == 204
+        assert "Content-Type" in response["Access-Control-Allow-Headers"]
+
+    asyncio.run(run_test())
+
+
+def test_clauses_are_checked_most_important_first(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Money comes before boilerplate, whatever the order in the contract."""
+    from mbiu.retrieval.evidence import ClausePlan
+
+    topics = {"Notices": "boilerplate", "Royalties": "royalties", "Term": "term"}
+
+    async def plans(texts: list[str], contract_type: str | None) -> list[ClausePlan]:
+        return [
+            ClausePlan(
+                evidence=[],
+                topic=next((t for word, t in topics.items() if word in text), None),
+            )
+            for text in texts
+        ]
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.plan_clauses", plans)
+    contract = [
+        "1. Notices\nNotices are sent by email.",
+        "2. Term\nThis agreement lasts two years.",
+        "3. Royalties\nThe Artist receives 10% of net receipts.",
+    ]
+
+    async def run_test() -> list[str]:
+        events = [
+            e
+            async for e in evaluate_contract(
+                pdf_bytes=create_synthetic_text_pdf(contract), llm=fake_llm
+            )
+        ]
+        document = next(e for e in events if isinstance(e, DocumentEvent))
+        headings = {c.clause_id: c.heading for c in document.payload.clauses}
+        return [
+            headings[e.payload.clause_id] or "" for e in events if isinstance(e, ClauseResultEvent)
+        ]
+
+    order = asyncio.run(run_test())
+    assert [h for h in order if h in topics] == ["Royalties", "Term", "Notices"]
+
+
+def test_when_the_token_budget_runs_out_the_rest_are_not_checked(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After the budget is spent, remaining clauses go out as retryable not_checked failures."""
+    from django.conf import settings
+
+    from mbiu.api.schemas import ClauseFailedEvent
+
+    monkeypatch.setattr(settings, "TOKEN_BUDGET_PER_CONTRACT", 1)
+    monkeypatch.setattr(settings, "BATCH_SIZE", 1)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=fake_llm)]
+
+    events = asyncio.run(run_test())
+    checked = [e for e in events if isinstance(e, ClauseResultEvent)]
+    skipped = [e for e in events if isinstance(e, ClauseFailedEvent)]
+    assert len(checked) == 1
+    assert skipped
+    assert all(e.payload.reason == "not_checked" and e.payload.retryable for e in skipped)
+    assert isinstance(events[-1], DoneEvent)
+
+
+def test_without_a_standard_for_the_contract_type_clauses_are_explained_not_compared(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mbiu.retrieval.evidence import NO_STANDARD_NOTE, ClausePlan
+
+    async def plans(texts: list[str], contract_type: str | None) -> list[ClausePlan]:
+        return [ClausePlan([], "royalties", note=NO_STANDARD_NOTE) for _ in texts]
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.plan_clauses", plans)
+    proposal = ClauseComparisonProposal(
+        comparison=Outcome.WORSE_FOR_YOU,
+        headline="Your royalty is paid after costs",
+        what_it_says="You get 10% of net receipts.",
+        what_it_means="Costs come off before you are paid.",
+        clause_quote="10% of net receipts",
+        evidence_quote=None,
+        ask_them="Can the royalty be paid on gross receipts?",
+    )
+    llm = Gemini(FakeGeminiClient(proposal=proposal), timeout_s=10.0)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT[:1])
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=llm)]
+
+    results = [e for e in asyncio.run(run_test()) if isinstance(e, ClauseResultEvent)]
+    assert results
+    for event in results:
+        assert event.payload.comparison == "cannot_compare"
+        assert event.payload.comparison_note is not None
+        assert NO_STANDARD_NOTE in event.payload.comparison_note
+
+
+def test_summary_carries_the_corpus_version(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def version() -> str:
+        return "v7"
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.corpus_version", version)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=fake_llm)]
+
+    done = asyncio.run(run_test())[-1]
+    assert isinstance(done, DoneEvent)
+    assert done.payload.versions.corpus == "v7"

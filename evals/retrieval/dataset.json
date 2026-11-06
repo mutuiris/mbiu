@@ -1,0 +1,32 @@
+{
+  "description": "Synthetic only. Each query is a contract clause; expected is the template chunk it should find.",
+  "templates": [
+    {"key": "KE-REC-ROYALTY", "jurisdiction": "KE", "contract_type": "recording", "title": "Royalties", "text": "The Producer shall pay the Artist a royalty of not less than fifteen per cent of the gross receipts from the sale, streaming and licensing of the recordings."},
+    {"key": "KE-REC-PAYMENT", "jurisdiction": "KE", "contract_type": "recording", "title": "Payment and statements", "text": "Royalties shall be paid within thirty days after the end of each calendar quarter, together with a statement showing how the amount was calculated."},
+    {"key": "KE-REC-AUDIT", "jurisdiction": "KE", "contract_type": "recording", "title": "Audit", "text": "The Artist may, on reasonable written notice, inspect and audit the Producer's books and records relating to the recordings once in every year."},
+    {"key": "KE-REC-TERM", "jurisdiction": "KE", "contract_type": "recording", "title": "Term", "text": "This Agreement shall continue for a period of two years from the date of signing and may be renewed only by written agreement of both parties."},
+    {"key": "KE-REC-EXCLUSIVE", "jurisdiction": "KE", "contract_type": "recording", "title": "Exclusivity", "text": "During the term the Artist shall not record the same works for any other producer, and this restriction ends when the Agreement ends."},
+    {"key": "KE-REC-TERMINATE", "jurisdiction": "KE", "contract_type": "recording", "title": "Termination", "text": "Either party may terminate this Agreement by giving sixty days' written notice if the other party fails to remedy a material breach."},
+    {"key": "KE-REC-RIGHTS", "jurisdiction": "KE", "contract_type": "recording", "title": "Ownership", "text": "Copyright in the master recordings shall be owned by the Producer for the term, after which all rights revert to the Artist."},
+    {"key": "KE-ASSIGN-RIGHTS", "jurisdiction": "KE", "contract_type": "assignment", "title": "Assignment", "text": "The Assignor assigns to the Assignee the copyright in the works listed in the Schedule, for the territory and period stated in the Schedule."},
+    {"key": "INT-MGMT-COMMISSION", "jurisdiction": "international", "contract_type": "management", "title": "Commission", "text": "The Manager shall receive a commission of twenty per cent of the Artist's gross earnings from activities in the entertainment industry during the term."},
+    {"key": "INT-REC-RECOUP", "jurisdiction": "international", "contract_type": "recording", "title": "Recoupment", "text": "Advances are recoupable only from the Artist's royalties and shall never be repayable by the Artist out of other income."},
+    {"key": "KE-REC-LAW", "jurisdiction": "KE", "contract_type": "recording", "title": "Governing law", "text": "This Agreement is governed by the laws of Kenya and the courts of Kenya have jurisdiction."},
+    {"key": "KE-REC-NOTICES", "jurisdiction": "KE", "contract_type": "recording", "title": "Notices", "text": "Any notice under this Agreement shall be in writing and delivered by hand or email to the addresses set out above."}
+  ],
+  "queries": [
+    {"contract_type": "recording", "expected": "KE-REC-ROYALTY", "text": "The Label will pay the Artist ten percent of net receipts from sales and streams after deducting all costs."},
+    {"contract_type": "recording", "expected": "KE-REC-ROYALTY", "text": "Artist royalty: 12% of what the Company actually receives from digital platforms."},
+    {"contract_type": "recording", "expected": "KE-REC-PAYMENT", "text": "Royalty payments will be made once a year, at the Company's discretion, without statements."},
+    {"contract_type": "recording", "expected": "KE-REC-AUDIT", "text": "The Artist has no right to examine the Company's accounts."},
+    {"contract_type": "recording", "expected": "KE-REC-TERM", "text": "This contract lasts for seven years and the Company alone may extend it."},
+    {"contract_type": "recording", "expected": "KE-REC-EXCLUSIVE", "text": "The Artist may not work with any other label for two years after this agreement ends."},
+    {"contract_type": "recording", "expected": "KE-REC-TERMINATE", "text": "Only the Company may end this agreement, at any time and without notice."},
+    {"contract_type": "recording", "expected": "KE-REC-RIGHTS", "text": "The Company owns the master recordings forever, throughout the universe."},
+    {"contract_type": "recording", "expected": "INT-REC-RECOUP", "text": "Any advance not recovered from royalties must be paid back by the Artist personally."},
+    {"contract_type": "assignment", "expected": "KE-ASSIGN-RIGHTS", "text": "I hereby transfer all my copyright in every song I write, worldwide and forever."},
+    {"contract_type": "management", "expected": "INT-MGMT-COMMISSION", "text": "The Manager takes thirty per cent of everything the Artist earns, including after the term."},
+    {"contract_type": "recording", "expected": "KE-REC-LAW", "text": "This agreement is subject to the laws of England and only English courts may hear disputes."},
+    {"contract_type": "recording", "expected": "KE-REC-NOTICES", "text": "Notices are valid only if sent by registered post to the Company's head office."}
+  ]
+}

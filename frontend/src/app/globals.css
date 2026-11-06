@@ -1,3 +1,44 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --font-fraunces: "Fraunces Variable";
+  --font-manrope: "Manrope Variable";
+}
+
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), "Iowan Old Style", "Palatino Linotype", Palatino,
+    Georgia, serif;
+}
+
+@theme {
+  --color-mbiu-bg-light: #faf7f2;
+  --color-mbiu-bg-dark: #0a171d;
+  --color-mbiu-surface-light: #ffffff;
+  --color-mbiu-surface-dark: #12222a;
+  --color-mbiu-teal: #0f6867;
+  --color-mbiu-teal-hover: #0b5251;
+  --color-mbiu-teal-dark-btn: #189ab4;
+  --color-mbiu-warning-badge: #f6beab;
+  --color-mbiu-warning-text: #6e2a18;
+
+  /* Landing palette sampled from the reference design */
+  --color-mbiu-cream: #fcf4e5;
+  --color-mbiu-cream-deep: #f7ecd9;
+  --color-mbiu-ink: #161a26;
+  --color-mbiu-ink-muted: #4a4f59;
+  --color-mbiu-indigo: #26298c;
+  --color-mbiu-indigo-hover: #1d2072;
+  --color-mbiu-indigo-dark: #5a63e8;
+  --color-mbiu-peach: #f6c4ad;
+  --color-mbiu-peach-strong: #fad2b8;
+  --color-mbiu-watermark: #e3d1bc;
+  --color-mbiu-line: #e6d9c4;
+  --color-mbiu-card: #f9eedf;
+}
+
 :root {
   --bg-color: #fafaf9;
   --card-bg: #ffffff;
@@ -52,8 +93,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+.dark {
     --bg-color: #0c0a09;
     --card-bg: #1c1917;
     --text-primary: #f5f5f4;
@@ -96,25 +136,20 @@
     --error-bg: #450a0a;
     --error-border: #b91c1c;
     --error-text: #fecaca;
-  }
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Layout reset comes from Tailwind preflight so utility spacing keeps precedence. */
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -2295,6 +2330,28 @@ body {
 }
 
 
+/* A pull-to-refresh on a phone would lose the results */
+:root:has(.results-page) {
+  overscroll-behavior-y: contain;
+}
+
+.keep-results {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.keep-results-detail {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.resume-panel:empty {
+  display: none;
+}
+
 /* Contract viewer: beside the cards on wide screens, a full-screen sheet on phones */
 .results-page:has(.live-results-layout.has-viewer) {
   max-width: 1200px;
@@ -2378,4 +2435,79 @@ body {
   .contract-viewer .contract-viewer-close {
     display: none;
   }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* The existing upload form adopts the warm landing palette without changing its markup. */
+.landing-upload {
+  --text-primary: #161a26;
+  --text-secondary: #4a4f59;
+  --text-muted: #6b6f78;
+  --border-color: rgba(22, 26, 38, 0.16);
+  --card-bg: rgba(255, 255, 255, 0.5);
+  --primary-color: #26298c;
+  --primary-hover: #1d2072;
+  --primary-disabled: #c9cbdf;
+  --accent-color: #26298c;
+  --border-focus: #26298c;
+  --banner-bg: rgba(246, 196, 173, 0.4);
+  --banner-border: rgba(198, 116, 88, 0.55);
+  --banner-text: #5b2e20;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+}
+
+.dark .landing-upload {
+  --text-primary: #f4efe6;
+  --text-secondary: #c2c9cd;
+  --text-muted: #98a3a9;
+  --border-color: rgba(255, 255, 255, 0.16);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --primary-color: #5a63e8;
+  --primary-hover: #6b74ea;
+  --primary-disabled: #3b4152;
+  --accent-color: #a9b0ff;
+  --border-focus: #a9b0ff;
+  --banner-bg: rgba(246, 196, 173, 0.12);
+  --banner-border: rgba(246, 196, 173, 0.35);
+  --banner-text: #f3c9b8;
+}
+
+.landing-upload .privacy-card {
+  background: transparent;
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.landing-upload .privacy-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.landing-upload .dropzone-area {
+  border-radius: 20px;
+  box-shadow: none;
+}
+
+.landing-upload .submit-btn {
+  border-radius: 999px;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 18px 36px -18px rgba(38, 41, 140, 0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Legacy primary buttons flip to a light fill in dark mode, so the label must flip too. */
+.dark .start-demo-btn,
+.dark .upload-submit-btn {
+  color: var(--bg-color);
 }

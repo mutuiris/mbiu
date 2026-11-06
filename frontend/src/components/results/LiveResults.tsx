@@ -24,6 +24,12 @@ import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
 
+/** Shown when time or the token budget ran out before every clause was checked. */
+export function notCheckedMessage(count: number): string {
+  const clauses = count === 1 ? "1 clause isn't" : `${count} clauses aren't`;
+  return `Mbiu checked the most important clauses first. ${clauses} checked yet.`;
+}
+
 // pdf.js needs the browser, so the viewer is never rendered on the server
 const ContractViewer = dynamic(() => import("@/components/viewer/ContractViewer"), { ssr: false });
 
@@ -296,6 +302,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   );
 
   const totalEvaluated = results.length + matches.length + failures.length;
+  const notCheckedCount = failures.filter((f) => f.reason === "not_checked").length;
   // Every clause failed because no provider was reachable: same message as a failed upload
   const isEverythingUnavailable =
     !!document &&
@@ -367,6 +374,12 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         <CollapsedMatches matches={matches} clauseLookup={clauseLookup} />
 
         {/* Failed Clauses (if any) */}
+        {notCheckedCount > 0 && (
+          <p className="status-alert info" role="status">
+            {notCheckedMessage(notCheckedCount)}
+          </p>
+        )}
+
         {failures.length > 0 && (
           <section
             className="failed-clauses-section"
