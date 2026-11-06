@@ -1,0 +1,52 @@
+name: Corpus pipeline
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays. Also keeps the free Supabase project from pausing
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: corpus-pipeline
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Off until the corpus secrets exist: set the repo variable CORPUS_PIPELINE_ENABLED=true
+    if: vars.CORPUS_PIPELINE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: corpus
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_ALLOWED_HOSTS: localhost
+      # Direct connection (session pooler): migrations and bulk writes, not PgBouncer
+      DATABASE_URL: ${{ secrets.DATABASE_DIRECT_URL }}
+      # Required by the settings; the pipeline never checks bot tokens
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      STORAGE_S3_ENDPOINT: ${{ secrets.STORAGE_S3_ENDPOINT }}
+      STORAGE_S3_KEY: ${{ secrets.STORAGE_S3_KEY }}
+      STORAGE_S3_SECRET: ${{ secrets.STORAGE_S3_SECRET }}
+      STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.24"
+      - run: uv sync --locked --no-dev --group pipeline
+      - name: Generate a Django secret key
+        run: echo "DJANGO_SECRET_KEY=$(uv run python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+      - run: uv run python manage.py migrate
+      - name: Fetch, store, parse and split the sources
+        run: uv run python -m mbiu.pipeline fetch
+      - name: Tag, check, embed and publish a new corpus version
+        run: uv run python -m mbiu.pipeline publish
