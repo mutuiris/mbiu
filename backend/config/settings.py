@@ -35,7 +35,8 @@ class Env(BaseSettings):
     cors_allowed_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
     max_pages: int = 40
-    turnstile_secret_key: str = "1x0000000000000000000000000000000AA"
+    # Required: a default here would be a bot check that always passes
+    turnstile_secret_key: str = Field(min_length=1)
     turnstile_verify_url: str = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 
