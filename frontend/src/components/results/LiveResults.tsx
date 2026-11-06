@@ -236,17 +236,15 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
   const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
-    if (typeof window !== "undefined") {
-      const cardElement = window.document.getElementById(`card-${clauseId}`);
-      if (cardElement) {
-        cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
-        return;
-      }
-      const listItem = window.document.getElementById(`clause-item-${clauseId}`);
-      if (listItem) {
-        listItem.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
+    const target =
+      window.document.getElementById(`card-${clauseId}`) ??
+      window.document.getElementById(`clause-item-${clauseId}`);
+    if (!target) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    // Move keyboard and screen-reader focus to the card, not just the viewport
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
   }, []);
 
   // Compute linked clauses metadata for each card

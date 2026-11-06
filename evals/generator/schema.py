@@ -72,7 +72,7 @@ GOLDEN_CONTRACT_SCHEMA: dict[str, object] = {
     "properties": {
         "schema_version": {"type": "integer", "const": SCHEMA_VERSION},
         "generator_version": {"type": "string", "minLength": 1},
-        "contract_id": {"type": "string", "pattern": r"^mb19-[a-z0-9-]+$"},
+        "contract_id": {"type": "string", "pattern": r"^golden-[a-z0-9-]+$"},
         "title": {"type": "string", "minLength": 1},
         "contract_type": {"type": "string", "const": "recording"},
         "jurisdiction": {"type": "string", "const": "Kenya"},

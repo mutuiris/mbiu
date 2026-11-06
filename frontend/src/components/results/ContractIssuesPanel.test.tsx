@@ -75,7 +75,7 @@ const mockClauseResult: ClauseResult = {
   model_version: "gemini-3.8-flash",
 };
 
-describe("ContractIssuesPanel (MB-15)", () => {
+describe("ContractIssuesPanel", () => {
   it("renders nothing when issues array is empty or undefined", () => {
     const markupEmpty = renderToStaticMarkup(<ContractIssuesPanel issues={[]} />);
     expect(markupEmpty).toBe("");
@@ -176,7 +176,7 @@ describe("ContractIssuesPanel (MB-15)", () => {
   });
 });
 
-describe("ClauseCard 'Also affected by' & clause_updated Notice (MB-15)", () => {
+describe("ClauseCard 'Also affected by' & clause_updated Notice", () => {
   it("renders 'Also affected by' links with kind badges on ClauseCard", () => {
     const onSelectClause = vi.fn();
     const linkedClauses = [
@@ -265,7 +265,7 @@ describe("ClauseCard 'Also affected by' & clause_updated Notice (MB-15)", () => 
   });
 });
 
-describe("Stream parsing for contract_map and clause_updated (MB-15)", () => {
+describe("Stream parsing for contract_map and clause_updated", () => {
   it("parses contract_map event from stream", async () => {
     const contractMapLine = JSON.stringify({
       type: "contract_map",
@@ -327,7 +327,7 @@ describe("Stream parsing for contract_map and clause_updated (MB-15)", () => {
   });
 });
 
-describe("Responsive design at 360px wide (MB-15)", () => {
+describe("Responsive design at 360px wide", () => {
   it("includes responsive rules for narrow viewports (<=400px down to 360px)", () => {
     const cssPath = resolve(process.cwd(), "src/app/globals.css");
     const cssContent = readFileSync(cssPath, "utf-8");

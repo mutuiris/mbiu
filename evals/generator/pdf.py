@@ -101,7 +101,7 @@ def render_contract(title: str, clauses: Sequence[TemplateClauseSpec]) -> Render
             {
                 "title": title,
                 "author": "Mbiu synthetic contract generator",
-                "subject": "MB-19 golden set; synthetic only",
+                "subject": "Golden set; synthetic only",
                 "keywords": "synthetic, evaluation, recording agreement",
                 "creator": "evals.generator.build",
                 "producer": "PyMuPDF",
@@ -111,7 +111,7 @@ def render_contract(title: str, clauses: Sequence[TemplateClauseSpec]) -> Render
         )
         writer = _PageWriter(document)
         writer.heading("SYNTHETIC RECORDING AGREEMENT")
-        writer.line("MB-19 golden set. Synthetic only. Not a real contract.", size=9)
+        writer.line("Golden set. Synthetic only. Not a real contract.", size=9)
         writer.blank()
         writer.paragraph(title)
         writer.paragraph(

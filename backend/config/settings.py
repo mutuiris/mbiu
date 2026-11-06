@@ -25,6 +25,9 @@ class Env(BaseSettings):
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model_main: str = "gemini-3.8-flash"
     gemini_model_light: str = "gemini-3.5-flash-lite"
+    openai_api_key: SecretStr = SecretStr("")
+    openai_model: str = "gpt-4o-mini"
+    failover_enabled: bool = False
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
     deadline_per_clause_s: float = Field(default=3.0, gt=0)
@@ -71,6 +74,9 @@ OTEL_SERVICE_NAME = env.otel_service_name
 GEMINI_API_KEY = env.gemini_api_key.get_secret_value()
 GEMINI_MODEL_MAIN = env.gemini_model_main
 GEMINI_MODEL_LIGHT = env.gemini_model_light
+OPENAI_API_KEY = env.openai_api_key.get_secret_value()
+OPENAI_MODEL = env.openai_model
+FAILOVER_ENABLED = env.failover_enabled
 BATCH_TIMEOUT_S = env.batch_timeout_s
 BATCH_SIZE = env.batch_size
 DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s

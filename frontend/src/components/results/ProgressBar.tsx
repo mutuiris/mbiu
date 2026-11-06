@@ -38,7 +38,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           {isStreaming && <span className="progress-pulse" />}
           {isStreaming ? stageName : "Analysis Complete"}
         </span>
-        <span className="progress-stats">
+        <span className="progress-stats" aria-live="polite">
           {current} of {total} clauses checked ({percentage}%)
         </span>
       </div>
