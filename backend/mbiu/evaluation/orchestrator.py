@@ -22,6 +22,8 @@ from mbiu.api.schemas import (
     SCHEMA_VERSION,
     Ask,
     Clause,
+    ClauseFailedEvent,
+    ClauseFailure,
     ClauseNote,
     ClauseResult,
     ClauseResultEvent,
@@ -30,6 +32,7 @@ from mbiu.api.schemas import (
     DocumentEvent,
     DocumentPayload,
     DoneEvent,
+    FailureReason,
     Heartbeat,
     HeartbeatEvent,
     Outcome,
@@ -245,7 +248,22 @@ async def _run_evaluation_pipeline(
         )
         await queue.put(document_event)
 
-        effective_llm = llm if llm is not None else gemini()
+        try:
+            effective_llm = llm if llm is not None else gemini()
+        except LLMError as err:
+            # No usable provider (for example a missing or revoked key). Say so per clause
+            # instead of breaking the stream, so the artist gets an honest retry.
+            for c in segmented.clauses:
+                await queue.put(
+                    ClauseFailedEvent(
+                        payload=ClauseFailure(
+                            clause_id=c.clause_id,
+                            reason=FailureReason(err.category.value),
+                            retryable=True,
+                        )
+                    )
+                )
+            return
         total_clauses = len(segmented.clauses)
         overall_deadline = time.monotonic() + min(
             settings.DEADLINE_CAP_S,

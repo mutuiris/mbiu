@@ -434,3 +434,27 @@ def test_opentelemetry_traces_stages_without_contract_text(fake_llm: Gemini) -> 
                     assert canary not in str(v)
 
     asyncio.run(run_test())
+
+
+def test_missing_provider_sends_clause_failed_instead_of_breaking(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With no usable model provider, every clause fails honestly and the stream ends cleanly."""
+    from mbiu.api.schemas import ClauseFailedEvent
+    from mbiu.llm import ErrorCategory, LLMError
+
+    def _no_provider() -> Gemini:
+        raise LLMError(ErrorCategory.UNAVAILABLE)
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.gemini", _no_provider)
+
+    async def run_test() -> None:
+        pdf_bytes = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
+        events = [e async for e in evaluate_contract(pdf_bytes=pdf_bytes, heartbeat_interval_s=5.0)]
+        document = next(e for e in events if isinstance(e, DocumentEvent))
+        failed = [e for e in events if isinstance(e, ClauseFailedEvent)]
+        clause_ids = {c.clause_id for c in document.payload.clauses}
+        assert {e.payload.clause_id for e in failed} == clause_ids
+        assert all(e.payload.reason == "unavailable" and e.payload.retryable for e in failed)
+
+    asyncio.run(run_test())

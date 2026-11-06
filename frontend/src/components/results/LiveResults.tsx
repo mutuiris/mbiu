@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import type {
   DocumentPayload,
   Progress,
@@ -23,6 +24,9 @@ import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
 
+// pdf.js needs the browser, so the viewer is never rendered on the server
+const ContractViewer = dynamic(() => import("@/components/viewer/ContractViewer"), { ssr: false });
+
 export interface LiveResultsProps {
   /**
    * An optional async generator stream to consume automatically on mount.
@@ -40,6 +44,10 @@ export interface LiveResultsProps {
    * Initial document if already split.
    */
   initialDocument?: DocumentPayload | null;
+  /**
+   * The artist's uploaded file, shown in the contract viewer. Kept in memory only.
+   */
+  file?: File | null;
 }
 
 export const LiveResults: React.FC<LiveResultsProps> = ({
@@ -47,6 +55,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   onRetryClause,
   onRetryAll,
   initialDocument = null,
+  file = null,
 }) => {
   const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
   const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
@@ -61,6 +70,8 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryingClauseId, setRetryingClauseId] = useState<string | null>(null);
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
+  const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   // Fast clause lookup for numbering, headings, and pages
   const clauseLookup = useMemo(() => {
@@ -285,99 +296,132 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   );
 
   const totalEvaluated = results.length + matches.length + failures.length;
+  // Every clause failed because no provider was reachable: same message as a failed upload
+  const isEverythingUnavailable =
+    !!document &&
+    document.clauses.length > 0 &&
+    failures.length === document.clauses.length &&
+    failures.every((f) => f.reason === "unavailable");
+
+  const viewerClause = useMemo(() => {
+    const clause = document?.clauses.find((c) => c.clause_id === viewerClauseId);
+    return clause ? { clauseId: clause.clause_id, pages: clause.pages, text: clause.text } : null;
+  }, [document, viewerClauseId]);
+
+  const openInViewer = useCallback((clauseId: string) => {
+    setViewerClauseId(clauseId);
+    setIsViewerOpen(true);
+  }, []);
+
+  const closeViewer = useCallback(() => {
+    setIsViewerOpen(false);
+    // Back to the card the artist came from
+    if (viewerClauseId) handleSelectClause(viewerClauseId);
+  }, [viewerClauseId, handleSelectClause]);
 
   return (
-    <div className="live-results-container">
-      {/* Service Unavailable Banner */}
-      {isServiceUnavailable && (
-        <ServiceUnavailableBanner onRetryAll={onRetryAll} />
-      )}
+    <div className={`live-results-layout${file ? " has-viewer" : ""}`}>
+      <div className="live-results-container">
+        {/* Service Unavailable Banner */}
+        {(isServiceUnavailable || isEverythingUnavailable) && (
+          <ServiceUnavailableBanner onRetryAll={onRetryAll} />
+        )}
 
-      {/* General Error Alert */}
-      {errorMessage && (
-        <div className="status-alert error" role="alert">
-          <strong>Error: </strong>
-          {errorMessage}
-        </div>
-      )}
+        {/* General Error Alert */}
+        {errorMessage && (
+          <div className="status-alert error" role="alert">
+            <strong>Error: </strong>
+            {errorMessage}
+          </div>
+        )}
 
-      {/* Progress Bar */}
-      <ProgressBar
-        progress={progress}
-        isStreaming={isStreaming}
-        totalClauses={document?.clauses.length}
-        evaluatedCount={totalEvaluated}
-      />
-
-      {/* Document Clause Overview (Visible as soon as document event arrives) */}
-      {document && (
-        <ClauseList
-          document={document}
-          resultsByClauseId={resultsByClauseId}
-          failedByClauseId={failedByClauseId}
-          selectedClauseId={selectedClauseId}
-          onSelectClause={handleSelectClause}
+        {/* Progress Bar */}
+        <ProgressBar
+          progress={progress}
+          isStreaming={isStreaming}
+          totalClauses={document?.clauses.length}
+          evaluatedCount={totalEvaluated}
         />
-      )}
 
-      {/* Contract-Wide Issues Panel (Sits above all cards, highest danger first) */}
-      {contractMap && contractMap.issues && contractMap.issues.length > 0 && (
-        <ContractIssuesPanel
-          issues={contractMap.issues}
-          clauseLookup={clauseLookup}
-          onSelectClause={handleSelectClause}
-        />
-      )}
+        {/* Document Clause Overview (Visible as soon as document event arrives) */}
+        {document && (
+          <ClauseList
+            document={document}
+            resultsByClauseId={resultsByClauseId}
+            failedByClauseId={failedByClauseId}
+            selectedClauseId={selectedClauseId}
+            onSelectClause={handleSelectClause}
+          />
+        )}
 
-      {/* Collapsed Standard Matches Banner */}
-      <CollapsedMatches matches={matches} clauseLookup={clauseLookup} />
+        {/* Contract-Wide Issues Panel (Sits above all cards, highest danger first) */}
+        {contractMap && contractMap.issues && contractMap.issues.length > 0 && (
+          <ContractIssuesPanel
+            issues={contractMap.issues}
+            clauseLookup={clauseLookup}
+            onSelectClause={handleSelectClause}
+          />
+        )}
 
-      {/* Failed Clauses (if any) */}
-      {failures.length > 0 && (
+        {/* Collapsed Standard Matches Banner */}
+        <CollapsedMatches matches={matches} clauseLookup={clauseLookup} />
+
+        {/* Failed Clauses (if any) */}
+        {failures.length > 0 && (
+          <section
+            className="failed-clauses-section"
+            aria-label="Clauses that could not be checked"
+          >
+            {failures.map((f) => {
+              const extra = clauseLookup.get(f.clause_id);
+              return (
+                <ClauseFailedCard
+                  key={f.clause_id}
+                  failure={f}
+                  clauseNumber={extra?.number}
+                  clauseHeading={extra?.heading}
+                  onRetry={handleRetry}
+                  isRetrying={retryingClauseId === f.clause_id}
+                />
+              );
+            })}
+          </section>
+        )}
+
+        {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
         <section
-          className="failed-clauses-section"
-          aria-label="Clauses that could not be checked"
+          className="results-cards-feed"
+          aria-label="Evaluated Clauses in Impact Order"
         >
-          {failures.map((f) => {
-            const extra = clauseLookup.get(f.clause_id);
+          {results.map((result) => {
+            const extra = clauseLookup.get(result.clause_id);
             return (
-              <ClauseFailedCard
-                key={f.clause_id}
-                failure={f}
+              <ClauseCard
+                key={result.clause_id}
+                result={result}
                 clauseNumber={extra?.number}
                 clauseHeading={extra?.heading}
-                onRetry={handleRetry}
-                isRetrying={retryingClauseId === f.clause_id}
+                isHighlighted={selectedClauseId === result.clause_id}
+                isUpdated={updatedClauseIds.has(result.clause_id)}
+                linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
+                onSelectClause={handleSelectClause}
+                onJumpToPdfClause={file ? openInViewer : undefined}
               />
             );
           })}
         </section>
+
+        {/* Final Summary Card upon done event */}
+        {summary && <SummaryCard summary={summary} />}
+      </div>
+      {file && (
+        <ContractViewer
+          file={file}
+          clause={viewerClause}
+          isOpen={isViewerOpen}
+          onClose={closeViewer}
+        />
       )}
-
-      {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
-      <section
-        className="results-cards-feed"
-        aria-label="Evaluated Clauses in Impact Order"
-      >
-        {results.map((result) => {
-          const extra = clauseLookup.get(result.clause_id);
-          return (
-            <ClauseCard
-              key={result.clause_id}
-              result={result}
-              clauseNumber={extra?.number}
-              clauseHeading={extra?.heading}
-              isHighlighted={selectedClauseId === result.clause_id}
-              isUpdated={updatedClauseIds.has(result.clause_id)}
-              linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
-              onSelectClause={handleSelectClause}
-            />
-          );
-        })}
-      </section>
-
-      {/* Final Summary Card upon done event */}
-      {summary && <SummaryCard summary={summary} />}
     </div>
   );
 };
