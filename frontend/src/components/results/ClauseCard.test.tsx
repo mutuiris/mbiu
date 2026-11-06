@@ -101,7 +101,7 @@ describe("ClauseCard Component", () => {
     expect(html).toContain("Example figures — adjust below");
     const shillingsCalcIndex = html.indexOf("data-testid=\"shillings-calculator\"");
 
-    // 5. Also affected by (from MB-15)
+    // 5. Also affected by
     expect(html).toContain("data-testid=\"also-affected-by\"");
     expect(html).toContain("Also affected by:");
     expect(html).toContain("Clause 19 (Suspension)");

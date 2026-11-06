@@ -31,24 +31,24 @@ describe("impact.ts calculations in shillings", () => {
       ).toBe(true);
     });
 
-    it("returns true when money_basis is present", () => {
+    it("returns false when only money_basis is stated (no rate to calculate)", () => {
       expect(
         hasClearFormula({
           deductions: [],
           money_basis: { quote: "net receipts", value: "net" },
           royalty_rate_percent: null,
         }),
-      ).toBe(true);
+      ).toBe(false);
     });
 
-    it("returns true when deductions are listed", () => {
-      expect(
-        hasClearFormula({
-          deductions: [{ quote: "recording costs", value: "recording costs" }],
-          money_basis: null,
-          royalty_rate_percent: null,
-        }),
-      ).toBe(true);
+    it("never invents a rate when only deductions are listed", () => {
+      const inputs: ImpactInputs = {
+        deductions: [{ quote: "recording costs", value: "recording costs" }],
+        money_basis: null,
+        royalty_rate_percent: null,
+      };
+      expect(hasClearFormula(inputs)).toBe(false);
+      expect(calculateImpact(inputs)).toBeNull();
     });
   });
 

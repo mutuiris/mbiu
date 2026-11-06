@@ -1590,9 +1590,7 @@ body {
   }
 }
 
-/* ==========================================================================
-   Full Result Card & Shillings Calculator (MB-21)
-   ========================================================================== */
+/* Full result card and shillings calculator */
 
 /* Status, Topic, and Location */
 .card-status-topic-location {
@@ -2244,9 +2242,7 @@ body {
   100% { transform: scale(1.3); opacity: 1; }
 }
 
-/* ==========================================================================
-   Full Card 360px Mobile Viewport Safety Guarantee
-   ========================================================================== */
+/* Keep every card field inside a 360px-wide screen */
 @media (max-width: 480px) {
   .result-card {
     padding: 1rem 0.85rem;

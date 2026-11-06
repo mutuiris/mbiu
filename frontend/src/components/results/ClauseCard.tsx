@@ -193,7 +193,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
       aria-labelledby={`headline-${result.clause_id}`}
       data-testid={`card-${result.clause_id}`}
     >
-      {/* Whole-contract update notice (from MB-15) */}
+      {/* Whole-contract update notice */}
       {isUpdated && (
         <div
           className="card-updated-notice"
@@ -218,7 +218,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         </h3>
       </div>
 
-      {/* 2. Status, topic and location (Tapping jumps to clause in PDF viewer MB-22) */}
+      {/* 2. Status, topic and location (tapping jumps to the clause in the PDF viewer) */}
       <div className="card-status-topic-location" data-testid="status-topic-location">
         <button
           type="button"
@@ -281,7 +281,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
           </div>
         )}
 
-        {/* 5. Also affected by (from MB-15) */}
+        {/* 5. Also affected by */}
         {linkedClauses && linkedClauses.length > 0 && (
           <div className="card-affected-by" data-testid="also-affected-by">
             <span className="affected-label">Also affected by:</span>

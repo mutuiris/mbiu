@@ -34,15 +34,12 @@ export const DEFAULT_EXAMPLE_GROSS = 100_000;
 export const DEFAULT_EXAMPLE_DEDUCTIONS = 40_000;
 
 /**
- * Checks whether the clause impact inputs contain a clear formula
- * (e.g. specified royalty percentage, gross/net basis, or listed deductions).
+ * A clear formula needs a stated royalty rate. Without one there is nothing to calculate,
+ * and inventing a rate would show the artist a number their contract never gave.
  */
 export function hasClearFormula(inputs: ImpactInputs | null | undefined): boolean {
-  if (!inputs) return false;
-  const hasRate = inputs.royalty_rate_percent != null && inputs.royalty_rate_percent.value != null;
-  const hasBasis = inputs.money_basis != null && inputs.money_basis.value != null;
-  const hasDeductions = Array.isArray(inputs.deductions) && inputs.deductions.length > 0;
-  return Boolean(hasRate || hasBasis || hasDeductions);
+  const rate = inputs?.royalty_rate_percent?.value;
+  return rate != null && Number.isFinite(rate);
 }
 
 /**
@@ -81,9 +78,7 @@ export function calculateImpact(
   // Ensure gross revenue is a non-negative finite number
   const safeGross = Math.max(0, Number.isFinite(customGross) ? customGross : 0);
 
-  // Royalty rate percentage (default to 15% if only deductions are stated)
-  const rawRate = inputs?.royalty_rate_percent?.value;
-  const safeRate = Number.isFinite(rawRate) && rawRate != null ? Math.max(0, rawRate) : 15;
+  const safeRate = Math.max(0, inputs?.royalty_rate_percent?.value ?? 0);
 
   // Basis: "net" if money_basis says net or if deductions are defined; otherwise "gross"
   const rawBasis = inputs?.money_basis?.value;
