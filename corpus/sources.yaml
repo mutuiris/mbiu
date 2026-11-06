@@ -11,24 +11,26 @@
 sources:
   - url: https://www.wipo.int/edocs/pubdocs/en/wipo-pub-939-2024-en-how-to-make-a-living-from-music.pdf
     licence: CC BY 4.0
-    reviewing_body: WIPO (publisher)
-    contract_type: artist management
+    reviewing_body: World Intellectual Property Organization (WIPO)
+    contract_type: management
     jurisdiction: international
 
+  # KECOBO states CC BY-SA without a version. Confirm the version and whether
+  # ShareAlike covers adapted text before publishing these three to the corpus.
   - url: https://copyright.go.ke/sites/default/files/downloads/MUSIC%20LICENSE%20AGREEMENT%20.pdf
-    licence: CC-BY SA (version not stated; needs confirmation)
-    reviewing_body: Kenya Copyright Board (KECOBO) (publisher)
-    contract_type: music licensing
+    licence: CC BY-SA
+    reviewing_body: Kenya Copyright Board (KECOBO)
+    contract_type: licensing
     jurisdiction: KE
 
   - url: https://copyright.go.ke/sites/default/files/downloads/RECORDING-PRODUCER%20AGREEMENT.pdf
-    licence: CC-BY SA (version not stated; needs confirmation)
-    reviewing_body: Kenya Copyright Board (KECOBO) (publisher)
-    contract_type: recording / producer
+    licence: CC BY-SA
+    reviewing_body: Kenya Copyright Board (KECOBO)
+    contract_type: recording
     jurisdiction: KE
 
   - url: https://copyright.go.ke/sites/default/files/downloads/DEED%20OF%20ASSIGNMENT_0.pdf
-    licence: CC-BY SA (version not stated; needs confirmation)
-    reviewing_body: Kenya Copyright Board (KECOBO) (publisher)
-    contract_type: assignment of rights
+    licence: CC BY-SA
+    reviewing_body: Kenya Copyright Board (KECOBO)
+    contract_type: assignment
     jurisdiction: KE
