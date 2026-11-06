@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "generator_version": "1.0.0",
-  "contract_id": "mb19-clean-control",
-  "title": "Clean control recording agreement",
+  "contract_id": "golden-cross-clause-conflict",
+  "title": "Recording agreement with a conflicting term",
   "contract_type": "recording",
   "jurisdiction": "Kenya",
-  "standard_template_id": "mb19-recording-standard-v1",
-  "pdf": "pdfs/mb19-clean-control.pdf",
+  "standard_template_id": "golden-recording-standard-v1",
+  "pdf": "pdfs/golden-cross-clause-conflict.pdf",
   "standard_clauses": [
     {
       "clause_id": "1.1",
@@ -93,9 +93,11 @@
         1
       ],
       "text": "The Term of this Agreement begins on the Effective Date and continues for two (2) years, unless it is terminated earlier in accordance with this Agreement.",
-      "expected_outcome": "matches_standard",
+      "expected_outcome": "worse_for_you",
       "planted_risk_ids": [],
-      "conflict_ids": []
+      "conflict_ids": [
+        "term_length_conflict"
+      ]
     },
     {
       "clause_id": "3.1",
@@ -180,10 +182,12 @@
       "pages": [
         1
       ],
-      "text": "The parties may renew this Agreement for a further period only by a written agreement signed by both parties.",
-      "expected_outcome": "matches_standard",
+      "text": "Notwithstanding clause 2.1, the Term of this Agreement is five (5) years from the Effective Date and renews automatically for further five (5) year periods unless notice is given.",
+      "expected_outcome": "worse_for_you",
       "planted_risk_ids": [],
-      "conflict_ids": []
+      "conflict_ids": [
+        "term_length_conflict"
+      ]
     },
     {
       "clause_id": "8.1",
@@ -219,5 +223,20 @@
       "conflict_ids": []
     }
   ],
-  "risks": []
+  "risks": [
+    {
+      "risk_id": "cross_clause_conflict",
+      "kind": "cross_clause",
+      "description": "The renewal clause says the Term is five years notwithstanding the two-year Term in clause 2.1, so the contract contradicts itself.",
+      "clause_ids": [
+        "2.1",
+        "7.1"
+      ],
+      "pages": [
+        1
+      ],
+      "expected_outcome": null,
+      "expected_issue_kind": "term_length_conflict"
+    }
+  ]
 }

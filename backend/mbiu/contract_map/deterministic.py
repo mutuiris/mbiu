@@ -1,4 +1,4 @@
-"""Deterministic link extraction for whole-contract mapping (MB-14).
+"""Deterministic link extraction for whole-contract mapping.
 
 Extracts links between clauses purely through code without invoking an LLM:
 1. Cross-references ("clause 12", "clause 2.1", "Schedule B", "Annex A")
@@ -212,7 +212,7 @@ def find_defined_term_links(
 
     Args:
         clauses: List of clauses in the segmented document.
-        defined_terms: Detailed defined terms extracted from MB-03.
+        defined_terms: Detailed defined terms extracted by the clause splitter.
 
     Returns:
         List of ClauseLink objects with kind='defined_term'.

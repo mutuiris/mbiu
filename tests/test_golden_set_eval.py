@@ -1,4 +1,4 @@
-"""Hermetic tests for the MB-19 golden set and quality gate.
+"""Hermetic tests for the golden set and quality gate.
 
 No test in this module reaches the network. The Gemini path is exercised with a
 fake HTTP response so standard ``pytest`` runs stay fast and offline.
@@ -11,6 +11,7 @@ import sys
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pymupdf
@@ -53,12 +54,12 @@ EXPECTED_RISK_COVERAGE = {
     "cross_clause_conflict": 2,
 }
 RISK_CONTRACT_IDS = {
-    "mb19-perpetual-rights",
-    "mb19-exclusivity-beyond-term",
-    "mb19-missing-payment-dates",
-    "mb19-deductions-before-royalties",
-    "mb19-cross-clause-conflict",
-    "mb19-combined-risks",
+    "golden-perpetual-rights",
+    "golden-exclusivity-beyond-term",
+    "golden-missing-payment-dates",
+    "golden-deductions-before-royalties",
+    "golden-cross-clause-conflict",
+    "golden-combined-risks",
 }
 
 
@@ -87,13 +88,13 @@ def _normalise(text: str) -> str:
 def test_builds_contracts_sidecars_and_promptfoo_cases(built: BuildResult) -> None:
     contract_ids = {contract.contract_id for contract in built.contracts}
     assert contract_ids == {
-        "mb19-clean-control",
-        "mb19-perpetual-rights",
-        "mb19-exclusivity-beyond-term",
-        "mb19-missing-payment-dates",
-        "mb19-deductions-before-royalties",
-        "mb19-cross-clause-conflict",
-        "mb19-combined-risks",
+        "golden-clean-control",
+        "golden-perpetual-rights",
+        "golden-exclusivity-beyond-term",
+        "golden-missing-payment-dates",
+        "golden-deductions-before-royalties",
+        "golden-cross-clause-conflict",
+        "golden-combined-risks",
     }
     assert len(built.contracts) == 7
 
@@ -215,7 +216,7 @@ def test_lenient_predictions_fail_every_planted_risk(built: BuildResult) -> None
     reports = {
         report.contract_id: report for report in run_gate(built.dataset_dir, "lenient")
     }
-    assert reports["mb19-clean-control"].passed
+    assert reports["golden-clean-control"].passed
     failures = [failure for report in reports.values() for failure in report.failures]
     assert len(failures) == 10
     reasons = {failure.reason for failure in failures}
@@ -256,7 +257,7 @@ def test_provider_reference_mode_never_calls_the_network(
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.setattr(httpx.Client, "post", _explode)
 
-    contract = _expectation(built, "mb19-combined-risks")
+    contract = _expectation(built, "golden-combined-risks")
     result = call_api(
         "rendered prompt",
         {"config": {"mode": "reference"}},
@@ -273,28 +274,24 @@ def test_provider_reference_mode_never_calls_the_network(
 def test_provider_gemini_mode_uses_mocked_api(
     built: BuildResult, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    contract = _expectation(built, "mb19-perpetual-rights")
+    contract = _expectation(built, "golden-perpetual-rights")
     reference = evaluate_contract(contract)
-    payload = json.dumps(
-        {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [{"text": json.dumps(reference.to_dict())}],
-                    }
-                }
-            ]
-        }
-    )
+    calls: list[dict[str, object]] = []
 
-    def _respond(self: httpx.Client, url: str, **kwargs: object) -> httpx.Response:
-        del self, kwargs
-        request = httpx.Request("POST", url)
-        return httpx.Response(200, content=payload, request=request)
+    class _Interactions:
+        def create(self, **kwargs: object) -> SimpleNamespace:
+            calls.append(kwargs)
+            return SimpleNamespace(
+                status="completed", output_text=json.dumps(reference.to_dict())
+            )
+
+    class _Client:
+        def __init__(self, **kwargs: object) -> None:
+            self.interactions = _Interactions()
 
     monkeypatch.setattr(provider_module, "DATASETS_DIR", built.dataset_dir)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setattr(httpx.Client, "post", _respond)
+    monkeypatch.setattr("evals.generator.provider.genai.Client", _Client)
 
     result = call_api(
         "rendered prompt",
@@ -308,13 +305,14 @@ def test_provider_gemini_mode_uses_mocked_api(
     metadata = as_mapping(result["metadata"], "metadata")
     assert metadata["mode"] == "gemini"
     assert metadata["model"] == "gemini-test"
+    assert [c["store"] for c in calls] == [False]
 
 
 def test_provider_lenient_mode_is_rejected_by_the_gate(
     built: BuildResult, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(provider_module, "DATASETS_DIR", built.dataset_dir)
-    contract = _expectation(built, "mb19-missing-payment-dates")
+    contract = _expectation(built, "golden-missing-payment-dates")
     result = call_api(
         "rendered prompt",
         {"config": {"mode": "lenient"}},
@@ -331,8 +329,8 @@ def test_assertion_accepts_reference_and_rejects_lenient(
     built: BuildResult, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(assertion_module, "DATASETS_DIR", built.dataset_dir)
-    contract = _expectation(built, "mb19-cross-clause-conflict")
-    perpetual = _expectation(built, "mb19-perpetual-rights")
+    contract = _expectation(built, "golden-cross-clause-conflict")
+    perpetual = _expectation(built, "golden-perpetual-rights")
     perpetual_prediction = evaluate_contract(perpetual)
     context = {
         "vars": {"expected_file": f"expected/{contract.contract_id}.expected.json"}
@@ -375,7 +373,7 @@ def test_assertion_accepts_reference_and_rejects_lenient(
 def test_gate_requires_a_conflict_issue_even_when_both_clauses_are_flagged(
     built: BuildResult,
 ) -> None:
-    contract = _expectation(built, "mb19-cross-clause-conflict")
+    contract = _expectation(built, "golden-cross-clause-conflict")
     prediction = replace(evaluate_contract(contract), contract_issues=())
     report = evaluate_contract_gate(contract, prediction)
     assert not report.passed
@@ -383,7 +381,7 @@ def test_gate_requires_a_conflict_issue_even_when_both_clauses_are_flagged(
 
 
 def test_gate_requires_a_result_for_every_planted_clause(built: BuildResult) -> None:
-    contract = _expectation(built, "mb19-deductions-before-royalties")
+    contract = _expectation(built, "golden-deductions-before-royalties")
     prediction = evaluate_contract(contract)
     prediction = replace(
         prediction,
@@ -399,7 +397,7 @@ def test_gate_requires_a_result_for_every_planted_clause(built: BuildResult) -> 
 def test_matches_standard_with_an_explicit_risk_flag_is_flagged(
     built: BuildResult,
 ) -> None:
-    contract = _expectation(built, "mb19-perpetual-rights")
+    contract = _expectation(built, "golden-perpetual-rights")
     prediction = evaluate_contract(contract)
     prediction = replace(
         prediction,
@@ -416,7 +414,7 @@ def test_matches_standard_with_an_explicit_risk_flag_is_flagged(
 
 
 def test_clean_control_passes_with_standard_predictions(built: BuildResult) -> None:
-    contract = _expectation(built, "mb19-clean-control")
+    contract = _expectation(built, "golden-clean-control")
     report = evaluate_contract_gate(contract, lenient_prediction(contract))
     assert report.passed
     assert report.checks == 0
@@ -456,7 +454,7 @@ def test_prediction_schema_rejects_unknown_comparison() -> None:
     with pytest.raises(SchemaValidationError):
         ContractPrediction.from_dict(
             {
-                "contract_id": "mb19-clean-control",
+                "contract_id": "golden-clean-control",
                 "clause_results": [
                     {
                         "clause_id": "1.1",

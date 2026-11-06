@@ -1,4 +1,4 @@
-"""AI-assisted whole-contract map analyzer and quote verification (MB-14).
+"""AI-assisted whole-contract map analyzer and quote verification.
 
 Runs overview or batched checks using Gemini with store=False.
 Enforces the core safety rule:
@@ -21,6 +21,7 @@ from mbiu.contract_map.candidates import CandidatePair
 from mbiu.contract_map.deterministic import OverrideOccurrence
 from mbiu.contract_map.rules import check_deterministic_issues
 from mbiu.documents.segment import Clause, SegmentedDocument
+from mbiu.llm import as_data
 from mbiu.llm.gemini import Gemini
 
 logger = logging.getLogger(__name__)
@@ -131,17 +132,18 @@ async def analyze_contract_issues(
         "for conflicts or overrides:\n"
     ]
     for idx, pair in enumerate(candidate_pairs[:20], start=1):
-        prompt_lines.append(f"--- Candidate Pair {idx} (Reasons: {', '.join(pair.reasons)}) ---")
-        title_a = pair.clause_a.title or "Untitled"
-        prompt_lines.append(
-            f"Clause {pair.clause_a.clause_id} ({title_a}, "
-            f"Page {pair.clause_a.pages}):\n{pair.clause_a.text}\n"
-        )
-        title_b = pair.clause_b.title or "Untitled"
-        prompt_lines.append(
-            f"Clause {pair.clause_b.clause_id} ({title_b}, "
-            f"Page {pair.clause_b.pages}):\n{pair.clause_b.text}\n"
-        )
+        prompt_lines.append(f"Candidate pair {idx} (reasons: {', '.join(pair.reasons)}):")
+        # Contract text is untrusted, so it goes in data blocks the prompt treats as data
+        for clause in (pair.clause_a, pair.clause_b):
+            prompt_lines.append(
+                as_data(
+                    "contract_clause",
+                    clause.text,
+                    clause_id=clause.clause_id,
+                    title=clause.title or "Untitled",
+                    pages=",".join(str(p) for p in clause.pages),
+                )
+            )
 
     user_prompt = "\n".join(prompt_lines)
 

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "generator_version": "1.0.0",
-  "contract_id": "mb19-cross-clause-conflict",
-  "title": "Recording agreement with a conflicting term",
+  "contract_id": "golden-missing-payment-dates",
+  "title": "Recording agreement with no payment dates",
   "contract_type": "recording",
   "jurisdiction": "Kenya",
-  "standard_template_id": "mb19-recording-standard-v1",
-  "pdf": "pdfs/mb19-cross-clause-conflict.pdf",
+  "standard_template_id": "golden-recording-standard-v1",
+  "pdf": "pdfs/golden-missing-payment-dates.pdf",
   "standard_clauses": [
     {
       "clause_id": "1.1",
@@ -93,11 +93,9 @@
         1
       ],
       "text": "The Term of this Agreement begins on the Effective Date and continues for two (2) years, unless it is terminated earlier in accordance with this Agreement.",
-      "expected_outcome": "worse_for_you",
+      "expected_outcome": "matches_standard",
       "planted_risk_ids": [],
-      "conflict_ids": [
-        "term_length_conflict"
-      ]
+      "conflict_ids": []
     },
     {
       "clause_id": "3.1",
@@ -138,9 +136,11 @@
       "pages": [
         1
       ],
-      "text": "Within thirty (30) days after the end of each calendar quarter, the Company shall send the Artist a statement. The Company shall pay the royalties shown in that statement within fifteen (15) days after the statement date.",
-      "expected_outcome": "matches_standard",
-      "planted_risk_ids": [],
+      "text": "The Company shall account to the Artist for royalties from time to time in the manner the Company considers appropriate. Payment shall be made when the Company is able to do so, and no statement or payment date is fixed by this Agreement.",
+      "expected_outcome": "worse_for_you",
+      "planted_risk_ids": [
+        "missing_payment_dates"
+      ],
       "conflict_ids": []
     },
     {
@@ -182,12 +182,10 @@
       "pages": [
         1
       ],
-      "text": "Notwithstanding clause 2.1, the Term of this Agreement is five (5) years from the Effective Date and renews automatically for further five (5) year periods unless notice is given.",
-      "expected_outcome": "worse_for_you",
+      "text": "The parties may renew this Agreement for a further period only by a written agreement signed by both parties.",
+      "expected_outcome": "matches_standard",
       "planted_risk_ids": [],
-      "conflict_ids": [
-        "term_length_conflict"
-      ]
+      "conflict_ids": []
     },
     {
       "clause_id": "8.1",
@@ -225,18 +223,17 @@
   ],
   "risks": [
     {
-      "risk_id": "cross_clause_conflict",
-      "kind": "cross_clause",
-      "description": "The renewal clause says the Term is five years notwithstanding the two-year Term in clause 2.1, so the contract contradicts itself.",
+      "risk_id": "missing_payment_dates",
+      "kind": "clause",
+      "description": "The payment clause sets no statement date and no payment date, so the artist cannot know when royalties are due.",
       "clause_ids": [
-        "2.1",
-        "7.1"
+        "4.2"
       ],
       "pages": [
         1
       ],
-      "expected_outcome": null,
-      "expected_issue_kind": "term_length_conflict"
+      "expected_outcome": "worse_for_you",
+      "expected_issue_kind": null
     }
   ]
 }

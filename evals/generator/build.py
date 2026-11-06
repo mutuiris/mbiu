@@ -172,7 +172,7 @@ def _promptfoo_case(
 
 def _clean_generated(dataset_dir: Path) -> None:
     for folder, suffix in (("pdfs", ".pdf"), ("expected", ".expected.json")):
-        for path in (dataset_dir / folder).glob(f"mb19-*{suffix}"):
+        for path in (dataset_dir / folder).glob(f"golden-*{suffix}"):
             path.unlink()
 
 
@@ -294,9 +294,7 @@ def _write(text: str) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Command-line entry point."""
-    parser = argparse.ArgumentParser(
-        description="Build the MB-19 synthetic golden set."
-    )
+    parser = argparse.ArgumentParser(description="Build the synthetic golden set.")
     parser.add_argument(
         "--out",
         type=Path,

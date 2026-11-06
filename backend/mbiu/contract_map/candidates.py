@@ -1,4 +1,4 @@
-"""Candidate pair generation for whole-contract mapping (MB-14).
+"""Candidate pair generation for whole-contract mapping.
 
 Selects pairs of clauses to check for conflicts or overrides:
 1. Every pair linked deterministically (cross-references, overrides, defined terms).
