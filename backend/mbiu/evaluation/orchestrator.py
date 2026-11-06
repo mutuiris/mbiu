@@ -358,7 +358,7 @@ async def _run_evaluation_pipeline(
                     schema_version=SCHEMA_VERSION,
                     prompt="compare_v1",
                     model=settings.GEMINI_MODEL_MAIN,
-                    corpus="synthetic-v0",
+                    corpus=getattr(settings, "ACTIVE_CORPUS_VERSION", "synthetic-v0"),
                 ),
             )
 
