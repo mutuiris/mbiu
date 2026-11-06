@@ -2,7 +2,7 @@
 
 The spine of Mbiu: handles the lifecycle of one contract evaluation from upload
 validation, text extraction, clause segmentation, template retrieval, batched LLM
-comparison, deterministic quote verification, to the final summary event.
+comparison, verification of every model proposal, to the final summary event.
 Emits a validated stream of StreamEvent models.
 """
 
@@ -16,7 +16,6 @@ from typing import Any, Final, Literal
 
 from django.conf import settings
 from opentelemetry import trace
-from pydantic import BaseModel, Field
 
 from mbiu.api.schemas import (
     SCHEMA_VERSION,
@@ -52,6 +51,7 @@ from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
 from mbiu.documents.segment import segment_document
 from mbiu.documents.upload import validate_upload
+from mbiu.evaluation.verify import ClauseComparisonProposal, Sent, verify
 from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
 from mbiu.llm.openai import openai
@@ -78,25 +78,6 @@ def load_compare_openai_prompt() -> str:
     if OPENAI_PROMPT_PATH.exists():
         return OPENAI_PROMPT_PATH.read_text(encoding="utf-8")
     return load_compare_prompt()
-
-
-class ClauseComparisonProposal(BaseModel):
-    """Structured proposal returned by the LLM before verification."""
-
-    comparison: Outcome
-    headline: str
-    what_it_says: str
-    what_it_means: str
-    clause_quote: str = Field(description="Exact substring quoted from the contract clause")
-    evidence_quote: str | None = Field(
-        default=None, description="Exact substring quoted from the template excerpt"
-    )
-    evidence_id: str | None = Field(
-        default=None, description="The ID of the template excerpt cited, if any"
-    )
-    ask_them: str | None = Field(
-        default=None, description="A specific question to ask the other party"
-    )
 
 
 def _error_clause_result(
@@ -155,32 +136,6 @@ def _section_kind(name: str) -> Literal["body", "schedule", "annex"]:
     if "annex" in low or "appendix" in low or "exhibit" in low:
         return "annex"
     return "body"
-
-
-def verify_quotes(
-    clause_text: str,
-    evidence_text: str | None,
-    clause_quote: str,
-    evidence_quote: str | None,
-    *,
-    evidence_id: str | None = None,
-    allowed_evidence_ids: set[str] | None = None,
-) -> bool:
-    """Verify that quotes and citations in the proposal are exact verbatim substrings and valid IDs.
-
-    Deterministic code verification ensuring the model never invents quotes or cites unsent IDs.
-    """
-    if not clause_quote or not clause_quote.strip():
-        return False
-    if clause_quote not in clause_text:
-        return False
-    if evidence_quote is not None and evidence_quote.strip():
-        if evidence_text is None or evidence_quote not in evidence_text:
-            return False
-    if evidence_id is not None and evidence_id.strip():
-        if allowed_evidence_ids is None or evidence_id not in allowed_evidence_ids:
-            return False
-    return True
 
 
 async def _run_evaluation_pipeline(
@@ -580,14 +535,13 @@ async def _evaluate_single_clause(
             as_data(
                 "standard_template",
                 primary_ev.excerpt,
+                evidence_id=primary_ev.evidence_id,
                 template_id=primary_ev.template_id,
                 source=primary_ev.source_title,
             )
         )
     content = "\n\n".join(content_parts)
-    allowed_ev_ids = {e.evidence_id for e in evidence}
-    if primary_ev:
-        allowed_ev_ids.add(primary_ev.template_id)
+    sent = Sent(clause_id=clause.clause_id, clause_text=clause.text, evidence=evidence)
 
     try:
         with tracer.start_as_current_span("mbiu.compare") as span:
@@ -599,36 +553,52 @@ async def _evaluate_single_clause(
                 output=ClauseComparisonProposal,
                 deadline=deadline,
             )
-            proposal = llm_result.value
 
-        # Verification in code
         with tracer.start_as_current_span("mbiu.verify") as span:
             span.set_attribute("mbiu.stage", "verify")
-            quotes_valid = verify_quotes(
-                clause_text=clause.text,
-                evidence_text=primary_ev.excerpt if primary_ev else None,
-                clause_quote=proposal.clause_quote,
-                evidence_quote=proposal.evidence_quote,
-                evidence_id=proposal.evidence_id,
-                allowed_evidence_ids=allowed_ev_ids,
-            )
-            span.set_attribute("mbiu.quotes_verified", quotes_valid)
+            failed = verify(llm_result.value, sent)
+            span.set_attribute("mbiu.verify.failed_rules", sorted(failed))
+            if failed:
+                # One repair attempt, naming each failed rule; a second failure is final
+                checks = "\n".join(f"- {name}: {reason}" for name, reason in failed.items())
+                llm_result = await llm.generate(
+                    model=model,
+                    instructions=instructions,
+                    content=(
+                        f"{content}\n\n"
+                        f"{as_data('previous_answer', llm_result.value.model_dump_json())}\n\n"
+                        "Your previous answer failed these checks. Answer again with them "
+                        f"fixed:\n{checks}"
+                    ),
+                    output=ClauseComparisonProposal,
+                    deadline=deadline,
+                )
+                failed = verify(llm_result.value, sent)
+                span.set_attribute("mbiu.verify.failed_rules_after_repair", sorted(failed))
+        proposal = llm_result.value
 
-        if not quotes_valid:
+        if failed:
+            # Never send an unverified proposal: none of its wording reaches the artist
             return ClauseResult(
                 clause_id=clause.clause_id,
                 pages=clause.pages,
                 original_text=clause.text,
                 status=ClauseStatus.CANNOT_COMPARE,
                 comparison=Outcome.CANNOT_COMPARE,
-                headline="Could not reliably verify comparison quotes",
-                what_it_says=proposal.what_it_says,
-                what_it_means=proposal.what_it_means,
-                comparison_note="The comparison could not be verified against the source text.",
+                headline="Mbiu couldn't verify this comparison",
+                what_it_says=(
+                    "Mbiu's answer for this clause didn't pass its accuracy checks, "
+                    "so it isn't shown."
+                ),
+                what_it_means=(
+                    "This clause hasn't been compared with the standard. Read it closely, "
+                    "or ask someone you trust about it."
+                ),
+                comparison_note=None,
                 impact_inputs=None,
                 linked_clauses=links,
                 fairer_wording=None,
-                ask_them=proposal.ask_them,
+                ask_them=None,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
                 standard_excerpt=primary_ev.excerpt if primary_ev else None,
                 evidence=evidence,
