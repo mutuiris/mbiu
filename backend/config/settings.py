@@ -33,6 +33,7 @@ class Env(BaseSettings):
     llm_concurrency: int = Field(default=4, gt=0)
     deadline_per_clause_s: float = Field(default=3.0, gt=0)
     deadline_cap_s: float = Field(default=300.0, gt=0)
+    max_reading_grade: float = Field(default=9.0, gt=0)
     cors_allowed_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
     max_pages: int = 40
@@ -84,6 +85,7 @@ BATCH_SIZE = env.batch_size
 LLM_CONCURRENCY = env.llm_concurrency
 DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s
 DEADLINE_CAP_S = env.deadline_cap_s
+MAX_READING_GRADE = env.max_reading_grade
 CORS_ALLOWED_ORIGINS = [o.strip() for o in env.cors_allowed_origins.split(",") if o.strip()]
 MAX_UPLOAD_MB = env.max_upload_mb
 MAX_PAGES = env.max_pages
