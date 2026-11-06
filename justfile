@@ -12,9 +12,14 @@ export NEXT_TELEMETRY_DISABLED := "1"
 default:
     @just --list
 
-# Start Postgres, PgBouncer, Jaeger and the API (auto-reload), and wait until they are ready
+# Start Postgres, PgBouncer, Jaeger and the API (auto-reload), wait until ready, then migrate
 dev:
     docker compose up -d --build --wait
+    docker compose run --rm migrate
+
+# Apply database migrations
+migrate:
+    docker compose run --rm migrate
 
 # Install frontend dependencies (the backend installs itself through uv)
 install:
