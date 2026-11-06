@@ -1,5 +1,13 @@
 import React from "react";
 import type { DocumentPayload, ClauseResult, ClauseFailure } from "@/lib/api/generated/types.gen";
+import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
+
+const PILL_CLASS: Record<OutcomeTone, string> = {
+  typical: "match",
+  unusual: "notice",
+  inquiry: "worse",
+  unchecked: "failed",
+};
 
 interface ClauseListProps {
   document: DocumentPayload;
@@ -51,17 +59,10 @@ export const ClauseList: React.FC<ClauseListProps> = ({
 
               let statusBadge = <span className="status-pill pending">Checking…</span>;
               if (result) {
-                if (result.comparison === "matches_standard") {
-                  statusBadge = <span className="status-pill match">Standard</span>;
-                } else if (result.comparison === "worse_for_you") {
-                  statusBadge = <span className="status-pill worse">High Risk</span>;
-                } else if (result.comparison === "better_for_you") {
-                  statusBadge = <span className="status-pill better">Favorable</span>;
-                } else {
-                  statusBadge = <span className="status-pill notice">{result.comparison.replace(/_/g, " ")}</span>;
-                }
+                const { label, tone } = outcomeLabel(result.comparison);
+                statusBadge = <span className={`status-pill ${PILL_CLASS[tone]}`}>{label}</span>;
               } else if (failure) {
-                statusBadge = <span className="status-pill failed">Unchecked</span>;
+                statusBadge = <span className="status-pill failed">Couldn&apos;t check</span>;
               }
 
               const isSelected = selectedClauseId === clause.clause_id;

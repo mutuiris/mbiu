@@ -82,8 +82,8 @@ describe("ClauseCard Component", () => {
     expect(html).toContain("You could earn very little from your songs for years");
     const headlineIndex = html.indexOf("data-testid=\"clause-headline\"");
 
-    // 2. Status, topic, and location ("Worse than the standard · Royalties · Page 4, clause 7.2")
-    expect(html).toContain("Worse than the standard");
+    // 2. Status, topic, and location ("Worth inquiry · Royalties · Page 4, clause 7.2")
+    expect(html).toContain("Worth inquiry");
     expect(html).toContain("Royalties");
     expect(html).toContain("Page 4, clause 7.2");
     const statusTopicLocationIndex = html.indexOf("data-testid=\"status-topic-location\"");
