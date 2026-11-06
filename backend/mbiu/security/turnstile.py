@@ -63,11 +63,7 @@ def verify_turnstile_token(
     if not token or not token.strip():
         return False
 
-    effective_secret = (
-        secret_key
-        if secret_key is not None
-        else getattr(settings, "TURNSTILE_SECRET_KEY", CLOUDFLARE_TEST_SECRET_ALWAYS_PASS)
-    )
+    effective_secret = secret_key if secret_key is not None else settings.TURNSTILE_SECRET_KEY
     effective_url = (
         verify_url
         if verify_url is not None
@@ -131,11 +127,7 @@ async def async_verify_turnstile_token(
     if not token or not token.strip():
         return False
 
-    effective_secret = (
-        secret_key
-        if secret_key is not None
-        else getattr(settings, "TURNSTILE_SECRET_KEY", CLOUDFLARE_TEST_SECRET_ALWAYS_PASS)
-    )
+    effective_secret = secret_key if secret_key is not None else settings.TURNSTILE_SECRET_KEY
     effective_url = (
         verify_url
         if verify_url is not None
