@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-STANDARD_TEMPLATE_ID = "mb19-recording-standard-v1"
+STANDARD_TEMPLATE_ID = "golden-recording-standard-v1"
 CONTRACT_TYPE = "recording"
 JURISDICTION = "Kenya"
 

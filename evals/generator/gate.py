@@ -1,4 +1,4 @@
-"""The MB-19 quality gate: planted risks may never pass unflagged.
+"""The quality gate: planted risks may never pass unflagged.
 
 Run it with ``python -m evals.generator.gate``. The command accepts predictions
 from the reference evaluator, a lenient (deliberately broken) evaluator, or a
@@ -337,7 +337,7 @@ def _report_text(reports: Sequence[GateReport]) -> str:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Command-line entry point."""
-    parser = argparse.ArgumentParser(description="MB-19 golden-set quality gate.")
+    parser = argparse.ArgumentParser(description="Golden-set quality gate.")
     parser.add_argument(
         "--dataset",
         type=Path,

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "generator_version": "1.0.0",
-  "contract_id": "mb19-deductions-before-royalties",
-  "title": "Recording agreement with costs deducted before royalties",
+  "contract_id": "golden-exclusivity-beyond-term",
+  "title": "Recording agreement with post-term exclusivity",
   "contract_type": "recording",
   "jurisdiction": "Kenya",
-  "standard_template_id": "mb19-recording-standard-v1",
-  "pdf": "pdfs/mb19-deductions-before-royalties.pdf",
+  "standard_template_id": "golden-recording-standard-v1",
+  "pdf": "pdfs/golden-exclusivity-beyond-term.pdf",
   "standard_clauses": [
     {
       "clause_id": "1.1",
@@ -125,11 +125,9 @@
       "pages": [
         1
       ],
-      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts after deducting all recording, marketing, distribution, administration and overhead costs, and after recoupment of any advances paid to the Artist.",
-      "expected_outcome": "worse_for_you",
-      "planted_risk_ids": [
-        "deductions_before_royalties"
-      ],
+      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts from the exploitation of the Recordings.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
       "conflict_ids": []
     },
     {
@@ -160,9 +158,11 @@
       "pages": [
         1
       ],
-      "text": "During the Term, the Artist shall work exclusively with the Company for the recording and release of the Recordings and shall not grant the same rights to any other label.",
-      "expected_outcome": "matches_standard",
-      "planted_risk_ids": [],
+      "text": "The Artist shall work exclusively with the Company during the Term and for five (5) years after the expiry or termination of the Term, and shall not record for, perform for or grant any rights to any other label during that period.",
+      "expected_outcome": "worse_for_you",
+      "planted_risk_ids": [
+        "exclusivity_beyond_term"
+      ],
       "conflict_ids": []
     },
     {
@@ -223,11 +223,11 @@
   ],
   "risks": [
     {
-      "risk_id": "deductions_before_royalties",
+      "risk_id": "exclusivity_beyond_term",
       "kind": "clause",
-      "description": "Recording, marketing and other costs are deducted before the royalty is calculated, reducing the artist's share.",
+      "description": "Exclusivity continues for five years after the Term ends, restricting the artist beyond the agreed term.",
       "clause_ids": [
-        "4.1"
+        "5.1"
       ],
       "pages": [
         1

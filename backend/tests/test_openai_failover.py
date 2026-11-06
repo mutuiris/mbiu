@@ -1,4 +1,4 @@
-"""Unit and failure-injection tests for OpenAI adapter and orchestrator failover (MB-20).
+"""Unit and failure-injection tests for OpenAI adapter and orchestrator failover.
 
 Verifies:
 1. OpenAI provider enforces store: false on every call, strict JSON schema, retries,
@@ -154,9 +154,7 @@ def run_openai(client: FakeHTTPClient, deadline_s: float = 30.0) -> Any:
     )
 
 
-# ---------------------------------------------------------------------------
 # SECTION 1: OpenAI Adapter Unit Tests
-# ---------------------------------------------------------------------------
 
 
 def test_openai_returns_validated_output_with_metadata() -> None:
@@ -288,9 +286,7 @@ def test_openai_spans_carry_no_prompt_or_response_text() -> None:
             assert key.startswith("llm.")
 
 
-# ---------------------------------------------------------------------------
 # SECTION 2: Failure Injection & Orchestrator Failover Tests
-# ---------------------------------------------------------------------------
 
 
 class MockGeminiClient:
@@ -412,7 +408,6 @@ def test_failure_injection_slow_gemini_fails_over_to_openai(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -450,7 +445,6 @@ def test_failure_injection_slow_gemini_without_failover(monkeypatch: pytest.Monk
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -497,7 +491,6 @@ def test_failure_injection_gemini_breaker_open_calls_openai(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -533,7 +526,6 @@ def test_failure_injection_429_returns_rate_limited_fallback(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -571,7 +563,6 @@ def test_failure_injection_refusal_maps_to_evaluation_failed(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -608,7 +599,6 @@ def test_failure_injection_invalid_json_maps_to_cannot_compare(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)
@@ -656,7 +646,6 @@ def test_never_second_opinion_when_gemini_succeeds(
         events = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=gemini_adapter,
         ):
             events.append(event)

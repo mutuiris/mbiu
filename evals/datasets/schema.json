@@ -27,7 +27,7 @@
     },
     "contract_id": {
       "type": "string",
-      "pattern": "^mb19-[a-z0-9-]+$"
+      "pattern": "^golden-[a-z0-9-]+$"
     },
     "title": {
       "type": "string",

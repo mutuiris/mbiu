@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "generator_version": "1.0.0",
-  "contract_id": "mb19-combined-risks",
-  "title": "Recording agreement with all five planted risks",
+  "contract_id": "golden-clean-control",
+  "title": "Clean control recording agreement",
   "contract_type": "recording",
   "jurisdiction": "Kenya",
-  "standard_template_id": "mb19-recording-standard-v1",
-  "pdf": "pdfs/mb19-combined-risks.pdf",
+  "standard_template_id": "golden-recording-standard-v1",
+  "pdf": "pdfs/golden-clean-control.pdf",
   "standard_clauses": [
     {
       "clause_id": "1.1",
@@ -93,11 +93,9 @@
         1
       ],
       "text": "The Term of this Agreement begins on the Effective Date and continues for two (2) years, unless it is terminated earlier in accordance with this Agreement.",
-      "expected_outcome": "worse_for_you",
+      "expected_outcome": "matches_standard",
       "planted_risk_ids": [],
-      "conflict_ids": [
-        "term_length_conflict"
-      ]
+      "conflict_ids": []
     },
     {
       "clause_id": "3.1",
@@ -105,11 +103,9 @@
       "pages": [
         1
       ],
-      "text": "The Artist irrevocably assigns to the Company all right, title and interest in the Recordings, the Masters and all related rights in perpetuity throughout the universe, including all renewals and extensions. The Artist retains no ownership in the Recordings or the Masters.",
-      "expected_outcome": "worse_for_you",
-      "planted_risk_ids": [
-        "perpetual_rights"
-      ],
+      "text": "The Artist grants to the Company a non-exclusive licence to record, reproduce, distribute and exploit the Recordings during the Term in Kenya. All rights not expressly granted are reserved by the Artist.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
       "conflict_ids": []
     },
     {
@@ -129,11 +125,9 @@
       "pages": [
         1
       ],
-      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts after deducting all recording, marketing, distribution, administration and overhead costs, and after recoupment of any advances paid to the Artist.",
-      "expected_outcome": "worse_for_you",
-      "planted_risk_ids": [
-        "deductions_before_royalties"
-      ],
+      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts from the exploitation of the Recordings.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
       "conflict_ids": []
     },
     {
@@ -142,11 +136,9 @@
       "pages": [
         1
       ],
-      "text": "The Company shall account to the Artist for royalties from time to time in the manner the Company considers appropriate. Payment shall be made when the Company is able to do so, and no statement or payment date is fixed by this Agreement.",
-      "expected_outcome": "worse_for_you",
-      "planted_risk_ids": [
-        "missing_payment_dates"
-      ],
+      "text": "Within thirty (30) days after the end of each calendar quarter, the Company shall send the Artist a statement. The Company shall pay the royalties shown in that statement within fifteen (15) days after the statement date.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
       "conflict_ids": []
     },
     {
@@ -166,11 +158,9 @@
       "pages": [
         1
       ],
-      "text": "The Artist shall work exclusively with the Company during the Term and for five (5) years after the expiry or termination of the Term, and shall not record for, perform for or grant any rights to any other label during that period.",
-      "expected_outcome": "worse_for_you",
-      "planted_risk_ids": [
-        "exclusivity_beyond_term"
-      ],
+      "text": "During the Term, the Artist shall work exclusively with the Company for the recording and release of the Recordings and shall not grant the same rights to any other label.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
       "conflict_ids": []
     },
     {
@@ -190,18 +180,16 @@
       "pages": [
         1
       ],
-      "text": "Notwithstanding clause 2.1, the Term of this Agreement is five (5) years from the Effective Date and renews automatically for further five (5) year periods unless notice is given.",
-      "expected_outcome": "worse_for_you",
+      "text": "The parties may renew this Agreement for a further period only by a written agreement signed by both parties.",
+      "expected_outcome": "matches_standard",
       "planted_risk_ids": [],
-      "conflict_ids": [
-        "term_length_conflict"
-      ]
+      "conflict_ids": []
     },
     {
       "clause_id": "8.1",
       "heading": "Governing Law",
       "pages": [
-        2
+        1
       ],
       "text": "This Agreement is governed by the laws of Kenya and the courts of Kenya have exclusive jurisdiction over any dispute about it.",
       "expected_outcome": "matches_standard",
@@ -231,72 +219,5 @@
       "conflict_ids": []
     }
   ],
-  "risks": [
-    {
-      "risk_id": "perpetual_rights",
-      "kind": "clause",
-      "description": "The grant assigns all rights to the company in perpetuity instead of a non-exclusive licence limited to the Term.",
-      "clause_ids": [
-        "3.1"
-      ],
-      "pages": [
-        1
-      ],
-      "expected_outcome": "worse_for_you",
-      "expected_issue_kind": null
-    },
-    {
-      "risk_id": "exclusivity_beyond_term",
-      "kind": "clause",
-      "description": "Exclusivity continues for five years after the Term ends, restricting the artist beyond the agreed term.",
-      "clause_ids": [
-        "5.1"
-      ],
-      "pages": [
-        1
-      ],
-      "expected_outcome": "worse_for_you",
-      "expected_issue_kind": null
-    },
-    {
-      "risk_id": "missing_payment_dates",
-      "kind": "clause",
-      "description": "The payment clause sets no statement date and no payment date, so the artist cannot know when royalties are due.",
-      "clause_ids": [
-        "4.2"
-      ],
-      "pages": [
-        1
-      ],
-      "expected_outcome": "worse_for_you",
-      "expected_issue_kind": null
-    },
-    {
-      "risk_id": "deductions_before_royalties",
-      "kind": "clause",
-      "description": "Recording, marketing and other costs are deducted before the royalty is calculated, reducing the artist's share.",
-      "clause_ids": [
-        "4.1"
-      ],
-      "pages": [
-        1
-      ],
-      "expected_outcome": "worse_for_you",
-      "expected_issue_kind": null
-    },
-    {
-      "risk_id": "cross_clause_conflict",
-      "kind": "cross_clause",
-      "description": "The renewal clause says the Term is five years notwithstanding the two-year Term in clause 2.1, so the contract contradicts itself.",
-      "clause_ids": [
-        "2.1",
-        "7.1"
-      ],
-      "pages": [
-        1
-      ],
-      "expected_outcome": null,
-      "expected_issue_kind": "term_length_conflict"
-    }
-  ]
+  "risks": []
 }
