@@ -89,13 +89,13 @@ function Backdrop() {
         width={972}
         height={590}
         priority
-        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-45 mix-blend-multiply sm:top-[10%] sm:w-[128%] lg:left-auto lg:right-[9%] lg:top-[8%] lg:w-[60%] lg:translate-x-0 lg:opacity-60 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
+        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-45 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[9%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-60 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
       />
 
       <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
       <TribalPattern className="absolute -bottom-8 -left-8 h-[220px] w-[190px] text-mbiu-ink sm:h-[260px] sm:w-[225px] dark:text-white/60" />
 
-      <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 lg:right-[11%] lg:top-[20%]" />
+      <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />
       <Music2 className="absolute bottom-[7%] right-[7%] h-10 w-10 rotate-[14deg] text-mbiu-ink/90 dark:text-white/70" />
       <Music className="absolute bottom-[3%] right-[3%] h-7 w-7 -rotate-[12deg] text-mbiu-ink/80 dark:text-white/60" />
       <Sparkles className="absolute bottom-[11%] right-[2%] h-5 w-5 text-mbiu-ink/60 dark:text-white/50" />
@@ -378,38 +378,38 @@ export default function Home() {
       <main className="relative z-10">
         <section
           id="about"
-          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-12 pt-8 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-14 sm:pt-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:pb-12 lg:pt-20"
+          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-10 px-4 pb-12 pt-8 sm:scroll-mt-24 sm:gap-12 sm:px-8 sm:pb-16 sm:pt-14 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-14 xl:pt-20"
         >
-          <div className="min-w-0 max-w-[660px]">
-            <h1 className="font-serif text-[clamp(2.15rem,6.2vw,4.75rem)] font-medium leading-[1.02] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] sm:leading-[0.92]">
+          <div className="mx-auto flex w-full max-w-[720px] flex-col items-center text-center xl:mx-0 xl:items-start xl:text-left">
+            <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
               Understand your contract before you sign it.
             </h1>
 
-            <p className="mt-5 text-[1.08rem] font-bold tracking-[-0.01em] text-mbiu-ink dark:text-[#F6F2E9] sm:mt-7 sm:text-[1.28rem]">
+            <p className="mt-5 text-[1.1rem] font-bold tracking-[-0.01em] text-mbiu-ink dark:text-[#F6F2E9] sm:mt-6 sm:text-[1.28rem]">
               Your music. Your rights. Your decisions.
             </p>
-            <p className="mt-3 max-w-[430px] text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#B9C1C5] sm:mt-4 sm:text-[1.02rem] sm:leading-7">
+            <p className="mt-3 max-w-[480px] text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#B9C1C5] sm:mt-4 sm:text-[1.02rem] sm:leading-7">
               Upload your music contract and understand what you&apos;re agreeing to, what could
               affect you, and what questions to ask before signing.
             </p>
 
-            <div className="mt-7 sm:mt-8">
+            <div className="mt-7 sm:mt-8 flex w-full justify-center xl:justify-start">
               <a
                 href="#upload"
-                className={`${primaryButton} h-[50px] w-full px-7 text-[0.98rem] sm:h-[52px] sm:w-auto sm:px-8 sm:text-[1.02rem]`}
+                className={`${primaryButton} h-[50px] w-full max-w-[320px] px-7 text-[0.98rem] sm:h-[52px] sm:w-auto sm:max-w-none sm:px-8 sm:text-[1.02rem]`}
               >
                 Upload your contract
                 <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2.2} />
               </a>
             </div>
 
-            <p className="mt-4 flex items-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem]">
+            <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
               Your contract isn&apos;t stored on our servers.
             </p>
           </div>
 
-          <div className="flex min-w-0 justify-center lg:justify-end lg:pr-16">
+          <div className="flex w-full min-w-0 justify-center xl:justify-end xl:pr-14">
             <ClausePreviewCard />
           </div>
         </section>
