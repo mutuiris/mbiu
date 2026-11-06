@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from evals.generator.jsonutil import as_mapping, as_str, load_json
+from evals.generator.jsonutil import as_list, as_mapping, as_str, load_json
 from evals.generator.models import (
     ContractPrediction,
     GoldenContract,
@@ -78,6 +78,15 @@ def _api_key() -> str | None:
     return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or None
 
 
+def _openai_api_key() -> str | None:
+    return os.environ.get("OPENAI_API_KEY") or None
+
+
+def _openai_model(config: Mapping[str, object]) -> str:
+    value = os.environ.get("OPENAI_MODEL") or config.get("model") or "gpt-4o-mini"
+    return as_str(value, "config.model")
+
+
 def _parse_model_output(text: str, contract_id: str) -> ContractPrediction:
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -110,6 +119,39 @@ def _gemini_text(prompt: str, model: str, api_key: str) -> str:
     return str(text)
 
 
+def _openai_text(prompt: str, model: str, api_key: str) -> str:
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "response_format": {"type": "json_object"},
+        "store": False,
+    }
+    with httpx.Client(timeout=120, follow_redirects=True) as client:
+        response = client.post(
+            url,
+            json=body,
+            headers=headers,
+        )
+        response.raise_for_status()
+        parsed: object = json.loads(response.content.decode("utf-8"))
+    data = as_mapping(parsed, "$")
+    choices = as_list(data.get("choices"), "$.choices")
+    if not choices:
+        raise ValueError("OpenAI returned no choices")
+    choice = as_mapping(choices[0], "$.choices[0]")
+    message = as_mapping(choice.get("message"), "$.choices[0].message")
+    content = message.get("content")
+    if not isinstance(content, str):
+        raise TypeError("OpenAI returned no message content")
+    return content
+
+
 def _prediction_payload(
     mode: str,
     prompt: str,
@@ -121,6 +163,14 @@ def _prediction_payload(
         return lenient_prediction(contract)
     if mode == "reference":
         return evaluate_contract(contract)
+    if mode == "openai":
+        api_key = _openai_api_key()
+        if api_key is None:
+            raise ValueError("OpenAI mode requires OPENAI_API_KEY")
+        model = _openai_model(config)
+        return _parse_model_output(
+            _openai_text(prompt, model, api_key), contract.contract_id
+        )
     if mode != "gemini":
         raise ValueError(f"unknown MBIU_EVAL_MODE {mode!r}")
     api_key = _api_key()
@@ -144,7 +194,12 @@ def call_api(
         contract = _expected_contract(variables)
         mode = _mode(config)
         if mode == "auto":
-            mode = "gemini" if _api_key() is not None else "reference"
+            if _api_key() is not None:
+                mode = "gemini"
+            elif _openai_api_key() is not None:
+                mode = "openai"
+            else:
+                mode = "reference"
         prediction = _prediction_payload(mode, prompt, contract, config)
     except (
         OSError,
@@ -162,6 +217,8 @@ def call_api(
     }
     if mode == "gemini":
         metadata["model"] = _model(config)
+    elif mode == "openai":
+        metadata["model"] = _openai_model(config)
     return {
         "output": json.dumps(prediction.to_dict(), indent=2, ensure_ascii=True),
         "metadata": metadata,
