@@ -31,6 +31,7 @@ from mbiu.api.schemas import (
     DocumentEvent,
     DocumentPayload,
     DoneEvent,
+    Evidence,
     FailureReason,
     Heartbeat,
     HeartbeatEvent,
@@ -55,6 +56,8 @@ from mbiu.evaluation.verify import ClauseComparisonProposal, Sent, verify
 from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
 from mbiu.llm.openai import openai
+from mbiu.retrieval.evidence import plan_clauses
+from mbiu.retrieval.topics import impact_rank
 
 tracer: Final = trace.get_tracer("mbiu.orchestrator")
 PROMPT_PATH: Final = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_v1.md"
@@ -179,8 +182,18 @@ async def _compare_clauses(
     deadline: float,
     clause_links_map: dict[str, set[str]],
     conflicts_by_clause: dict[str, list[str]],
+    contract_type: str | None = None,
 ) -> list[ClauseResult]:
-    """Check clauses in batches, streaming each result and progress as it lands."""
+    """Check clauses in batches, most important first, streaming each result as it lands."""
+    plans = dict(
+        zip(
+            (c.clause_id for c in clauses),
+            await plan_clauses([c.text for c in clauses], contract_type),
+            strict=True,
+        )
+    )
+    # Money, ownership, term, exclusivity and termination first; boilerplate last
+    clauses = sorted(clauses, key=lambda c: impact_rank(plans[c.clause_id].topic))
     total_clauses = len(clauses)
     await queue.put(
         ProgressEvent(
@@ -233,6 +246,7 @@ async def _compare_clauses(
                         deadline=deadline,
                         linked_clauses=links_for(clause),
                         conflict_with=conflicts_by_clause.get(clause.clause_id, []),
+                        evidence=plans[clause.clause_id].evidence,
                         provider=provider,
                         model=model,
                         raise_on_error=raise_on_error,
@@ -460,6 +474,7 @@ async def _run_evaluation_pipeline(
             deadline=overall_deadline,
             clause_links_map=clause_links_map,
             conflicts_by_clause=conflicts_by_clause,
+            contract_type=contract_map_payload.contract_type,
         )
 
         # Stage 5: Compile Summary and Done event
@@ -549,19 +564,17 @@ async def _evaluate_single_clause(
     linked_clauses: list[str] | None = None,
     conflict_with: list[str] | None = None,
     *,
+    evidence: list[Evidence] | None = None,
     provider: Provider = Provider.GEMINI,
     model: str = settings.GEMINI_MODEL_MAIN,
     raise_on_error: bool = False,
 ) -> ClauseResult:
-    """Evaluate one clause against retrieved synthetic template evidence."""
+    """Evaluate one clause against the template evidence retrieved for it."""
     links = linked_clauses or []
     conflicts = conflict_with or []
 
-    # Retrieve template evidence
-    with tracer.start_as_current_span("mbiu.retrieve") as span:
-        span.set_attribute("mbiu.stage", "retrieve")
+    if evidence is None:
         evidence = retrieve_simple_evidence(clause.text)
-        span.set_attribute("mbiu.evidence_count", len(evidence))
 
     primary_ev = evidence[0] if evidence else None
     content_parts = [

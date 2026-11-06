@@ -9,7 +9,7 @@ import uuid
 from django.db import models, transaction
 from pgvector.django import VectorField
 
-EMBEDDING_DIM = 768
+from mbiu.corpus.snapshot import EMBEDDING_DIM
 
 
 class ReferenceSource(models.Model):

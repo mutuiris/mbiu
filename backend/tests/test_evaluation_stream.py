@@ -570,3 +570,44 @@ def test_resent_clauses_preflight() -> None:
         assert "Content-Type" in response["Access-Control-Allow-Headers"]
 
     asyncio.run(run_test())
+
+
+def test_clauses_are_checked_most_important_first(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Money comes before boilerplate, whatever the order in the contract."""
+    from mbiu.retrieval.evidence import ClausePlan
+
+    topics = {"Notices": "boilerplate", "Royalties": "royalties", "Term": "term"}
+
+    async def plans(texts: list[str], contract_type: str | None) -> list[ClausePlan]:
+        return [
+            ClausePlan(
+                evidence=[],
+                topic=next((t for word, t in topics.items() if word in text), None),
+            )
+            for text in texts
+        ]
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.plan_clauses", plans)
+    contract = [
+        "1. Notices\nNotices are sent by email.",
+        "2. Term\nThis agreement lasts two years.",
+        "3. Royalties\nThe Artist receives 10% of net receipts.",
+    ]
+
+    async def run_test() -> list[str]:
+        events = [
+            e
+            async for e in evaluate_contract(
+                pdf_bytes=create_synthetic_text_pdf(contract), llm=fake_llm
+            )
+        ]
+        document = next(e for e in events if isinstance(e, DocumentEvent))
+        headings = {c.clause_id: c.heading for c in document.payload.clauses}
+        return [
+            headings[e.payload.clause_id] or "" for e in events if isinstance(e, ClauseResultEvent)
+        ]
+
+    order = asyncio.run(run_test())
+    assert [h for h in order if h in topics] == ["Royalties", "Term", "Notices"]

@@ -27,8 +27,7 @@ class Env(BaseSettings):
     gemini_model_light: str = "gemini-3.5-flash-lite"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = "gpt-4o-mini"
-    embedding_model_id: str = "google/embeddinggemma-2"
-    embedding_revision: str = ""
+    embedding_model_id: str = "gemini-embedding-2"
     failover_enabled: bool = False
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
@@ -82,7 +81,6 @@ GEMINI_MODEL_LIGHT = env.gemini_model_light
 OPENAI_API_KEY = env.openai_api_key.get_secret_value()
 OPENAI_MODEL = env.openai_model
 EMBEDDING_MODEL_ID = env.embedding_model_id
-EMBEDDING_REVISION = env.embedding_revision
 FAILOVER_ENABLED = env.failover_enabled
 BATCH_TIMEOUT_S = env.batch_timeout_s
 BATCH_SIZE = env.batch_size
