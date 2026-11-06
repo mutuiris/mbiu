@@ -522,7 +522,7 @@ async def _run_evaluation_pipeline(
                     schema_version=SCHEMA_VERSION,
                     prompt=summary_prompt,
                     model=summary_model,
-                    corpus="synthetic-v0",
+                    corpus=getattr(settings, "ACTIVE_CORPUS_VERSION", "synthetic-v0"),
                 ),
             )
 
