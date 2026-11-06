@@ -1,0 +1,135 @@
+name: Evals
+
+on:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "llm/**"
+      - "evaluation/**"
+      - "retrieval/**"
+      - "backend/mbiu/prompts/**"
+      - "backend/mbiu/llm/**"
+      - "backend/mbiu/evaluation/**"
+      - "backend/mbiu/retrieval/**"
+      - "evals/**"
+      - "tests/test_golden_set_eval.py"
+      - ".github/workflows/evals.yml"
+  push:
+    branches: [develop, prod]
+    paths:
+      - "prompts/**"
+      - "llm/**"
+      - "evaluation/**"
+      - "retrieval/**"
+      - "backend/mbiu/prompts/**"
+      - "backend/mbiu/llm/**"
+      - "backend/mbiu/evaluation/**"
+      - "backend/mbiu/retrieval/**"
+      - "evals/**"
+      - "tests/test_golden_set_eval.py"
+  schedule:
+    - cron: "0 5 * * 1" # Mondays, before the weekly releases
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-set:
+    runs-on: ubuntu-24.04
+    env:
+      DJANGO_ALLOWED_HOSTS: localhost
+      # No database is used by these tests; this only satisfies the settings check
+      DATABASE_URL: postgresql://localhost/unused
+      HAS_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.24"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+      - name: Install backend dependencies
+        run: uv sync --locked --project backend
+      - name: Generate a Django secret key
+        run: echo "DJANGO_SECRET_KEY=$(uv run --project backend python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+      - name: Lint and format-check the evaluation harness
+        run: |
+          uv run --project backend ruff check evals tests/test_golden_set_eval.py
+          uv run --project backend ruff format --check evals tests/test_golden_set_eval.py
+      - name: Type-check the evaluation harness
+        env:
+          MYPYPATH: .
+          PYTHONPATH: backend:.
+        run: uv run --project backend mypy --config-file backend/pyproject.toml --explicit-package-bases evals tests/test_golden_set_eval.py
+      - name: Hermetic tests (no live API calls)
+        run: uv run --project backend pytest tests/test_golden_set_eval.py -q
+      - name: Regenerate the golden set
+        run: uv run --project backend python -m evals.generator.build
+      - name: Committed ground truth matches the generator
+        run: |
+          git diff --exit-code -- \
+            evals/datasets/expected \
+            evals/datasets/fixtures \
+            evals/datasets/golden_set.jsonl \
+            evals/datasets/manifest.json \
+            evals/datasets/prediction_schema.json \
+            evals/datasets/promptfoo_tests.yaml \
+            evals/datasets/schema.json || {
+              echo "::error::The committed golden set is stale. Run 'python -m evals.generator.build' and commit the JSON outputs."
+              exit 1
+            }
+      - name: Quality gate (reference evaluator, strict outcomes)
+        run: uv run --project backend python -m evals.generator.gate --dataset evals/datasets --predictions reference --strict-outcomes
+      - name: Evaluation prompt carries every guard rail
+        run: uv run --project backend python -m evals.generator.gate --check-prompt evals/generator/prompts/mbiu_clause_eval.txt
+      - name: Deliberately broken prompt is rejected
+        run: |
+          if uv run --project backend python -m evals.generator.gate --check-prompt evals/generator/prompts/lenient_clause_eval.txt; then
+            echo "::error::The deliberately broken prompt passed the guard rails."
+            exit 1
+          fi
+          echo "The deliberately broken prompt was rejected as expected."
+      - name: Promptfoo (reference evaluator)
+        working-directory: evals
+        env:
+          MBIU_EVAL_MODE: reference
+          PROMPTFOO_PYTHON: ${{ github.workspace }}/backend/.venv/bin/python
+          PROMPTFOO_DISABLE_TELEMETRY: "1"
+        run: npx --yes promptfoo@0.124.1 eval -c promptfooconfig.yaml --no-cache --no-progress-bar
+      - name: Promptfoo blocks the deliberately broken prompt
+        working-directory: evals
+        env:
+          MBIU_EVAL_MODE: lenient
+          PROMPTFOO_PYTHON: ${{ github.workspace }}/backend/.venv/bin/python
+          PROMPTFOO_DISABLE_TELEMETRY: "1"
+        run: |
+          set +e
+          npx --yes promptfoo@0.124.1 eval \
+            -c promptfooconfig.yaml \
+            -p file://generator/prompts/lenient_clause_eval.txt \
+            --no-cache --no-progress-bar
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "::error::Promptfoo passed the deliberately broken prompt; the quality gate is too lenient."
+            exit 1
+          fi
+          echo "Promptfoo failed the deliberately broken prompt as required (exit $status)."
+      - name: Live model evaluation (Gemini)
+        if: env.HAS_GEMINI_KEY == 'true'
+        working-directory: evals
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
+          MBIU_EVAL_MODE: gemini
+          PROMPTFOO_PYTHON: ${{ github.workspace }}/backend/.venv/bin/python
+          PROMPTFOO_DISABLE_TELEMETRY: "1"
+        run: npx --yes promptfoo@0.124.1 eval -c promptfooconfig.yaml --no-cache --no-progress-bar
