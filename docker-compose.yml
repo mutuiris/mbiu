@@ -38,6 +38,18 @@ services:
       - "127.0.0.1:4317:4317"   # OTLP gRPC
       - "127.0.0.1:4318:4318"   # OTLP HTTP (OTEL_EXPORTER_OTLP_ENDPOINT)
 
+  # One-off: apply migrations over the direct connection, not PgBouncer. Run with `just migrate`
+  migrate:
+    build: ./backend
+    command: python manage.py migrate
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build: ./backend
     command: uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --reload
@@ -51,7 +63,8 @@ services:
       - ./backend/config:/app/config
       - ./backend/mbiu:/app/mbiu
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
+      # Liveness only: /readyz also needs a published corpus, which a fresh local database lacks
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 5s
       timeout: 3s
       retries: 10
