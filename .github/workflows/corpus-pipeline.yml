@@ -29,12 +29,14 @@ jobs:
       # Required by the settings; the pipeline never checks bot tokens
       TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      # Optional: without it, a second Gemini model gives the second opinion on tags
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       STORAGE_S3_ENDPOINT: ${{ secrets.STORAGE_S3_ENDPOINT }}
       STORAGE_S3_KEY: ${{ secrets.STORAGE_S3_KEY }}
       STORAGE_S3_SECRET: ${{ secrets.STORAGE_S3_SECRET }}
       STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+      STORAGE_S3_REGION: ${{ vars.STORAGE_S3_REGION }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
