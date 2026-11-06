@@ -2325,6 +2325,28 @@ body {
 }
 
 
+/* A pull-to-refresh on a phone would lose the results */
+:root:has(.results-page) {
+  overscroll-behavior-y: contain;
+}
+
+.keep-results {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.keep-results-detail {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.resume-panel:empty {
+  display: none;
+}
+
 /* Contract viewer: beside the cards on wide screens, a full-screen sheet on phones */
 .results-page:has(.live-results-layout.has-viewer) {
   max-width: 1200px;

@@ -25,6 +25,7 @@ class SnapshotChunk:
     contract_type: str
     jurisdiction: str
     drafted_for: str
+    pattern_count: int
     source_title: str
     source_url: str
     licence: str
@@ -94,6 +95,7 @@ def _load() -> CorpusSnapshot | None:
             contract_type=row.contract_type,
             jurisdiction=row.jurisdiction,
             drafted_for=row.drafted_for,
+            pattern_count=row.pattern_count,
             source_title=row.source.title,
             source_url=row.source.url,
             licence=row.source.licence,

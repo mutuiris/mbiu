@@ -128,6 +128,31 @@
         "title": "Clause",
         "type": "object"
       },
+      "ClauseEvaluationRequest": {
+        "additionalProperties": false,
+        "description": "Clauses the browser already holds, sent back to be checked again: a retry, the\nclauses left unfinished when a stream dropped or the page reloaded, or \"Check them\".",
+        "properties": {
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/Clause"
+            },
+            "minItems": 1,
+            "title": "Clauses",
+            "type": "array"
+          },
+          "turnstile_token": {
+            "minLength": 1,
+            "title": "Turnstile Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "turnstile_token",
+          "clauses"
+        ],
+        "title": "ClauseEvaluationRequest",
+        "type": "object"
+      },
       "ClauseFailedEvent": {
         "additionalProperties": false,
         "description": "Sent when one clause couldn't be checked.",
@@ -715,7 +740,7 @@
         "type": "object"
       },
       "ErrorCode": {
-        "description": "Why an upload was refused before the stream started.",
+        "description": "Why a request was refused before the stream started.",
         "enum": [
           "invalid_file_type",
           "file_too_large",
@@ -725,7 +750,8 @@
           "mostly_not_english",
           "bot_check_failed",
           "rate_limited",
-          "service_unavailable"
+          "service_unavailable",
+          "invalid_request"
         ],
         "title": "ErrorCode",
         "type": "string"

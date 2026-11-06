@@ -31,7 +31,10 @@ def _drop_const_defaults(node: Any) -> None:
 
 def build() -> dict[str, Any]:
     """Return the OpenAPI document. Endpoint paths join it once the API has routes."""
-    _, top = models_json_schema([(schemas.ApiError, "serialization")], ref_template=REF)
+    _, top = models_json_schema(
+        [(schemas.ApiError, "serialization"), (schemas.ClauseEvaluationRequest, "validation")],
+        ref_template=REF,
+    )
     event = schemas.stream_event.json_schema(mode="serialization", ref_template=REF)
     components = {**top.get("$defs", {}), **event.pop("$defs", {})}
     components["StreamEvent"] = event

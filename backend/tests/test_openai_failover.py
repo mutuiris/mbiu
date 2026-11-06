@@ -35,11 +35,8 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from pydantic import BaseModel
 
 from mbiu.api.schemas import ClauseResultEvent, ClauseStatus, Outcome, Provider, StreamEvent
-from mbiu.evaluation.orchestrator import (
-    ClauseComparisonProposal,
-    evaluate_contract,
-    verify_quotes,
-)
+from mbiu.evaluation.orchestrator import evaluate_contract
+from mbiu.evaluation.verify import ClauseComparisonProposal
 from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini
 from mbiu.llm.openai import BREAKER_FAIL_MAX, OpenAI
@@ -322,56 +319,6 @@ SAMPLE_CONTRACT = [
 ]
 
 
-def test_failure_injection_invents_a_number_or_quote() -> None:
-    """Invents a number or hallucinated quote not in the contract."""
-    # Contract says 10%, model invents 50%
-    clause_text = (
-        "The Company will pay the Artist 10% of net receipts after all distribution costs."
-    )
-    evidence_text = "Standard royalty is 15% of Gross Receipts."
-
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="50% of net receipts",  # Hallucinated number
-            evidence_quote="15% of Gross Receipts",
-        )
-        is False
-    )
-
-
-def test_failure_injection_cites_unsent_id() -> None:
-    """Cites an unsent evidence ID."""
-    clause_text = "The Company will pay the Artist 10% of net receipts."
-    evidence_text = "Standard royalty is 15%."
-
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="10% of net receipts",
-            evidence_quote="Standard royalty is 15%.",
-            evidence_id="fake_template_999",
-            allowed_evidence_ids={"std_recording_royalty_v1"},
-        )
-        is False
-    )
-
-    # Valid ID passes
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="10% of net receipts",
-            evidence_quote="Standard royalty is 15%.",
-            evidence_id="std_recording_royalty_v1",
-            allowed_evidence_ids={"std_recording_royalty_v1"},
-        )
-        is True
-    )
-
-
 def test_failure_injection_slow_gemini_fails_over_to_openai(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -392,7 +339,7 @@ def test_failure_injection_slow_gemini_fails_over_to_openai(
     proposal = ClauseComparisonProposal(
         comparison=Outcome.WORSE_FOR_YOU,
         headline="Royalty rate is lower than standard",
-        what_it_says="You receive 10% of net receipts after costs.",
+        what_it_says="You receive 10% of net receipts (what is left after costs).",
         what_it_means="Your royalties will be reduced by label deductions.",
         clause_quote="10% of net receipts",
         evidence_quote=None,
@@ -475,7 +422,7 @@ def test_failure_injection_gemini_breaker_open_calls_openai(
     proposal = ClauseComparisonProposal(
         comparison=Outcome.WORSE_FOR_YOU,
         headline="Royalty rate is lower than standard",
-        what_it_says="You receive 10% of net receipts after costs.",
+        what_it_says="You receive 10% of net receipts (what is left after costs).",
         what_it_means="Your royalties will be reduced by label deductions.",
         clause_quote="10% of net receipts",
         evidence_quote=None,

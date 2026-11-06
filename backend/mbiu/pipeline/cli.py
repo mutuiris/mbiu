@@ -5,17 +5,24 @@ import logging
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+import django
 import httpx
 
-from mbiu.pipeline.errors import ConfigurationError, SourceConfigError
+from mbiu.llm import LLMError
+from mbiu.pipeline.errors import ConfigurationError, PipelineError, SourceConfigError
 from mbiu.pipeline.fetch import DEFAULT_BASE_URL, USER_AGENT, FirecrawlFetcher, RobotsPolicy
 from mbiu.pipeline.logging_setup import configure_pipeline_logging
 from mbiu.pipeline.parse import DoclingParser
-from mbiu.pipeline.pipeline import CorpusPipeline, write_clauses
+from mbiu.pipeline.pipeline import CorpusPipeline, read_clauses, write_clauses
 from mbiu.pipeline.sources import load_sources
 from mbiu.pipeline.store import SupabaseS3Store
+
+if TYPE_CHECKING:
+    from mbiu.pipeline.publish import PublishTools
 
 
 @dataclass(frozen=True)
@@ -119,6 +126,7 @@ def main(
     *,
     pipeline: CorpusPipeline | None = None,
     env: Mapping[str, str] | None = None,
+    tools: PublishTools | None = None,
 ) -> int:
     """Run the requested pipeline command and return a process exit code."""
     parser = _build_parser()
@@ -132,6 +140,8 @@ def main(
         logger.error("Invalid pipeline configuration: %s", exc)
         return 2
     configure_pipeline_logging(level=settings.log_level)
+    if args.command == "publish":
+        return _publish(args.clauses, args.version_tag, tools)
 
     sources_path: Path = args.sources
     try:
@@ -171,10 +181,64 @@ def main(
     return 1 if report.errors else 0
 
 
+def _publish(clauses_dir: Path, version_tag: str, tools: PublishTools | None) -> int:
+    logger = logging.getLogger(__name__)
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+    django.setup()
+    # The corpus models can only be imported once Django is set up
+    from django.conf import settings
+
+    from mbiu.pipeline.publish import publish_corpus
+
+    try:
+        clauses = read_clauses(clauses_dir)
+        version = publish_corpus(
+            clauses,
+            tools or _publish_tools(),
+            version_tag=version_tag,
+            concurrency=settings.LLM_CONCURRENCY,
+            timeout_s=settings.BATCH_TIMEOUT_S,
+        )
+    except ConfigurationError as exc:
+        logger.error("Publish configuration error: %s", exc)
+        return 2
+    except ImportError as exc:
+        logger.error("Missing %s: run `uv sync --group pipeline`", exc.name or exc)
+        return 2
+    except (PipelineError, LLMError) as exc:
+        logger.error("Publish failed, nothing was activated: %s", exc)
+        return 1
+    logger.info("Corpus version %s is now active", version.version_tag)
+    return 0
+
+
+def _publish_tools() -> PublishTools:
+    from django.conf import settings
+
+    from mbiu.llm.gemini import gemini
+    from mbiu.llm.openai import openai
+    from mbiu.pipeline.checks import LinguaDetector, PresidioFinder
+    from mbiu.pipeline.embed import EmbeddingGemma
+    from mbiu.pipeline.publish import PublishTools
+    from mbiu.pipeline.tag import Tagger
+
+    if not settings.GEMINI_API_KEY or not settings.OPENAI_API_KEY:
+        raise ConfigurationError("GEMINI_API_KEY and OPENAI_API_KEY are both required to tag")
+    return PublishTools(
+        taggers=[
+            Tagger(gemini(), settings.GEMINI_MODEL_LIGHT),
+            Tagger(openai(), settings.OPENAI_MODEL),
+        ],
+        embedder=EmbeddingGemma(settings.EMBEDDING_MODEL_ID, settings.EMBEDDING_REVISION),
+        find_personal_data=PresidioFinder(),
+        is_english=LinguaDetector(),
+    )
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m mbiu.pipeline",
-        description="Fetch and version public music contract templates.",
+        description="Fetch, check and publish public music contract templates.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
 
@@ -205,6 +269,25 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=_default_sources_path().parent / "clauses",
         help="Directory for split clauses, one <sha256>.jsonl per document.",
+    )
+
+    publish = subcommands.add_parser(
+        "publish",
+        help=(
+            "Check, tag and embed split clauses, publish them as a new corpus version and "
+            "activate it. Set DATABASE_URL to the direct database connection."
+        ),
+    )
+    publish.add_argument(
+        "--clauses",
+        type=Path,
+        default=_default_sources_path().parent / "clauses",
+        help="Directory of <sha256>.jsonl clause files written by fetch.",
+    )
+    publish.add_argument(
+        "--version-tag",
+        default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"),
+        help="Tag for the new version; defaults to the UTC time.",
     )
     return parser
 
