@@ -29,6 +29,24 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary }) => {
         </div>
       )}
 
+      {summary.missing_protections.length > 0 && (
+        <div className="summary-section missing-protections">
+          <h3 className="section-title">Missing from your contract</h3>
+          <p className="summary-subtitle">
+            The reviewed standard protects you here, but your contract doesn&apos;t say anything about it.
+          </p>
+          <ul className="top-asks-list">
+            {summary.missing_protections.map((item) => (
+              <li key={item.template_id} className="top-ask-item">
+                <p className="ask-text">
+                  <strong>{item.title}:</strong> “{item.ask_them}”
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {summary.good_news && summary.good_news.length > 0 && (
         <div className="summary-section good-news">
           <h3 className="section-title">Good News in Your Contract</h3>
@@ -45,7 +63,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary }) => {
 
       <footer className="summary-footer">
         <div className="summary-meta-item">
-          <span className="meta-label">Standard Matches:</span>
+          <span className="meta-label">Typical clauses:</span>
           <span className="meta-value">{summary.matches_count} clauses</span>
         </div>
         <div className="summary-meta-item">

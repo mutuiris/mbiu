@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final
@@ -10,9 +11,11 @@ import numpy as np
 import numpy.typing as npt
 from opentelemetry import trace
 
-from mbiu.api.schemas import Evidence
+from mbiu.api.schemas import Evidence, MissingProtection
 from mbiu.corpus.loader import active_snapshot
+from mbiu.corpus.snapshot import CorpusSnapshot, SnapshotChunk
 from mbiu.corpus.synthetic import retrieve_simple_evidence
+from mbiu.evaluation.verify import NUMBER_WORDS
 from mbiu.llm import LLMError
 from mbiu.retrieval.embed import embedder
 from mbiu.retrieval.search import Match, search
@@ -28,6 +31,19 @@ NO_STANDARD_NOTE: Final = (
     "so it can explain these clauses but not compare them."
 )
 SYNTHETIC_CORPUS_VERSION: Final = "synthetic"
+
+# Protections a standard template gives the artist, with a fixed, reviewed question for each
+PROTECTIONS: Final[dict[str, str]] = {
+    "accounting_audit": "Can we add a clause that lets me check your accounts once a year?",
+    "termination": "Can we add a way for me to end this agreement if you break its terms?",
+    "payment": "Can we write down when and how often I will be paid?",
+}
+
+_UNITS: Final = {"day": "days", "month": "months", "year": "years", "%": "%", "per cent": "%"}
+_number = r"\d+(?:\.\d+)?|" + "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
+_FIGURE: Final = re.compile(
+    rf"\b({_number})\s*(%|per\s?cent|days?|months?|years?)\b", re.IGNORECASE
+)
 
 _EXAMPLE_TOPICS: Final[tuple[str, ...]] = tuple(
     topic for topic, examples in TOPIC_EXAMPLES.items() for _ in examples
@@ -45,6 +61,38 @@ class ClausePlan:
     evidence: list[Evidence]
     topic: str | None
     note: str | None = None
+    # Shown on the card but doesn't change the verdict, e.g. templates that disagree
+    context: str | None = None
+
+
+def _figures(text: str) -> dict[str, set[float]]:
+    """Durations and percentages in a text, by unit."""
+    found: dict[str, set[float]] = {}
+    for number, unit in _FIGURE.findall(text):
+        value = float(NUMBER_WORDS.get(number.lower(), number))
+        key = unit.lower().replace("per cent", "%").replace("percent", "%").rstrip("s")
+        found.setdefault(_UNITS.get(key, key), set()).add(value)
+    return found
+
+
+def _show(value: float, unit: str) -> str:
+    number = f"{value:g}"
+    return f"{number}%" if unit == "%" else f"{number} {unit}"
+
+
+def disagreement(clause: str, templates: Sequence[SnapshotChunk]) -> str | None:
+    """Say so when two templates give different figures for something the clause also sets."""
+    if len(templates) < 2:
+        return None
+    first, second, mine = _figures(templates[0].text), _figures(templates[1].text), _figures(clause)
+    for unit in ("days", "months", "years", "%"):
+        a, b, c = first.get(unit), second.get(unit), mine.get(unit)
+        if a and b and c and len(a) == len(b) == len(c) == 1 and a != b:
+            return (
+                f"Standard templates differ here: one gives {_show(min(a), unit)}, "
+                f"another {_show(min(b), unit)}. Your contract gives {_show(min(c), unit)}."
+            )
+    return None
 
 
 def _evidence(match: Match) -> Evidence:
@@ -106,10 +154,15 @@ async def plan_clauses(texts: Sequence[str], contract_type: str | None) -> list[
             elif not has_standard:
                 plans.append(ClausePlan([], topic, note=NO_STANDARD_NOTE))
             else:
-                matches = search(
-                    snapshot, text, vector, contract_type=contract_type, k=EVIDENCE_PER_CLAUSE
+                # Two matches: the best is sent to the model, the second shows disagreement
+                matches = search(snapshot, text, vector, contract_type=contract_type, k=2)
+                plans.append(
+                    ClausePlan(
+                        [_evidence(m) for m in matches[:EVIDENCE_PER_CLAUSE]],
+                        topic,
+                        context=disagreement(text, [m.chunk for m in matches]),
+                    )
                 )
-                plans.append(ClausePlan([_evidence(m) for m in matches], topic))
         span.set_attribute("mbiu.corpus_loaded", snapshot is not None)
         return plans
 
@@ -118,3 +171,45 @@ async def corpus_version() -> str:
     """The version tag of the corpus results were compared with."""
     snapshot = await asyncio.to_thread(active_snapshot)
     return snapshot.version_tag if snapshot is not None else SYNTHETIC_CORPUS_VERSION
+
+
+def _missing(
+    snapshot: CorpusSnapshot, topics: Sequence[str | None], contract_type: str | None
+) -> list[MissingProtection]:
+    present = {t for t in topics if t is not None}
+    missing = []
+    for topic, question in PROTECTIONS.items():
+        if topic in present:
+            continue
+        templates = sorted(
+            (
+                c
+                for c in snapshot.chunks
+                if c.topic == topic and contract_type in (None, c.contract_type)
+            ),
+            key=lambda c: c.jurisdiction != "KE",
+        )
+        if templates:
+            chunk = templates[0]
+            missing.append(
+                MissingProtection(
+                    template_id=chunk.chunk_key,
+                    title=chunk.title or topic.replace("_", " ").capitalize(),
+                    excerpt=chunk.text,
+                    ask_them=question,
+                )
+            )
+    return missing
+
+
+async def missing_protections(
+    topics: Sequence[str | None], contract_type: str | None
+) -> list[MissingProtection]:
+    """Protections the matching standard has that no clause in the contract covers.
+
+    Needs a published corpus and known topics; without either it can't tell, so says nothing.
+    """
+    snapshot = await asyncio.to_thread(active_snapshot)
+    if snapshot is None or all(t is None for t in topics):
+        return []
+    return _missing(snapshot, topics, contract_type)
