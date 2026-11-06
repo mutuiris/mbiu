@@ -218,9 +218,9 @@ def _publish_tools() -> PublishTools:
     from mbiu.llm.gemini import gemini
     from mbiu.llm.openai import openai
     from mbiu.pipeline.checks import LinguaDetector, PresidioFinder
-    from mbiu.pipeline.embed import EmbeddingGemma
     from mbiu.pipeline.publish import PublishTools
     from mbiu.pipeline.tag import Tagger
+    from mbiu.retrieval.embed import embedder
 
     if not settings.GEMINI_API_KEY or not settings.OPENAI_API_KEY:
         raise ConfigurationError("GEMINI_API_KEY and OPENAI_API_KEY are both required to tag")
@@ -229,7 +229,7 @@ def _publish_tools() -> PublishTools:
             Tagger(gemini(), settings.GEMINI_MODEL_LIGHT),
             Tagger(openai(), settings.OPENAI_MODEL),
         ],
-        embedder=EmbeddingGemma(settings.EMBEDDING_MODEL_ID, settings.EMBEDDING_REVISION),
+        embedder=embedder(),
         find_personal_data=PresidioFinder(),
         is_english=LinguaDetector(),
     )

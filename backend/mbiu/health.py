@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import connection
 from django.db.utils import Error as DatabaseError
 from django.http import HttpRequest, JsonResponse
@@ -12,7 +13,6 @@ def healthz(request: HttpRequest) -> JsonResponse:
 
 def readyz(request: HttpRequest) -> JsonResponse:
     """Readiness: dependencies are usable. Returns 503 listing what failed."""
-    # TODO: add the embedding self-test
     failed: list[str] = []
     try:
         with connection.cursor() as cursor:
@@ -20,8 +20,12 @@ def readyz(request: HttpRequest) -> JsonResponse:
     except DatabaseError:
         failed.append("database")
     # The first call loads the corpus into memory; later calls reuse it
-    if not failed and active_snapshot() is None:
+    snapshot = None if failed else active_snapshot()
+    if not failed and snapshot is None:
         failed.append("corpus")
+    # Corpus vectors only compare with clause vectors from the same model
+    if snapshot is not None and snapshot.embedding_model_id != settings.EMBEDDING_MODEL_ID:
+        failed.append("embeddings")
     if failed:
         return JsonResponse({"status": "not_ready", "failed": failed}, status=503)
     return JsonResponse({"status": "ready"})

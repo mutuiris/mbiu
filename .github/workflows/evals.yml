@@ -68,11 +68,13 @@ jobs:
           uv run --project backend ruff format --check evals tests/test_golden_set_eval.py
       - name: Type-check the evaluation harness
         env:
-          MYPYPATH: .
+          MYPYPATH: .:backend
           PYTHONPATH: backend:.
         run: uv run --project backend mypy --config-file backend/pyproject.toml --explicit-package-bases evals tests/test_golden_set_eval.py
       - name: Hermetic tests (no live API calls)
         run: uv run --project backend pytest tests/test_golden_set_eval.py -q
+      - name: Retrieval recall (BM25, synthetic set)
+        run: uv run --project backend python -m evals.retrieval.run --k 5 --min-recall 0.9
       - name: Regenerate the golden set
         run: uv run --project backend python -m evals.generator.build
       - name: Committed ground truth matches the generator
