@@ -2,7 +2,7 @@
 
 Verifies:
 1. Stream event order: document -> progress -> clause_result -> done.
-2. Quote verification: exact substring quotes accepted; hallucinated quotes rejected.
+2. Every clause result comes from a proposal that passed verification.
 3. Keepalive heartbeats: emitted during slow LLM processing.
 4. Client disconnect: early cancellation stops processing cleanly without leaks.
 5. Pre-stream validation errors: bad file, encrypted PDF, invalid Turnstile return ApiError.
@@ -39,11 +39,8 @@ from mbiu.api.schemas import (
     stream_event,
 )
 from mbiu.api.views import clause_evaluations, evaluations
-from mbiu.evaluation.orchestrator import (
-    ClauseComparisonProposal,
-    evaluate_contract,
-    verify_quotes,
-)
+from mbiu.evaluation.orchestrator import evaluate_contract
+from mbiu.evaluation.verify import ClauseComparisonProposal
 from mbiu.llm.gemini import Gemini
 from mbiu.security.turnstile import (
     CLOUDFLARE_TEST_SECRET_ALWAYS_FAIL,
@@ -83,7 +80,7 @@ class FakeGeminiClient:
         prop = self.proposal or ClauseComparisonProposal(
             comparison=Outcome.WORSE_FOR_YOU,
             headline="Royalty rate is lower than recommended standard",
-            what_it_says="You receive 10% of net receipts after costs.",
+            what_it_says="You receive 10% of net receipts (what is left after costs).",
             what_it_means="Your earnings will be reduced by label expenses.",
             clause_quote="10% of net receipts",
             evidence_quote="royalty of not less than 15% to 20% of Gross Receipts",
@@ -115,56 +112,6 @@ SYNTHETIC_TEST_CONTRACT = [
     ),
     ("2. Term\nThe initial period shall be for a duration of two (2) years."),
 ]
-
-
-def test_quote_verification_logic() -> None:
-    """Verifies that quotes must be exact substrings of what was sent."""
-    clause_text = "The Label shall pay the Artist 10% of net receipts after costs."
-    evidence_text = "Standard royalty is 15% of Gross Receipts without deductions."
-
-    # Exact quotes pass
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="10% of net receipts",
-            evidence_quote="15% of Gross Receipts",
-        )
-        is True
-    )
-
-    # Hallucinated clause quote fails
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="50% of gross profits",  # Not in clause_text
-            evidence_quote="15% of Gross Receipts",
-        )
-        is False
-    )
-
-    # Hallucinated evidence quote fails
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="10% of net receipts",
-            evidence_quote="Standard rate is 30%",  # Not in evidence_text
-        )
-        is False
-    )
-
-    # Empty clause quote fails
-    assert (
-        verify_quotes(
-            clause_text=clause_text,
-            evidence_text=evidence_text,
-            clause_quote="",
-            evidence_quote=None,
-        )
-        is False
-    )
 
 
 def test_stream_event_sequence_and_schemas(fake_llm: Gemini) -> None:
