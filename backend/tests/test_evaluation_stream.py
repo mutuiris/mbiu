@@ -28,6 +28,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from mbiu.api.schemas import (
     ClauseResultEvent,
+    ContractMapEvent,
     DocumentEvent,
     DoneEvent,
     HeartbeatEvent,
@@ -190,10 +191,14 @@ def test_stream_event_sequence_and_schemas(fake_llm: Gemini) -> None:
         assert doc_payload.page_count == 2
         assert len(doc_payload.clauses) >= 2
 
-        # 2. Second event is initial ProgressEvent
-        assert isinstance(events[1], ProgressEvent)
-        assert events[1].payload.stage == "compare"
-        assert events[1].payload.done == 0
+        # 2. Second event is ContractMapEvent
+        assert isinstance(events[1], ContractMapEvent)
+        assert events[1].payload.links is not None
+
+        # 3. Third event is initial ProgressEvent
+        assert isinstance(events[2], ProgressEvent)
+        assert events[2].payload.stage == "compare"
+        assert events[2].payload.done == 0
 
         # 3. Intermediate events include ClauseResultEvents
         clause_results = [e for e in events if isinstance(e, ClauseResultEvent)]

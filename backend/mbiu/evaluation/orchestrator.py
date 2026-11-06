@@ -26,6 +26,7 @@ from mbiu.api.schemas import (
     ClauseResult,
     ClauseResultEvent,
     ClauseStatus,
+    ContractMapEvent,
     DocumentEvent,
     DocumentPayload,
     DoneEvent,
@@ -42,6 +43,7 @@ from mbiu.api.schemas import (
     Summary,
     Versions,
 )
+from mbiu.contract_map import map_contract
 from mbiu.corpus.synthetic import retrieve_simple_evidence
 from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
@@ -174,8 +176,51 @@ async def _run_evaluation_pipeline(
         )
         await queue.put(document_event)
 
-        # Stage 4: Batched clause evaluations
+        effective_llm = llm if llm is not None else gemini()
         total_clauses = len(segmented.clauses)
+        overall_deadline = time.monotonic() + min(
+            settings.DEADLINE_CAP_S,
+            10.0 + (total_clauses * settings.DEADLINE_PER_CLAUSE_S),
+        )
+
+        # Stage 3.5: Whole-contract map
+        with tracer.start_as_current_span("mbiu.map_contract") as span:
+            span.set_attribute("mbiu.stage", "map_contract")
+            contract_map_payload = await map_contract(
+                segmented,
+                llm=effective_llm,
+                deadline=overall_deadline,
+            )
+            span.set_attribute("mbiu.links_count", len(contract_map_payload.links))
+            span.set_attribute("mbiu.issues_count", len(contract_map_payload.issues))
+            if contract_map_payload.contract_type:
+                span.set_attribute("mbiu.contract_type", contract_map_payload.contract_type)
+
+        contract_map_event = ContractMapEvent(
+            type="contract_map",
+            payload=contract_map_payload,
+        )
+        await queue.put(contract_map_event)
+
+        # Build fast lookup for linked clauses and conflicts
+        clause_links_map: dict[str, set[str]] = {c.clause_id: set() for c in segmented.clauses}
+        for link in contract_map_payload.links:
+            if link.from_clause_id in clause_links_map and link.to_clause_id != link.from_clause_id:
+                clause_links_map[link.from_clause_id].add(link.to_clause_id)
+            if link.to_clause_id in clause_links_map and link.to_clause_id != link.from_clause_id:
+                clause_links_map[link.to_clause_id].add(link.from_clause_id)
+
+        conflicts_by_clause: dict[str, list[str]] = {}
+        for issue in contract_map_payload.issues:
+            id1, id2 = issue.clause_ids
+            if id1 in clause_links_map:
+                clause_links_map[id1].add(id2)
+            if id2 in clause_links_map:
+                clause_links_map[id2].add(id1)
+            conflicts_by_clause.setdefault(id1, []).append(id2)
+            conflicts_by_clause.setdefault(id2, []).append(id1)
+
+        # Stage 4: Batched clause evaluations
         await queue.put(
             ProgressEvent(
                 type="progress",
@@ -183,12 +228,6 @@ async def _run_evaluation_pipeline(
             )
         )
 
-        overall_deadline = time.monotonic() + min(
-            settings.DEADLINE_CAP_S,
-            10.0 + (total_clauses * settings.DEADLINE_PER_CLAUSE_S),
-        )
-
-        effective_llm = llm if llm is not None else gemini()
         instructions = load_compare_prompt()
 
         results_list: list[ClauseResult] = []
@@ -201,6 +240,7 @@ async def _run_evaluation_pipeline(
             # Check overall deadline
             if time.monotonic() >= overall_deadline:
                 for c in segmented.clauses[i:]:
+                    c_links = sorted(list(clause_links_map.get(c.clause_id, set())))
                     await queue.put(
                         ClauseResultEvent(
                             type="clause_result",
@@ -218,7 +258,7 @@ async def _run_evaluation_pipeline(
                                 what_it_means="Higher-priority clauses were evaluated first.",
                                 comparison_note=None,
                                 impact_inputs=None,
-                                linked_clauses=[],
+                                linked_clauses=c_links,
                                 fairer_wording=None,
                                 ask_them=None,
                                 standard_template_id=None,
@@ -234,11 +274,15 @@ async def _run_evaluation_pipeline(
                 break
 
             for clause in batch:
+                c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
+                c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
                 clause_res = await _evaluate_single_clause(
                     clause=clause,
                     llm=effective_llm,
                     instructions=instructions,
                     deadline=overall_deadline,
+                    linked_clauses=c_links,
+                    conflict_with=c_conflicts,
                 )
                 results_list.append(clause_res)
                 done_count += 1
@@ -329,8 +373,13 @@ async def _evaluate_single_clause(
     llm: Gemini,
     instructions: str,
     deadline: float,
+    linked_clauses: list[str] | None = None,
+    conflict_with: list[str] | None = None,
 ) -> ClauseResult:
     """Evaluate one clause against retrieved synthetic template evidence."""
+    links = linked_clauses or []
+    conflicts = conflict_with or []
+
     # Retrieve template evidence
     with tracer.start_as_current_span("mbiu.retrieve") as span:
         span.set_attribute("mbiu.stage", "retrieve")
@@ -387,7 +436,7 @@ async def _evaluate_single_clause(
                 what_it_means=proposal.what_it_means,
                 comparison_note="The comparison could not be verified against the source text.",
                 impact_inputs=None,
-                linked_clauses=[],
+                linked_clauses=links,
                 fairer_wording=None,
                 ask_them=proposal.ask_them,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
@@ -399,23 +448,28 @@ async def _evaluate_single_clause(
                 model_version=llm_result.model_version,
             )
 
-        fairer = (
-            primary_ev.excerpt
-            if proposal.comparison == Outcome.WORSE_FOR_YOU and primary_ev
+        # A conflict is a contract issue, not a template comparison, so the verdict stays
+        outcome = proposal.comparison
+        comp_note = (
+            f"This clause conflicts with clause(s) {', '.join(conflicts)} "
+            "elsewhere in the contract."
+            if conflicts
             else None
         )
+
+        fairer = primary_ev.excerpt if outcome == Outcome.WORSE_FOR_YOU and primary_ev else None
         return ClauseResult(
             clause_id=clause.clause_id,
             pages=clause.pages,
             original_text=clause.text,
             status=ClauseStatus.EVALUATED,
-            comparison=proposal.comparison,
+            comparison=outcome,
             headline=proposal.headline,
             what_it_says=proposal.what_it_says,
             what_it_means=proposal.what_it_means,
-            comparison_note=None,
+            comparison_note=comp_note,
             impact_inputs=None,
-            linked_clauses=[],
+            linked_clauses=links,
             fairer_wording=fairer,
             ask_them=proposal.ask_them,
             standard_template_id=primary_ev.template_id if primary_ev else None,
@@ -441,7 +495,7 @@ async def _evaluate_single_clause(
             what_it_means=f"The AI evaluation encountered an error: {err.category.value}",
             comparison_note=None,
             impact_inputs=None,
-            linked_clauses=[],
+            linked_clauses=links,
             fairer_wording=None,
             ask_them=None,
             standard_template_id=primary_ev.template_id if primary_ev else None,
