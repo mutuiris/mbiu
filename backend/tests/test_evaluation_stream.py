@@ -251,8 +251,10 @@ def test_client_disconnect_stops_processing() -> None:
             heartbeat_interval_s=0.1,
         )
 
-        # Consume first event (DocumentEvent)
+        # Heartbeats may come first while extraction runs in a thread
         first_event = await anext(gen)
+        while isinstance(first_event, HeartbeatEvent):
+            first_event = await anext(gen)
         assert isinstance(first_event, DocumentEvent)
 
         # Close generator (simulating client network disconnect)
