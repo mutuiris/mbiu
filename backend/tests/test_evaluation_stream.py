@@ -174,7 +174,6 @@ def test_stream_event_sequence_and_schemas(fake_llm: Gemini) -> None:
 
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=fake_llm,
             heartbeat_interval_s=5.0,
         ):
@@ -227,7 +226,6 @@ def test_heartbeats_during_slow_llm() -> None:
         events: list[StreamEvent] = []
         async for event in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=slow_llm,
             heartbeat_interval_s=0.1,
         ):
@@ -249,7 +247,6 @@ def test_client_disconnect_stops_processing() -> None:
         pdf_bytes = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
         gen = evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=slow_llm,
             heartbeat_interval_s=0.1,
         )
@@ -405,7 +402,6 @@ def test_opentelemetry_traces_stages_without_contract_text(fake_llm: Gemini) -> 
 
         async for _ in evaluate_contract(
             pdf_bytes=pdf_bytes,
-            turnstile_token="test_token",
             llm=fake_llm,
         ):
             pass
