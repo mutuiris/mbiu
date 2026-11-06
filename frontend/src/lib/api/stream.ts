@@ -4,6 +4,8 @@ import type {
   ClauseResult,
   Outcome,
   ApiError,
+  Clause,
+  ClauseEvaluationRequest,
 } from "./generated/types.gen";
 
 /**
@@ -226,6 +228,45 @@ export interface FetchEvaluationOptions {
 export async function fetchEvaluationStream(
   options: FetchEvaluationOptions
 ): Promise<AsyncGenerator<EvaluationEvent, void, unknown>> {
+  const formData = new FormData();
+  formData.append("file", options.file);
+  formData.append("turnstile_token", options.turnstileToken);
+  return postForStream("/api/v1/evaluations", formData, {}, options);
+}
+
+export interface FetchClauseEvaluationsOptions {
+  clauses: Clause[];
+  turnstileToken: string;
+  apiUrl?: string;
+  traceparent?: string;
+  signal?: AbortSignal;
+}
+
+/**
+ * Sends clauses the browser already holds to /api/v1/clause-evaluations, to check them
+ * again. The stream carries only progress, clause_result and clause_failed events.
+ */
+export async function fetchClauseEvaluations(
+  options: FetchClauseEvaluationsOptions
+): Promise<AsyncGenerator<EvaluationEvent, void, unknown>> {
+  const body: ClauseEvaluationRequest = {
+    clauses: options.clauses,
+    turnstile_token: options.turnstileToken,
+  };
+  return postForStream(
+    "/api/v1/clause-evaluations",
+    JSON.stringify(body),
+    { "Content-Type": "application/json" },
+    options
+  );
+}
+
+async function postForStream(
+  path: string,
+  body: BodyInit,
+  headers: Record<string, string>,
+  options: { apiUrl?: string; traceparent?: string; signal?: AbortSignal }
+): Promise<AsyncGenerator<EvaluationEvent, void, unknown>> {
   const baseUrl = (
     options.apiUrl ||
     process.env.NEXT_PUBLIC_API_URL ||
@@ -234,16 +275,13 @@ export async function fetchEvaluationStream(
 
   const traceparent = options.traceparent || generateTraceparent();
 
-  const formData = new FormData();
-  formData.append("file", options.file);
-  formData.append("turnstile_token", options.turnstileToken);
-
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}/api/v1/evaluations`, {
+    response = await fetch(`${baseUrl}${path}`, {
       method: "POST",
-      body: formData,
+      body,
       headers: {
+        ...headers,
         traceparent,
       },
       signal: options.signal,

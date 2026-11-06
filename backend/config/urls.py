@@ -7,4 +7,5 @@ urlpatterns = [
     path("healthz", health.healthz),
     path("readyz", health.readyz),
     path("api/v1/evaluations", views.evaluations),
+    path("api/v1/clause-evaluations", views.clause_evaluations),
 ]
