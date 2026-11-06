@@ -4,29 +4,43 @@ version = "0.1.0"
 requires-python = "==3.14.*"
 dependencies = [
     "django==6.1.2",
+    "google-genai==2.31.0",
+    "httpx==0.28.1",
+    "numpy==2.5.4",
     "opentelemetry-exporter-otlp-proto-http==1.45.1",
     "opentelemetry-sdk==1.45.1",
+    "pgvector==0.5.1",
     "psycopg[binary]==3.3.6",
+    "pybreaker==1.4.1",
+    "pydantic==2.14.1",
     "pydantic-settings==2.15.0",
+    "pymupdf==2.0",
+    "tenacity==9.1.4",
     "uvicorn==0.54.0",
 ]
 
 [dependency-groups]
 dev = [
     "django-stubs==6.1.2",
+    "hypothesis==6.170.5",
     "mypy==2.4.0",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-django==4.14.0",
     "ruff==0.17.0",
 ]
+pipeline = [
+    "docling==2.142.1",
+]
 
 [tool.uv]
 package = false
 # Only resolve versions published at least 14 days ago
 exclude-newer = "14 days"
-# Security exception: certifi < 2026.10.19 has PYSEC-2026-4320 (compromised CA roots). Remove after 2026-11-03.
-exclude-newer-package = { certifi = "2026-10-21T00:00:00Z" }
+# Security exception: pyasn1 < 0.6.5 (via google-auth) has CVE-2026-119194 to -119197.
+# Remove both lines after 2026-11-10.
+constraint-dependencies = ["pyasn1>=0.6.5"]
+exclude-newer-package = { pyasn1 = "2026-10-28T00:00:00Z" }
 
 [tool.ruff]
 line-length = 100
@@ -37,6 +51,7 @@ select = ["E", "F", "I", "UP", "B", "T20", "D101", "D102", "D103"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
+"*/migrations/*" = ["D", "E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -44,6 +59,15 @@ convention = "google"
 [tool.mypy]
 strict = true
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pymupdf", "pymupdf.*", "psutil", "psutil.*"]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_calls = false
 
 [tool.django-stubs]
 django_settings_module = "config.settings"

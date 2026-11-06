@@ -277,6 +277,7 @@ Run `just --list` to see every command. The common ones:
 | `just dev`       | Start Postgres, PgBouncer, Jaeger and the API                       |
 | `just web`       | Start the frontend dev server                                       |
 | `just test`      | Run backend tests                                                   |
+| `just types`     | Regenerate frontend API types and Zod schemas from the backend models |
 | `just lint`      | Lint and format-check backend and frontend                          |
 | `just typecheck` | mypy for the backend, `tsc` for the frontend                      |
 | `just down`      | Stop all local services                                             |

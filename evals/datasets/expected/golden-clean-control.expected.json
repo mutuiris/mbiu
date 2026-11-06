@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "generator_version": "1.0.0",
+  "contract_id": "golden-clean-control",
+  "title": "Clean control recording agreement",
+  "contract_type": "recording",
+  "jurisdiction": "Kenya",
+  "standard_template_id": "golden-recording-standard-v1",
+  "pdf": "pdfs/golden-clean-control.pdf",
+  "standard_clauses": [
+    {
+      "clause_id": "1.1",
+      "heading": "Parties",
+      "text": "This Recording Agreement is made between the Artist and the Company on the Effective Date stated at the end of this Agreement."
+    },
+    {
+      "clause_id": "2.1",
+      "heading": "Term",
+      "text": "The Term of this Agreement begins on the Effective Date and continues for two (2) years, unless it is terminated earlier in accordance with this Agreement."
+    },
+    {
+      "clause_id": "3.1",
+      "heading": "Grant of Rights",
+      "text": "The Artist grants to the Company a non-exclusive licence to record, reproduce, distribute and exploit the Recordings during the Term in Kenya. All rights not expressly granted are reserved by the Artist."
+    },
+    {
+      "clause_id": "3.2",
+      "heading": "Ownership",
+      "text": "The Company owns the master recordings created under this Agreement. The Artist retains ownership of the musical compositions and the right to receive royalties."
+    },
+    {
+      "clause_id": "4.1",
+      "heading": "Royalties",
+      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts from the exploitation of the Recordings."
+    },
+    {
+      "clause_id": "4.2",
+      "heading": "Payment Dates",
+      "text": "Within thirty (30) days after the end of each calendar quarter, the Company shall send the Artist a statement. The Company shall pay the royalties shown in that statement within fifteen (15) days after the statement date."
+    },
+    {
+      "clause_id": "4.3",
+      "heading": "Accounting",
+      "text": "The Company shall keep complete books and records of Gross Receipts and shall allow the Artist to inspect them once each year on reasonable notice."
+    },
+    {
+      "clause_id": "5.1",
+      "heading": "Exclusivity",
+      "text": "During the Term, the Artist shall work exclusively with the Company for the recording and release of the Recordings and shall not grant the same rights to any other label."
+    },
+    {
+      "clause_id": "6.1",
+      "heading": "Termination",
+      "text": "Either party may terminate this Agreement on thirty (30) days written notice if the other party commits a material breach and does not cure it within that period."
+    },
+    {
+      "clause_id": "7.1",
+      "heading": "Renewal",
+      "text": "The parties may renew this Agreement for a further period only by a written agreement signed by both parties."
+    },
+    {
+      "clause_id": "8.1",
+      "heading": "Governing Law",
+      "text": "This Agreement is governed by the laws of Kenya and the courts of Kenya have exclusive jurisdiction over any dispute about it."
+    },
+    {
+      "clause_id": "9.1",
+      "heading": "Notices",
+      "text": "Notices under this Agreement must be in writing and delivered to the addresses given by the parties in clause 1.1."
+    },
+    {
+      "clause_id": "10.1",
+      "heading": "Entire Agreement",
+      "text": "This Agreement is the entire agreement between the parties about the Recordings and replaces all earlier understandings on that subject."
+    }
+  ],
+  "clauses": [
+    {
+      "clause_id": "1.1",
+      "heading": "Parties",
+      "pages": [
+        1
+      ],
+      "text": "This Recording Agreement is made between the Artist and the Company on the Effective Date stated at the end of this Agreement.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "2.1",
+      "heading": "Term",
+      "pages": [
+        1
+      ],
+      "text": "The Term of this Agreement begins on the Effective Date and continues for two (2) years, unless it is terminated earlier in accordance with this Agreement.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "3.1",
+      "heading": "Grant of Rights",
+      "pages": [
+        1
+      ],
+      "text": "The Artist grants to the Company a non-exclusive licence to record, reproduce, distribute and exploit the Recordings during the Term in Kenya. All rights not expressly granted are reserved by the Artist.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "3.2",
+      "heading": "Ownership",
+      "pages": [
+        1
+      ],
+      "text": "The Company owns the master recordings created under this Agreement. The Artist retains ownership of the musical compositions and the right to receive royalties.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "4.1",
+      "heading": "Royalties",
+      "pages": [
+        1
+      ],
+      "text": "The Company shall pay the Artist a royalty of twenty per cent (20%) of Gross Receipts from the exploitation of the Recordings.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "4.2",
+      "heading": "Payment Dates",
+      "pages": [
+        1
+      ],
+      "text": "Within thirty (30) days after the end of each calendar quarter, the Company shall send the Artist a statement. The Company shall pay the royalties shown in that statement within fifteen (15) days after the statement date.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "4.3",
+      "heading": "Accounting",
+      "pages": [
+        1
+      ],
+      "text": "The Company shall keep complete books and records of Gross Receipts and shall allow the Artist to inspect them once each year on reasonable notice.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "5.1",
+      "heading": "Exclusivity",
+      "pages": [
+        1
+      ],
+      "text": "During the Term, the Artist shall work exclusively with the Company for the recording and release of the Recordings and shall not grant the same rights to any other label.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "6.1",
+      "heading": "Termination",
+      "pages": [
+        1
+      ],
+      "text": "Either party may terminate this Agreement on thirty (30) days written notice if the other party commits a material breach and does not cure it within that period.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "7.1",
+      "heading": "Renewal",
+      "pages": [
+        1
+      ],
+      "text": "The parties may renew this Agreement for a further period only by a written agreement signed by both parties.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "8.1",
+      "heading": "Governing Law",
+      "pages": [
+        1
+      ],
+      "text": "This Agreement is governed by the laws of Kenya and the courts of Kenya have exclusive jurisdiction over any dispute about it.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "9.1",
+      "heading": "Notices",
+      "pages": [
+        2
+      ],
+      "text": "Notices under this Agreement must be in writing and delivered to the addresses given by the parties in clause 1.1.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    },
+    {
+      "clause_id": "10.1",
+      "heading": "Entire Agreement",
+      "pages": [
+        2
+      ],
+      "text": "This Agreement is the entire agreement between the parties about the Recordings and replaces all earlier understandings on that subject.",
+      "expected_outcome": "matches_standard",
+      "planted_risk_ids": [],
+      "conflict_ids": []
+    }
+  ],
+  "risks": []
+}

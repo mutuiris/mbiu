@@ -12,9 +12,14 @@ export NEXT_TELEMETRY_DISABLED := "1"
 default:
     @just --list
 
-# Start Postgres, PgBouncer, Jaeger and the API (auto-reload), and wait until they are ready
+# Start Postgres, PgBouncer, Jaeger and the API (auto-reload), wait until ready, then migrate
 dev:
     docker compose up -d --build --wait
+    docker compose run --rm migrate
+
+# Apply database migrations
+migrate:
+    docker compose run --rm migrate
 
 # Install frontend dependencies (the backend installs itself through uv)
 install:
@@ -23,6 +28,11 @@ install:
 # Start the frontend on http://localhost:3000
 web:
     pnpm --dir frontend dev
+
+# Regenerate the frontend's API types and Zod schemas from the backend models
+types:
+    uv run --directory backend python -m mbiu.api.openapi ../frontend/src/lib/api/openapi.json
+    pnpm --dir frontend generate:api
 
 # Run backend tests
 test:
