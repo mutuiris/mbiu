@@ -458,3 +458,35 @@ def test_missing_provider_sends_clause_failed_instead_of_breaking(
         assert all(e.payload.reason == "unavailable" and e.payload.retryable for e in failed)
 
     asyncio.run(run_test())
+
+
+def test_clauses_run_in_parallel_up_to_the_concurrency_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Clause checks overlap, but never more than LLM_CONCURRENCY at once."""
+    from django.conf import settings
+
+    monkeypatch.setattr(settings, "LLM_CONCURRENCY", 2)
+    in_flight = 0
+    peak = 0
+
+    class CountingClient(FakeGeminiClient):
+        async def _create(self, **kwargs: Any) -> Any:
+            nonlocal in_flight, peak
+            in_flight += 1
+            peak = max(peak, in_flight)
+            try:
+                return await super()._create(**kwargs)
+            finally:
+                in_flight -= 1
+
+    llm = Gemini(CountingClient(delay_s=0.2), timeout_s=10.0)
+    clauses = [f"{n}. Clause {n}\nThe Artist receives 10% of net receipts." for n in range(1, 6)]
+
+    async def run_test() -> None:
+        pdf_bytes = create_synthetic_text_pdf(clauses)
+        async for _ in evaluate_contract(pdf_bytes=pdf_bytes, llm=llm, heartbeat_interval_s=5.0):
+            pass
+
+    asyncio.run(run_test())
+    assert peak == 2
