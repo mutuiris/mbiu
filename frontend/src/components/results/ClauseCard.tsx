@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
+import { ShillingsCalculator } from "./ShillingsCalculator";
 
 export interface LinkedClauseItem {
   clauseId: string;
@@ -9,35 +10,130 @@ export interface LinkedClauseItem {
   issueKind?: "conflict" | "override" | null;
 }
 
+export interface CopyButtonProps {
+  text: string;
+  label?: string;
+  copiedLabel?: string;
+  className?: string;
+}
+
+export const CopyButton: React.FC<CopyButtonProps> = ({
+  text,
+  label = "📋 Copy",
+  copiedLabel = "✓ Copied!",
+  className = "copy-btn",
+}) => {
+  const [copied, setCopied] = useState<boolean>(false);
+
+  const handleCopy = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // Clipboard fallback
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={`${className} ${copied ? "copied" : ""}`}
+      aria-label="Copy to clipboard"
+    >
+      {copied ? copiedLabel : label}
+    </button>
+  );
+};
+
+export interface ReadAloudButtonProps {
+  text: string;
+}
+
+export const ReadAloudButton: React.FC<ReadAloudButtonProps> = ({ text }) => {
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleToggleSpeech = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-KE";
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleToggleSpeech}
+      className={`read-aloud-btn ${isSpeaking ? "speaking" : ""}`}
+      aria-label={isSpeaking ? "Stop reading aloud" : "Read card summary aloud"}
+      title={isSpeaking ? "Stop speech" : "Read aloud on this device"}
+    >
+      <span className="speaker-icon" aria-hidden="true">
+        {isSpeaking ? "⏹" : "🔊"}
+      </span>
+      <span>{isSpeaking ? "Stop reading" : "Read aloud"}</span>
+      {isSpeaking && <span className="speaking-pulse" aria-hidden="true"></span>}
+    </button>
+  );
+};
+
 export interface ClauseCardProps {
   result: ClauseResult;
   clauseNumber?: string | null;
   clauseHeading?: string | null;
+  topic?: string | null;
   isHighlighted?: boolean;
   isUpdated?: boolean;
   linkedClauses?: LinkedClauseItem[];
   onSelectClause?: (clauseId: string) => void;
+  onJumpToPdfClause?: (clauseId: string, pageNumber: number) => void;
 }
 
 export const ClauseCard: React.FC<ClauseCardProps> = ({
   result,
   clauseNumber,
   clauseHeading,
+  topic,
   isHighlighted = false,
   isUpdated = false,
   linkedClauses = [],
   onSelectClause,
+  onJumpToPdfClause,
 }) => {
   const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
     switch (comparison) {
       case "worse_for_you":
         return {
-          label: "Worse than standard",
+          label: "Worse than the standard",
           className: "badge-worse",
         };
       case "better_for_you":
         return {
-          label: "Better than standard",
+          label: "Better than the standard",
           className: "badge-better",
         };
       case "not_in_standard":
@@ -64,9 +160,29 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   };
 
   const badge = getBadgeConfig(result.comparison);
+  const topicText = topic || clauseHeading || "Contract Term";
+  const firstPage = result.pages[0] ?? 1;
   const locationLabel = `Page ${result.pages.join(", ")}${
-    clauseNumber ? ` · Clause ${clauseNumber}` : ""
-  }${clauseHeading ? ` (${clauseHeading})` : ""}`;
+    clauseNumber ? `, clause ${clauseNumber}` : ""
+  }`;
+
+  const speechText = [
+    result.headline,
+    `Status: ${badge.label}.`,
+    `Topic: ${topicText}.`,
+    `Location: ${locationLabel}.`,
+    `Your contract says: ${result.what_it_says}.`,
+    result.standard_excerpt ? `Reviewed standard says: ${result.standard_excerpt}.` : "",
+    `What this means for you: ${result.what_it_means}.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const whatsappShareUrl = result.ask_them
+    ? `https://wa.me/?text=${encodeURIComponent(
+        `Mbiu Contract Review question for clause ${clauseNumber ? clauseNumber : ""}:\n"${result.ask_them}"`,
+      )}`
+    : "";
 
   return (
     <article
@@ -77,46 +193,70 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
       aria-labelledby={`headline-${result.clause_id}`}
       data-testid={`card-${result.clause_id}`}
     >
+      {/* Whole-contract update notice */}
       {isUpdated && (
         <div
           className="card-updated-notice"
           role="status"
           data-testid="clause-updated-notice"
         >
-          <span className="updated-dot" aria-hidden="true">●</span>
+          <span className="updated-dot" aria-hidden="true">
+            ●
+          </span>
           <span>Result updated based on whole-contract check</span>
         </div>
       )}
 
-      <header className="card-header">
-        <div className="card-meta">
-          <span className={`status-badge ${badge.className}`}>{badge.label}</span>
-          <span className="card-location">{locationLabel}</span>
-        </div>
-        <h3 id={`headline-${result.clause_id}`} className="card-headline">
+      {/* 1. Headline in artist's terms */}
+      <div className="card-headline-wrapper">
+        <h3
+          id={`headline-${result.clause_id}`}
+          className="card-headline"
+          data-testid="clause-headline"
+        >
           {result.headline}
         </h3>
-      </header>
+      </div>
 
-      <section className="card-comparison-section">
-        <div className="comparison-row your-contract">
-          <span className="comparison-label">Your contract:</span>
-          <blockquote className="comparison-quote">
-            “{result.what_it_says}”
-          </blockquote>
+      {/* 2. Status, topic and location (tapping jumps to the clause in the PDF viewer) */}
+      <div className="card-status-topic-location" data-testid="status-topic-location">
+        <button
+          type="button"
+          onClick={() => onJumpToPdfClause?.(result.clause_id, firstPage)}
+          className="jump-to-pdf-trigger"
+          aria-label={`Jump to page ${firstPage} in PDF viewer`}
+          title={`Click to jump to page ${firstPage} in PDF viewer`}
+        >
+          <span className={`status-badge-inline ${badge.className}`}>{badge.label}</span>
+          <span className="meta-separator" aria-hidden="true">
+            ·
+          </span>
+          <span className="meta-topic">{topicText}</span>
+          <span className="meta-separator" aria-hidden="true">
+            ·
+          </span>
+          <span className="meta-location">
+            {locationLabel}
+            <span className="pdf-jump-icon" aria-hidden="true">
+              {" "}
+              ↗
+            </span>
+          </span>
+        </button>
+      </div>
+
+      {/* 3, 4, 5 Comparison Section */}
+      <section className="card-comparison-section" data-testid="contract-vs-standard">
+        {/* 3. Your contract vs the standard, one line each */}
+        <div className="comparison-line your-contract-line">
+          <span className="line-label">Your contract:</span>
+          <p className="line-content text-contract">“{result.what_it_says}”</p>
         </div>
 
         {result.standard_excerpt && (
-          <div className="comparison-row standard-practice">
-            <span className="comparison-label">Reviewed standard:</span>
-            <p className="comparison-text">{result.standard_excerpt}</p>
-          </div>
-        )}
-
-        {result.fairer_wording && (
-          <div className="comparison-row fairer-wording">
-            <span className="comparison-label">Fairer wording:</span>
-            <p className="fairer-text">{result.fairer_wording}</p>
+          <div className="comparison-line standard-line">
+            <span className="line-label">The standard:</span>
+            <p className="line-content text-standard">{result.standard_excerpt}</p>
           </div>
         )}
 
@@ -127,11 +267,21 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
 
         {result.comparison_note && (
           <div className="card-comparison-note" data-testid="clause-comparison-note">
-            <span className="note-icon" aria-hidden="true">ℹ️</span>
+            <span className="note-icon" aria-hidden="true">
+              ℹ️
+            </span>
             <p className="note-text">{result.comparison_note}</p>
           </div>
         )}
 
+        {/* 4. In shillings: worked example from impact_inputs */}
+        {result.impact_inputs && (
+          <div className="card-shillings-section">
+            <ShillingsCalculator inputs={result.impact_inputs} />
+          </div>
+        )}
+
+        {/* 5. Also affected by */}
         {linkedClauses && linkedClauses.length > 0 && (
           <div className="card-affected-by" data-testid="also-affected-by">
             <span className="affected-label">Also affected by:</span>
@@ -148,10 +298,14 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
                   title={`Jump to ${link.label}`}
                 >
                   {link.issueKind === "conflict" && (
-                    <span className="kind-icon" aria-hidden="true">⚠️ </span>
+                    <span className="kind-icon" aria-hidden="true">
+                      ⚠️{" "}
+                    </span>
                   )}
                   {link.issueKind === "override" && (
-                    <span className="kind-icon" aria-hidden="true">⚡ </span>
+                    <span className="kind-icon" aria-hidden="true">
+                      ⚡{" "}
+                    </span>
                   )}
                   <span>{link.label}</span>
                 </button>
@@ -161,12 +315,88 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         )}
       </section>
 
-      {result.ask_them && (
-        <footer className="card-ask-them-section">
-          <div className="ask-them-badge">Ask them:</div>
-          <p className="ask-them-text">“{result.ask_them}”</p>
-        </footer>
+      {/* 6. Fairer wording from the template with a Copy button (on cards worse than standard) */}
+      {result.comparison === "worse_for_you" && result.fairer_wording && (
+        <section className="card-fairer-section" data-testid="fairer-wording-section">
+          <div className="fairer-header">
+            <div className="fairer-title-row">
+              <span className="fairer-badge-tag">Fairer wording</span>
+              <span className="fairer-hint">Recommended alternative from reviewed standard</span>
+            </div>
+            <CopyButton
+              text={result.fairer_wording}
+              label="📋 Copy"
+              copiedLabel="✓ Copied!"
+              className="copy-btn"
+            />
+          </div>
+          <blockquote className="fairer-quote">“{result.fairer_wording}”</blockquote>
+        </section>
       )}
+
+      {/* 7. Ask them, with Copy and Share to WhatsApp */}
+      {result.ask_them && (
+        <section className="card-ask-them-section" data-testid="ask-them-section">
+          <div className="ask-them-header">
+            <span className="ask-them-badge">Ask them</span>
+            <div className="ask-them-actions">
+              <CopyButton
+                text={result.ask_them}
+                label="📋 Copy"
+                copiedLabel="✓ Copied"
+                className="action-btn copy-action-btn"
+              />
+              <a
+                href={whatsappShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="action-btn whatsapp-action-btn"
+                aria-label="Share question to WhatsApp"
+              >
+                <span className="whatsapp-icon" aria-hidden="true">
+                  💬
+                </span>
+                <span>WhatsApp</span>
+              </a>
+            </div>
+          </div>
+          <p className="ask-them-text">“{result.ask_them}”</p>
+        </section>
+      )}
+
+      {/* 8. Show the exact wording: original clause and template excerpt, collapsed by default */}
+      <section className="card-exact-wording-section" data-testid="exact-wording-section">
+        <details className="exact-wording-details">
+          <summary className="exact-wording-summary">
+            <span className="summary-icon" aria-hidden="true">
+              🔍
+            </span>
+            <span>Show exact wording</span>
+            <span className="summary-hint">(original clause & template excerpt)</span>
+          </summary>
+
+          <div className="exact-wording-body">
+            <div className="wording-block">
+              <span className="wording-sublabel">Original contract clause (unaltered):</span>
+              <blockquote className="exact-text-quote">{result.original_text}</blockquote>
+            </div>
+
+            {result.standard_excerpt && (
+              <div className="wording-block">
+                <span className="wording-sublabel">Reviewed template excerpt:</span>
+                <blockquote className="exact-template-quote">
+                  {result.standard_excerpt}
+                </blockquote>
+              </div>
+            )}
+          </div>
+        </details>
+      </section>
+
+      {/* 9. Read aloud with the browser's speech synthesis, on the device */}
+      <footer className="card-read-aloud-footer" data-testid="read-aloud-section">
+        <ReadAloudButton text={speechText} />
+      </footer>
     </article>
   );
 };
