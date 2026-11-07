@@ -86,9 +86,10 @@ jobs:
         with:
           node-version: 24.21.0
       - run: npm install --global vercel@65.2.0
-      # The Vercel project's Root Directory is frontend, so the CLI runs from the repo root.
+      # The Vercel project has no Root Directory set, so the CLI runs inside frontend/.
       # Its environment variables (API URL, Turnstile site key) come from the Vercel project.
       - name: Build and deploy to Vercel
+        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
