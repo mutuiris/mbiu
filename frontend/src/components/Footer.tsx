@@ -32,21 +32,13 @@ export function Footer({ className = "" }: FooterProps) {
             </div>
 
             <p className="text-[0.9rem] leading-relaxed text-mbiu-ink/80 dark:text-[#B9C1C5]">
-              Democratizing contract clarity and creative rights for Kenya&apos;s independent music
-              artists.
+              Helps Kenyan musicians understand a music contract before they sign:
+              clause-by-clause comparison with reviewed standard templates, in plain language. Not
+              legal advice.
             </p>
 
-            <p className="text-[0.84rem] leading-relaxed text-mbiu-ink/75 dark:text-[#9aa5aa]">
-              This project was part of the 2026{" "}
-              <a
-                href="https://www.mozillafoundation.org/en/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo hover:decoration-mbiu-indigo dark:text-[#F6F2E9] dark:decoration-white/30 dark:hover:text-white"
-              >
-                Mozilla
-              </a>{" "}
-              x{" "}
+            <p className="text-[0.84rem] leading-relaxed text-mbiu-ink/70 dark:text-[#9aa5aa]">
+              Supported by{" "}
               <a
                 href="https://www.kamilimu.org/"
                 target="_blank"
@@ -54,26 +46,8 @@ export function Footer({ className = "" }: FooterProps) {
                 className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo hover:decoration-mbiu-indigo dark:text-[#F6F2E9] dark:decoration-white/30 dark:hover:text-white"
               >
                 KamiLimu
-              </a>{" "}
-              Buildathon and has been funded by{" "}
-              <a
-                href="https://www.mozillafoundation.org/en/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo hover:decoration-mbiu-indigo dark:text-[#F6F2E9] dark:decoration-white/30 dark:hover:text-white"
-              >
-                Mozilla Foundation
               </a>
               .
-            </p>
-
-            <p className="text-[0.81rem] leading-relaxed text-mbiu-ink/65 dark:text-[#88949b]">
-              <strong className="font-semibold text-mbiu-ink/90 dark:text-[#d3dbe0]">
-                Independent Civic Resource:
-              </strong>{" "}
-              Mbiu is an independent educational contract review tool. It is not affiliated with or
-              operating on behalf of any record label or management firm. It does not provide legal
-              advice. Always consult a qualified lawyer for binding agreements.
             </p>
           </div>
 

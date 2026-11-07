@@ -10,17 +10,18 @@ describe("Footer Component", () => {
     expect(markup).toContain("mbiu-horn.png");
   });
 
-  it("renders the KamiLimu and Mozilla Buildathon acknowledgments", () => {
+  it("renders the KamiLimu support acknowledgment", () => {
     const markup = renderToStaticMarkup(<Footer />);
     expect(markup).toContain("KamiLimu");
-    expect(markup).toContain("Mozilla");
-    expect(markup).toContain("Mozilla Foundation");
+    expect(markup).toContain("Supported by");
   });
 
-  it("renders legal disclaimer and short concise guidance", () => {
+  it("renders plain-language explanation and disclaimer", () => {
     const markup = renderToStaticMarkup(<Footer />);
-    expect(markup).toContain("Independent Civic Resource:");
-    expect(markup).toContain("It does not provide legal advice.");
+    expect(markup).toContain(
+      "Helps Kenyan musicians understand a music contract before they sign"
+    );
+    expect(markup).toContain("Not legal advice.");
   });
 
   it("renders navigation columns with working routes: Platform, About, and Privacy & Legal", () => {
