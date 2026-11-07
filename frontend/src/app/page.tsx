@@ -89,7 +89,7 @@ function Backdrop() {
         width={972}
         height={590}
         priority
-        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-45 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-60 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
+        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-35 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-45 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
       />
 
       <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
