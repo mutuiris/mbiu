@@ -45,8 +45,8 @@ jobs:
       DJANGO_ALLOWED_HOSTS: localhost
       # No database is used by these tests; this only satisfies the settings check
       DATABASE_URL: postgresql://localhost/unused
-      # Cloudflare's public always-pass test secret; production sets its own
-      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      # Cloudflare's always-pass test key: the tests depend on its behaviour
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_TEST_SECRET_KEY }}
       HAS_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
