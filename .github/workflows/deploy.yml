@@ -16,7 +16,9 @@ jobs:
   ci:
     name: Test
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
+    # Only the secret the tests need, not every secret in the repository
+    secrets:
+      TURNSTILE_TEST_SECRET_KEY: ${{ secrets.TURNSTILE_TEST_SECRET_KEY }}
 
   # Off until the production secrets exist: set the repo variable DEPLOY_ENABLED=true
   migrate:
