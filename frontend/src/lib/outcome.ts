@@ -14,7 +14,7 @@ export interface OutcomeLabel {
  * Mbiu system architecture and tooling:
  * - typical: 🔵 Typical
  * - unusual: 🟡 Unusual
- * - worth_asking_about: 🟠 Worth asking about
+ * - worth_asking_about: 🟠 Worth inquiry
  * - cannot_compare: ⚪ Couldn't compare
  *
  * Typical does not mean safe. No green label is ever used.
@@ -39,10 +39,10 @@ export function outcomeLabel(comparison: ClauseResult["comparison"]): OutcomeLab
     case "worse_for_you":
     case "missing_from_contract":
       return {
-        label: "Worth asking about",
+        label: "Worth inquiry",
         symbol: "🟠",
         tone: "worth_asking_about",
-        display: "🟠 Worth asking about",
+        display: "🟠 Worth inquiry",
       };
     default:
       return {

@@ -78,7 +78,7 @@ describe("ClauseCard Component", () => {
 
     // 1. Heading: Clause number, plain-language topic title, and label symbol + text
     expect(html).toContain("Clause 7.2, Royalties");
-    expect(html).toContain("🟠 Worth asking about");
+    expect(html).toContain("🟠 Worth inquiry");
     expect(html).toContain("Page 4, clause 7.2");
     const headingIndex = html.indexOf("data-testid=\"clause-heading\"");
 

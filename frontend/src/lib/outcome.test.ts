@@ -22,16 +22,16 @@ describe("outcomeLabel", () => {
       display: "🟡 Unusual",
     });
     expect(outcomeLabel("worse_for_you")).toEqual({
-      label: "Worth asking about",
+      label: "Worth inquiry",
       symbol: "🟠",
       tone: "worth_asking_about",
-      display: "🟠 Worth asking about",
+      display: "🟠 Worth inquiry",
     });
     expect(outcomeLabel("missing_from_contract")).toEqual({
-      label: "Worth asking about",
+      label: "Worth inquiry",
       symbol: "🟠",
       tone: "worth_asking_about",
-      display: "🟠 Worth asking about",
+      display: "🟠 Worth inquiry",
     });
     expect(outcomeLabel("cannot_compare")).toEqual({
       label: "Couldn't compare",
