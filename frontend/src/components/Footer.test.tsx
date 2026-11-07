@@ -24,15 +24,17 @@ describe("Footer Component", () => {
     expect(markup).toContain("Not legal advice.");
   });
 
-  it("renders navigation columns with working routes: Platform, About, and Privacy & Legal", () => {
+  it("renders navigation columns with working routes: Platform and Privacy & Legal", () => {
     const markup = renderToStaticMarkup(<Footer />);
     expect(markup).toContain("Platform");
-    expect(markup).toContain("About");
     expect(markup).toContain("Privacy &amp; Legal");
+    expect(markup).toContain('href="/"');
     expect(markup).toContain('href="/#how-it-works"');
+    expect(markup).toContain('href="/#about"');
+    expect(markup).toContain('href="/#upload"');
+    expect(markup).toContain('href="/team"');
     expect(markup).toContain('href="/privacy"');
     expect(markup).toContain('href="/terms"');
-    expect(markup).toContain('href="/team"');
   });
 
   it("renders centered copyright notice and omits old project subtitle", () => {
