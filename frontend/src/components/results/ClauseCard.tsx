@@ -126,14 +126,14 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   onJumpToPdfClause,
 }) => {
   const BADGE_CLASS: Record<OutcomeTone, string> = {
-    typical: "badge-better",
-    unusual: "badge-notice",
-    inquiry: "badge-worse",
-    unchecked: "badge-muted",
+    typical: "badge-typical",
+    unusual: "badge-unusual",
+    worth_asking_about: "badge-worth",
+    cannot_compare: "badge-cannot-compare",
   };
   const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
-    const { label, tone } = outcomeLabel(comparison);
-    return { label, className: BADGE_CLASS[tone] };
+    const { label, symbol, tone, display } = outcomeLabel(comparison);
+    return { label, symbol, tone, display, className: BADGE_CLASS[tone] };
   };
 
   const badge = getBadgeConfig(result.comparison);
@@ -204,7 +204,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
           aria-label={`Jump to page ${firstPage} in PDF viewer`}
           title={`Click to jump to page ${firstPage} in PDF viewer`}
         >
-          <span className={`status-badge-inline ${badge.className}`}>{badge.label}</span>
+          <span className={`status-badge-inline ${badge.className}`}>{badge.display}</span>
           <span className="meta-separator" aria-hidden="true">
             ·
           </span>
