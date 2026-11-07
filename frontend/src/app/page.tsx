@@ -81,7 +81,7 @@ function Backdrop() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-[100svh] min-h-[720px] max-h-[1000px] overflow-hidden"
+      className="pointer-events-none absolute inset-x-0 top-0 h-[100svh] min-h-[620px] max-h-[880px] overflow-hidden"
     >
       <Image
         src="/brand/mbiu-horn-watermark.png"
@@ -93,7 +93,7 @@ function Backdrop() {
       />
 
       <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
-      <TribalPattern className="absolute -bottom-8 -left-8 h-[220px] w-[190px] text-mbiu-ink sm:h-[260px] sm:w-[225px] dark:text-white/60" />
+      <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[170px] text-mbiu-ink/15 sm:h-[240px] sm:w-[205px] dark:text-white/20" />
 
       <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />
       <Music2 className="absolute bottom-[7%] right-[7%] h-10 w-10 rotate-[14deg] text-mbiu-ink/90 dark:text-white/70" />
@@ -105,7 +105,7 @@ function Backdrop() {
 
 function ClausePreviewCard() {
   return (
-    <article className="relative z-10 w-full max-w-[380px] rounded-[24px] border border-white/70 bg-[#fbf1e1]/70 p-5 shadow-[0_36px_90px_-32px_rgba(30,25,15,0.5)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_36px_90px_-34px_rgba(0,0,0,0.9)] sm:rounded-[28px] sm:p-7 lg:mt-8">
+    <article className="relative z-10 w-full max-w-[380px] rounded-[24px] border border-white/70 bg-[#fbf1e1]/70 p-5 shadow-[0_36px_90px_-32px_rgba(30,25,15,0.5)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_36px_90px_-34px_rgba(0,0,0,0.9)] sm:rounded-[28px] sm:p-7 xl:mt-2">
       <div className="flex items-center gap-2.5">
         <Diamond className="h-3.5 w-3.5 fill-[#e98a3f] text-[#e98a3f]" strokeWidth={1} />
         <span className="text-[0.88rem] font-medium text-mbiu-ink dark:text-[#EDE7DB] sm:text-[0.9rem]">
@@ -378,7 +378,7 @@ export default function Home() {
       <main className="relative z-10">
         <section
           id="about"
-          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-10 px-4 pb-12 pt-8 sm:scroll-mt-24 sm:gap-12 sm:px-8 sm:pb-16 sm:pt-14 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-14 xl:pt-20"
+          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
         >
           <div className="mx-auto flex w-full max-w-[720px] flex-col items-center text-center xl:mx-0 xl:items-start xl:text-left">
             <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
@@ -405,7 +405,7 @@ export default function Home() {
 
             <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Your contract isn&apos;t stored on our servers.
+              Mbiu does not store your contracts on our servers.
             </p>
           </div>
 
