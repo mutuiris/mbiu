@@ -39,6 +39,9 @@ class Env(BaseSettings):
     cors_allowed_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
     max_pages: int = 40
+    # Slow, shared CPUs (free hosting) need more time just to start the extraction worker
+    extraction_timeout_s: float = Field(default=30.0, gt=0)
+    extraction_timeout_per_page_s: float = Field(default=0.5, ge=0)
     # Required: a default here would be a bot check that always passes
     turnstile_secret_key: str = Field(min_length=1)
     turnstile_verify_url: str = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
@@ -93,5 +96,7 @@ MAX_READING_GRADE = env.max_reading_grade
 CORS_ALLOWED_ORIGINS = [o.strip() for o in env.cors_allowed_origins.split(",") if o.strip()]
 MAX_UPLOAD_MB = env.max_upload_mb
 MAX_PAGES = env.max_pages
+EXTRACTION_TIMEOUT_S = env.extraction_timeout_s
+EXTRACTION_TIMEOUT_PER_PAGE_S = env.extraction_timeout_per_page_s
 TURNSTILE_SECRET_KEY = env.turnstile_secret_key
 TURNSTILE_VERIFY_URL = env.turnstile_verify_url
