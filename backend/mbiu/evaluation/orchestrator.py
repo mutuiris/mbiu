@@ -674,8 +674,7 @@ async def _evaluate_single_clause(
         outcome = proposal.comparison
         notes = []
         if note is not None:
-            # Nothing to compare with: keep the explanation, never a verdict
-            outcome = Outcome.CANNOT_COMPARE
+            # Include informational note without forcing cannot_compare
             notes.append(note)
         if context is not None:
             notes.append(context)
@@ -691,7 +690,9 @@ async def _evaluate_single_clause(
             clause_id=clause.clause_id,
             pages=clause.pages,
             original_text=clause.text,
-            status=ClauseStatus.EVALUATED if note is None else ClauseStatus.CANNOT_COMPARE,
+            status=ClauseStatus.EVALUATED
+            if outcome != Outcome.CANNOT_COMPARE
+            else ClauseStatus.CANNOT_COMPARE,
             comparison=outcome,
             headline=proposal.headline,
             what_it_says=proposal.what_it_says,
