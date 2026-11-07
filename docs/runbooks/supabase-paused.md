@@ -12,8 +12,9 @@ The API reads public templates from Supabase and stores no contracts there. If t
 
 ```bash
 curl -i "$API_URL/readyz"
-gcloud run services logs read mbiu-api --region "$REGION" --limit 200
 ```
+
+Then check the logs in Render: **mbiu-api → Logs**.
 
 ## Mitigate
 
@@ -23,7 +24,7 @@ gcloud run services logs read mbiu-api --region "$REGION" --limit 200
 
 1. `DATABASE_URL` must use the transaction pooler (port 6543). Django keeps no connections open (`CONN_MAX_AGE` is 0 in [settings.py](../../backend/config/settings.py)), so a saturated pooler usually means another client is holding connections.
 2. In the Supabase dashboard, check active connections under Database, then restart the pooler.
-3. As a temporary workaround, add a new version of the `DATABASE_URL` secret that uses the session pooler (port 5432), then redeploy. Switch back afterwards.
+3. As a temporary workaround, set `DATABASE_URL` in Render → mbiu-api → Environment to the session pooler (port 5432); saving redeploys. Switch back afterwards.
 
 ## Verify
 
