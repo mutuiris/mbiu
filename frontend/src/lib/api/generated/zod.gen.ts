@@ -303,7 +303,6 @@ export const zClauseResult = z.object({
     evidence: z.array(zEvidence),
     evidence_ids: z.array(z.string()),
     evidence_quote: z.string().nullable(),
-    fairer_wording: z.string().nullable(),
     headline: z.string(),
     impact_inputs: zImpactInputs.nullable(),
     linked_clauses: z.array(z.string().min(1).max(64)),
