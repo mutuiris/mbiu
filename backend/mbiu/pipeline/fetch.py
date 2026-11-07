@@ -1,4 +1,7 @@
-"""Fetch source documents through Firecrawl with strict robots.txt handling."""
+"""Fetch source documents, with strict robots.txt handling.
+
+Direct links to a PDF or DOCX are downloaded as-is; web pages go through Firecrawl.
+"""
 
 import logging
 import re
@@ -20,6 +23,13 @@ logger = logging.getLogger(__name__)
 DEFAULT_BASE_URL = "https://api.firecrawl.dev"
 USER_AGENT = "mbiu-corpus-pipeline/0.1 (+https://mbiu.app)"
 _API_VERSION = "v2"
+# Links straight to a file are downloaded as-is; Firecrawl is for web pages
+DOCUMENT_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+# Templates are a few MB at most; anything bigger is not what we expect
+MAX_DOCUMENT_BYTES = 25 * 1024 * 1024
 
 
 class RobotsGate(Protocol):
@@ -121,6 +131,9 @@ class FirecrawlFetcher:
             return []
         if not self._robots.allowed(source.url, timeout_s=min(timeout_s, 10.0)):
             return []
+        suffix = Path(urlsplit(source.url).path).suffix.lower()
+        if suffix in DOCUMENT_TYPES:
+            return [self._download(source, DOCUMENT_TYPES[suffix], timeout_s)]
 
         deadline = self._clock() + timeout_s
         job_id = self._start_crawl(source, max_pages, timeout_s)
@@ -177,6 +190,30 @@ class FirecrawlFetcher:
         if not isinstance(payload, Mapping):
             raise FetchError(f"Firecrawl returned an invalid crawl payload for job {job_id}")
         return payload
+
+    def _download(self, source: Source, content_type: str, timeout_s: float) -> FetchedDocument:
+        """Download a file the source links to directly, keeping its original bytes."""
+        try:
+            response = self._client.get(
+                source.url,
+                headers={"User-Agent": self._user_agent, "Accept": f"{content_type},*/*"},
+                timeout=timeout_s,
+                follow_redirects=True,
+            )
+        except httpx.HTTPError as exc:
+            raise FetchError(f"download failed: {type(exc).__name__}") from exc
+        if response.status_code != 200:
+            raise FetchError(f"download returned {response.status_code}")
+        if len(response.content) > MAX_DOCUMENT_BYTES:
+            raise FetchError("download is larger than expected")
+        name = Path(urlsplit(source.url).path).name
+        return FetchedDocument(
+            url=source.url,
+            content=response.content,
+            content_type=content_type,
+            filename=re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("._") or "document",
+            fetched_at=self._now(),
+        )
 
     def _documents(
         self,

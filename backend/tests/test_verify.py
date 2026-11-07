@@ -232,3 +232,20 @@ def test_a_second_failure_becomes_cannot_compare_without_model_wording(
     assert not model_wording & {result.headline, result.what_it_says, result.what_it_means}
     assert result.ask_them is None
     assert result.evidence_quote is None
+
+
+def test_impact_inputs_must_quote_the_contract_and_take_values_from_their_quotes() -> None:
+    from mbiu.api.schemas import ImpactInputs, QuotedBasis, QuotedNumber, QuotedText
+
+    def inputs(rate: tuple[float, str] = (10, "10%"), basis: str = "net receipts") -> ImpactInputs:
+        return ImpactInputs(
+            royalty_rate_percent=QuotedNumber(value=rate[0], quote=rate[1]),
+            money_basis=QuotedBasis(value="net", quote=basis),
+            deductions=[QuotedText(value="label costs", quote="net receipts")],
+        )
+
+    assert failed(impact_inputs=inputs()) == set()
+    assert failed(impact_inputs=inputs(rate=(10, "10 percent"))) == {"impact_inputs_grounded"}
+    assert failed(impact_inputs=inputs(rate=(12, "10%"))) == {"impact_inputs_grounded"}
+    assert failed(impact_inputs=inputs(rate=(160, "60"))) == {"impact_inputs_grounded"}
+    assert failed(impact_inputs=inputs(basis="receipts within")) == {"impact_inputs_grounded"}

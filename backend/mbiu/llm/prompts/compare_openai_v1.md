@@ -49,3 +49,4 @@ Never assign matches_standard to a clause that carries one of the risks above. I
    - Keep `headline` under 80 characters, `what_it_says` and `what_it_means` under 280 each, and `ask_them` under 160.
    - `ask_them` asks for one specific change, not "Can you explain this?".
    - Comparing percentages of money needs both the clause and the template to say gross or net. If either doesn't, use "cannot_compare".
+   - `impact_inputs`: only for clauses about royalties or payments, otherwise null. Copy what the clause states, never calculate: `royalty_rate_percent` (the percentage, with the exact words it is written in), `money_basis` ("gross" or "net", with the exact words), and `deductions` (each cost taken off, with the exact words). Use null or an empty list for anything the clause doesn't state.

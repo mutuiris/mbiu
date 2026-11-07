@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
+import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
 import { ShillingsCalculator } from "./ShillingsCalculator";
 
 export interface LinkedClauseItem {
@@ -124,39 +125,15 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   onSelectClause,
   onJumpToPdfClause,
 }) => {
+  const BADGE_CLASS: Record<OutcomeTone, string> = {
+    typical: "badge-better",
+    unusual: "badge-notice",
+    inquiry: "badge-worse",
+    unchecked: "badge-muted",
+  };
   const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
-    switch (comparison) {
-      case "worse_for_you":
-        return {
-          label: "Worse than the standard",
-          className: "badge-worse",
-        };
-      case "better_for_you":
-        return {
-          label: "Better than the standard",
-          className: "badge-better",
-        };
-      case "not_in_standard":
-        return {
-          label: "Not in standard",
-          className: "badge-notice",
-        };
-      case "missing_from_contract":
-        return {
-          label: "Missing from contract",
-          className: "badge-warning",
-        };
-      case "cannot_compare":
-        return {
-          label: "Cannot compare",
-          className: "badge-muted",
-        };
-      default:
-        return {
-          label: comparison.replace(/_/g, " "),
-          className: "badge-neutral",
-        };
-    }
+    const { label, tone } = outcomeLabel(comparison);
+    return { label, className: BADGE_CLASS[tone] };
   };
 
   const badge = getBadgeConfig(result.comparison);

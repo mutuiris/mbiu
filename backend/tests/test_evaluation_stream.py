@@ -570,3 +570,117 @@ def test_resent_clauses_preflight() -> None:
         assert "Content-Type" in response["Access-Control-Allow-Headers"]
 
     asyncio.run(run_test())
+
+
+def test_clauses_are_checked_most_important_first(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Money comes before boilerplate, whatever the order in the contract."""
+    from mbiu.retrieval.evidence import ClausePlan
+
+    topics = {"Notices": "boilerplate", "Royalties": "royalties", "Term": "term"}
+
+    async def plans(texts: list[str], contract_type: str | None) -> list[ClausePlan]:
+        return [
+            ClausePlan(
+                evidence=[],
+                topic=next((t for word, t in topics.items() if word in text), None),
+            )
+            for text in texts
+        ]
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.plan_clauses", plans)
+    contract = [
+        "1. Notices\nNotices are sent by email.",
+        "2. Term\nThis agreement lasts two years.",
+        "3. Royalties\nThe Artist receives 10% of net receipts.",
+    ]
+
+    async def run_test() -> list[str]:
+        events = [
+            e
+            async for e in evaluate_contract(
+                pdf_bytes=create_synthetic_text_pdf(contract), llm=fake_llm
+            )
+        ]
+        document = next(e for e in events if isinstance(e, DocumentEvent))
+        headings = {c.clause_id: c.heading for c in document.payload.clauses}
+        return [
+            headings[e.payload.clause_id] or "" for e in events if isinstance(e, ClauseResultEvent)
+        ]
+
+    order = asyncio.run(run_test())
+    assert [h for h in order if h in topics] == ["Royalties", "Term", "Notices"]
+
+
+def test_when_the_token_budget_runs_out_the_rest_are_not_checked(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After the budget is spent, remaining clauses go out as retryable not_checked failures."""
+    from django.conf import settings
+
+    from mbiu.api.schemas import ClauseFailedEvent
+
+    monkeypatch.setattr(settings, "TOKEN_BUDGET_PER_CONTRACT", 1)
+    monkeypatch.setattr(settings, "BATCH_SIZE", 1)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=fake_llm)]
+
+    events = asyncio.run(run_test())
+    checked = [e for e in events if isinstance(e, ClauseResultEvent)]
+    skipped = [e for e in events if isinstance(e, ClauseFailedEvent)]
+    assert len(checked) == 1
+    assert skipped
+    assert all(e.payload.reason == "not_checked" and e.payload.retryable for e in skipped)
+    assert isinstance(events[-1], DoneEvent)
+
+
+def test_without_a_standard_for_the_contract_type_clauses_are_explained_not_compared(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mbiu.retrieval.evidence import NO_STANDARD_NOTE, ClausePlan
+
+    async def plans(texts: list[str], contract_type: str | None) -> list[ClausePlan]:
+        return [ClausePlan([], "royalties", note=NO_STANDARD_NOTE) for _ in texts]
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.plan_clauses", plans)
+    proposal = ClauseComparisonProposal(
+        comparison=Outcome.WORSE_FOR_YOU,
+        headline="Your royalty is paid after costs",
+        what_it_says="You get 10% of net receipts.",
+        what_it_means="Costs come off before you are paid.",
+        clause_quote="10% of net receipts",
+        evidence_quote=None,
+        ask_them="Can the royalty be paid on gross receipts?",
+    )
+    llm = Gemini(FakeGeminiClient(proposal=proposal), timeout_s=10.0)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT[:1])
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=llm)]
+
+    results = [e for e in asyncio.run(run_test()) if isinstance(e, ClauseResultEvent)]
+    assert results
+    for event in results:
+        assert event.payload.comparison == "cannot_compare"
+        assert event.payload.comparison_note is not None
+        assert NO_STANDARD_NOTE in event.payload.comparison_note
+
+
+def test_summary_carries_the_corpus_version(
+    fake_llm: Gemini, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def version() -> str:
+        return "v7"
+
+    monkeypatch.setattr("mbiu.evaluation.orchestrator.corpus_version", version)
+
+    async def run_test() -> list[StreamEvent]:
+        pdf = create_synthetic_text_pdf(SYNTHETIC_TEST_CONTRACT)
+        return [e async for e in evaluate_contract(pdf_bytes=pdf, llm=fake_llm)]
+
+    done = asyncio.run(run_test())[-1]
+    assert isinstance(done, DoneEvent)
+    assert done.payload.versions.corpus == "v7"

@@ -15,7 +15,7 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
   if (matches.length === 0) return null;
 
   return (
-    <section className="collapsed-matches-container" aria-label="Standard Matching Clauses">
+    <section className="collapsed-matches-container" aria-label="Typical clauses">
       <div
         className="collapsed-matches-header"
         role="button"
@@ -32,15 +32,15 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
         <div className="matches-summary-left">
           <span className="check-icon" aria-hidden="true">✓</span>
           <span className="matches-summary-text">
-            <strong>{matches.length} {matches.length === 1 ? "clause matches" : "clauses match"}</strong> the standard
+            <strong>{matches.length} {matches.length === 1 ? "clause is" : "clauses are"} typical</strong>
           </span>
         </div>
         <button
           type="button"
           className="matches-toggle-btn"
-          aria-label={isOpen ? "Collapse standard clauses" : "Expand standard clauses"}
+          aria-label={isOpen ? "Collapse typical clauses" : "Expand typical clauses"}
         >
-          {isOpen ? "Hide details" : "View matching clauses"}
+          {isOpen ? "Hide details" : "View typical clauses"}
         </button>
       </div>
 

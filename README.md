@@ -84,8 +84,7 @@ Every provider that receives contract text is listed in [`docs/data-transfers.md
 flowchart LR
     A[Artist's browser<br/>Next.js on Vercel] -- PDF upload --> B[Mbiu API<br/>Django on ASGI]
     B -- streamed results --> A
-    B -- clause comparison --> G[Gemini<br/>OpenAI as failover]
-    B -- in-process --> E[EmbeddingGemma 2<br/>embeddings]
+    B -- clause comparison and embeddings --> G[Gemini<br/>OpenAI as failover]
     C[(Reference corpus<br/>Supabase Postgres + pgvector)] -- loaded once at startup --> B
     P[Corpus pipeline<br/>scheduled job] -- publishes versions --> C
 ```
@@ -150,7 +149,7 @@ The comparison is only as good as the templates behind it. The corpus pipeline i
    - near-duplicates are removed (MinHash);
    - both models confirm it is standard template wording, not an article, a sales page or a signed deal;
    - both models agree on every tag.
-7. **Embed** each clause with EmbeddingGemma 2 at a pinned revision and count how common each pattern is.
+7. **Embed** each clause with gemini-embedding-2, the same model the API uses for contract clauses, and count how common each pattern is.
 8. **Publish** a new version and make it active. Published versions are never edited, and rolling back means pointing back to an earlier version.
 
 Steps 1 to 4 run with `python -m mbiu.pipeline fetch`, steps 5 to 8 with `python -m mbiu.pipeline publish` (install the extra tools with `uv sync --group pipeline`).
@@ -163,7 +162,7 @@ The pipeline handles only public templates. It never sees an artist's contract.
 | --------------- | ---------------------------------------------------------------------------------------------------- |
 | Backend         | Python, [uv](https://docs.astral.sh/uv/), Django (ASGI, uvicorn), django-ninja, Pydantic              |
 | Documents       | PyMuPDF (live requests), Docling (corpus pipeline)                                                   |
-| Search          | sentence-transformers with EmbeddingGemma 2, numpy, rank-bm25                                        |
+| Search          | gemini-embedding-2 vectors and rank-bm25, fused in memory with numpy                                 |
 | AI models       | Gemini (primary), OpenAI (failover only), tenacity, pybreaker                                        |
 | Corpus pipeline | Firecrawl, Docling, Presidio, Lingua                                                                 |
 | Data            | Supabase Postgres + pgvector, Supabase Storage, psycopg 3                                            |
@@ -296,7 +295,7 @@ All configuration comes from **environment variables**. The settings are validat
 | Django             | `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`                                                             |
 | Database           | `DATABASE_URL` (pooled), `DATABASE_DIRECT_URL` (migrations and pipeline)                                |
 | AI models          | `GEMINI_API_KEY`, `GEMINI_MODEL_MAIN`, `GEMINI_MODEL_LIGHT`, `OPENAI_API_KEY`, `FAILOVER_ENABLED` |
-| Embeddings         | `EMBEDDING_MODEL_ID`, `EMBEDDING_REVISION`, `EMBEDDING_DIM`                                           |
+| Embeddings         | `EMBEDDING_MODEL_ID`                                                                                    |
 | Limits and budgets | `MAX_UPLOAD_MB`, `MAX_PAGES`, `BATCH_SIZE`, `LLM_CONCURRENCY`, `TOKEN_BUDGET_PER_CONTRACT`        |
 | Security           | `TURNSTILE_SECRET_KEY`, `CORS_ALLOWED_ORIGINS`                                                          |
 | Telemetry          | `OTEL_EXPORTER_OTLP_ENDPOINT`, `SENTRY_DSN`                                                             |
