@@ -112,7 +112,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             onClick={() => setIsOpen(!isOpen)}
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
-            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/10 bg-white/70 text-mbiu-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/10 dark:bg-white/5 dark:text-[#F4EFE6] dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
+            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/20 bg-white text-mbiu-ink shadow-xs transition hover:border-mbiu-ink/40 hover:bg-[#faf7f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/20 dark:bg-white/[0.06] dark:text-[#F4EFE6] dark:hover:border-white/40 dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
           >
             {isOpen ? (
               <X className="h-5 w-5" strokeWidth={2.2} />
