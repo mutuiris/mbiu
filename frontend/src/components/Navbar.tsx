@@ -40,9 +40,12 @@ export function Navbar({ onUploadClick }: NavbarProps) {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <header className="relative z-30 px-3 pt-3 sm:px-6 sm:pt-5" ref={menuRef}>
+    <header
+      className="sticky top-0 z-50 w-full bg-mbiu-cream/80 px-3 py-2.5 backdrop-blur-md transition-colors sm:px-6 sm:py-3 dark:bg-mbiu-bg-dark/80"
+      ref={menuRef}
+    >
       <nav
-        className="mx-auto flex max-w-[1280px] items-center justify-between rounded-full border border-white/60 bg-white/45 px-3 py-2 shadow-[0_20px_60px_-36px_rgba(22,26,38,0.6)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] sm:px-5 sm:py-2.5"
+        className="mx-auto flex max-w-[1280px] items-center justify-between rounded-full border border-[#d5c5b2] bg-[#fffdfa] px-3 py-2 shadow-[0_16px_40px_-16px_rgba(22,26,38,0.22),0_3px_10px_-2px_rgba(22,26,38,0.08)] backdrop-blur-xl dark:border-white/15 dark:bg-[#101d24] dark:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] sm:px-5 sm:py-2.5"
         aria-label="Main Navigation"
       >
         {/* Brand Logo */}
@@ -66,7 +69,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
         </a>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#E7E0D4]/85">
+        <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
           <a
             href="#how-it-works"
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
@@ -92,7 +95,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
           <ThemeToggle />
 
           {/* Desktop CTA Button */}
-          <div className="hidden md:block rounded-full bg-white/40 p-1 dark:bg-white/[0.04]">
+          <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
             <a
               href="#upload"
               onClick={onUploadClick}
@@ -109,7 +112,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             onClick={() => setIsOpen(!isOpen)}
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
-            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/10 bg-white/50 text-mbiu-ink transition hover:bg-white/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/10 dark:bg-white/5 dark:text-[#F4EFE6] dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
+            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/10 bg-white/70 text-mbiu-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/10 dark:bg-white/5 dark:text-[#F4EFE6] dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
           >
             {isOpen ? (
               <X className="h-5 w-5" strokeWidth={2.2} />
@@ -123,7 +126,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
       {/* Mobile Drawer / Dropdown Menu */}
       {isOpen && (
         <div
-          className="mt-2 rounded-[24px] border border-white/70 bg-[#fbf5eb]/95 p-4 shadow-[0_24px_50px_-15px_rgba(22,26,38,0.35)] backdrop-blur-2xl md:hidden dark:border-white/15 dark:bg-[#0e1d24]/95 sm:p-5"
+          className="mt-2 rounded-[24px] border border-mbiu-ink/10 bg-[#fbf5eb]/98 p-4 shadow-[0_24px_50px_-15px_rgba(22,26,38,0.25)] backdrop-blur-2xl md:hidden dark:border-white/15 dark:bg-[#0e1d24]/98 sm:p-5"
           role="dialog"
           aria-label="Mobile Navigation"
         >
