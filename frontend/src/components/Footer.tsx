@@ -55,7 +55,7 @@ export function Footer({ className = "" }: FooterProps) {
           </div>
 
           {/* Navigation Link Columns */}
-          <div className="grid grid-cols-2 gap-8 sm:gap-12 lg:col-span-7">
+          <div className="flex justify-between gap-10 sm:justify-end sm:gap-16 lg:col-span-7 lg:ml-auto lg:gap-24">
             {/* Platform Column */}
             <div className="flex flex-col gap-3">
               <h4 className="font-serif text-[1rem] font-bold tracking-tight text-mbiu-ink dark:text-[#F6F2E9]">

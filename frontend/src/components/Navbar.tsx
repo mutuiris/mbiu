@@ -73,16 +73,16 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         {/* Desktop Navigation Links */}
         <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
           <a
+            href={href("#")}
+            className="transition hover:text-mbiu-indigo dark:hover:text-white"
+          >
+            Home
+          </a>
+          <a
             href={href("#how-it-works")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             How it works
-          </a>
-          <a
-            href={href("#privacy")}
-            className="transition hover:text-mbiu-indigo dark:hover:text-white"
-          >
-            Privacy
           </a>
           <a
             href={href("#about")}
@@ -135,20 +135,20 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         >
           <div className="flex flex-col gap-2.5">
             <a
+              href={href("#")}
+              onClick={closeMenu}
+              className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
+            >
+              <span>Home</span>
+              <ArrowRight className="h-4 w-4 opacity-50" />
+            </a>
+
+            <a
               href={href("#how-it-works")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
               <span>How it works</span>
-              <ArrowRight className="h-4 w-4 opacity-50" />
-            </a>
-
-            <a
-              href={href("#privacy")}
-              onClick={closeMenu}
-              className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
-            >
-              <span>Privacy</span>
               <ArrowRight className="h-4 w-4 opacity-50" />
             </a>
 
