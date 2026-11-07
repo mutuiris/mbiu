@@ -15,6 +15,7 @@ import {
   sortByImpactOrder,
   ServiceUnavailableError,
 } from "@/lib/api/stream";
+import { isHighImpactClause } from "@/lib/impact";
 import { ProgressBar } from "./ProgressBar";
 import { ClauseList } from "./ClauseList";
 import { ClauseCard, type LinkedClauseItem } from "./ClauseCard";
@@ -66,8 +67,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
   const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [results, setResults] = useState<ClauseResult[]>([]);
-  const [matches, setMatches] = useState<ClauseResult[]>([]);
+  const [allResults, setAllResults] = useState<ClauseResult[]>([]);
   const [failures, setFailures] = useState<ClauseFailure[]>([]);
   const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -93,17 +93,44 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     return map;
   }, [document]);
 
+  // Clause IDs involved in contract-wide issues (conflicts/overrides)
+  const issueClauseIds = useMemo(() => {
+    const set = new Set<string>();
+    if (contractMap?.issues) {
+      for (const issue of contractMap.issues) {
+        issue.clause_ids.forEach((id) => set.add(id));
+      }
+    }
+    return set;
+  }, [contractMap]);
+
+  // Partition evaluated clauses into high-impact cards vs collapsed standard/boilerplate
+  const { highImpactResults, lowImpactResults } = useMemo(() => {
+    const high: ClauseResult[] = [];
+    const low: ClauseResult[] = [];
+    for (const r of allResults) {
+      const extra = clauseLookup.get(r.clause_id);
+      const hasIssue = issueClauseIds.has(r.clause_id);
+      if (isHighImpactClause(r, extra?.heading, hasIssue)) {
+        high.push(r);
+      } else {
+        low.push(r);
+      }
+    }
+    return {
+      highImpactResults: sortByImpactOrder(high),
+      lowImpactResults: low,
+    };
+  }, [allResults, clauseLookup, issueClauseIds]);
+
   // Results map for overview badges
   const resultsByClauseId = useMemo(() => {
     const map = new Map<string, ClauseResult>();
-    for (const r of results) {
+    for (const r of allResults) {
       map.set(r.clause_id, r);
     }
-    for (const m of matches) {
-      map.set(m.clause_id, m);
-    }
     return map;
-  }, [results, matches]);
+  }, [allResults]);
 
   // Failures map for overview badges
   const failedByClauseId = useMemo(() => {
@@ -131,24 +158,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
       case "clause_result": {
         const item = event.payload;
-        if (item.comparison === "matches_standard") {
-          setMatches((prev) => {
-            if (prev.some((m) => m.clause_id === item.clause_id)) {
-              return prev.map((m) => (m.clause_id === item.clause_id ? item : m));
-            }
-            return [...prev, item];
-          });
-          setResults((prev) => prev.filter((r) => r.clause_id !== item.clause_id));
-        } else {
-          setResults((prev) => {
-            const exists = prev.some((r) => r.clause_id === item.clause_id);
-            const updated = exists
-              ? prev.map((r) => (r.clause_id === item.clause_id ? item : r))
-              : [...prev, item];
-            return sortByImpactOrder(updated);
-          });
-          setMatches((prev) => prev.filter((m) => m.clause_id !== item.clause_id));
-        }
+        setAllResults((prev) => {
+          const exists = prev.some((r) => r.clause_id === item.clause_id);
+          return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
+        });
         setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
@@ -156,25 +169,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
       case "clause_updated": {
         const item = event.payload;
         setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
-
-        if (item.comparison === "matches_standard") {
-          setMatches((prev) => {
-            const exists = prev.some((m) => m.clause_id === item.clause_id);
-            return exists
-              ? prev.map((m) => (m.clause_id === item.clause_id ? item : m))
-              : [...prev, item];
-          });
-          setResults((prev) => prev.filter((r) => r.clause_id !== item.clause_id));
-        } else {
-          setResults((prev) => {
-            const exists = prev.some((r) => r.clause_id === item.clause_id);
-            const updated = exists
-              ? prev.map((r) => (r.clause_id === item.clause_id ? item : r))
-              : [...prev, item];
-            return sortByImpactOrder(updated);
-          });
-          setMatches((prev) => prev.filter((m) => m.clause_id !== item.clause_id));
-        }
+        setAllResults((prev) => {
+          const exists = prev.some((r) => r.clause_id === item.clause_id);
+          return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
+        });
         break;
       }
 
@@ -301,7 +299,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     [contractMap, clauseLookup]
   );
 
-  const totalEvaluated = results.length + matches.length + failures.length;
+  const totalEvaluated = allResults.length + failures.length;
   const notCheckedCount = failures.filter((f) => f.reason === "not_checked").length;
   // Every clause failed because no provider was reachable: same message as a failed upload
   const isEverythingUnavailable =
@@ -370,8 +368,13 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           />
         )}
 
-        {/* Collapsed Standard Matches Banner */}
-        <CollapsedMatches matches={matches} clauseLookup={clauseLookup} />
+        {/* Collapsed Standard & Boilerplate Matches Banner */}
+        <CollapsedMatches
+          matches={lowImpactResults}
+          clauseLookup={clauseLookup}
+          onSelectClause={handleSelectClause}
+          selectedClauseId={selectedClauseId}
+        />
 
         {/* Failed Clauses (if any) */}
         {notCheckedCount > 0 && (
@@ -404,9 +407,9 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
         <section
           className="results-cards-feed"
-          aria-label="Evaluated Clauses in Impact Order"
+          aria-label="High-Impact Evaluated Clauses"
         >
-          {results.map((result) => {
+          {highImpactResults.map((result) => {
             const extra = clauseLookup.get(result.clause_id);
             return (
               <ClauseCard
