@@ -24,6 +24,7 @@ import { ClauseFailedCard } from "./ClauseFailedCard";
 import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
+import { EvaluationReportModal } from "./EvaluationReportModal";
 
 /** Shown when time or the token budget ran out before every clause was checked. */
 export function notCheckedMessage(count: number): string {
@@ -78,6 +79,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   // Fast clause lookup for numbering, headings, and pages
   const clauseLookup = useMemo(() => {
@@ -340,6 +342,21 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           </div>
         )}
 
+        {/* Results Actions Bar (Download / Print Report) */}
+        {(allResults.length > 0 || isStreaming || document) && (
+          <div className="results-actions-bar">
+            <button
+              type="button"
+              onClick={() => setIsReportOpen(true)}
+              className="download-report-btn"
+              data-testid="download-report-btn"
+              aria-label="Download evaluation report"
+            >
+              📄 Download Report
+            </button>
+          </div>
+        )}
+
         {/* Progress Bar */}
         <ProgressBar
           progress={progress}
@@ -438,6 +455,19 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           onClose={closeViewer}
         />
       )}
+
+      {/* Downloadable / Printable Evaluation Report Modal */}
+      <EvaluationReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        document={document}
+        allResults={allResults}
+        highImpactResults={highImpactResults}
+        contractMap={contractMap}
+        summary={summary}
+        clauseLookup={clauseLookup}
+        isStreaming={isStreaming}
+      />
     </div>
   );
 };
