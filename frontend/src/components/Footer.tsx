@@ -112,7 +112,7 @@ export function Footer({ className = "" }: FooterProps) {
               <ul className="flex flex-col gap-2.5 text-[0.9rem] text-mbiu-ink/80 dark:text-[#B9C1C5]">
                 <li>
                   <Link
-                    href="/how-it-works"
+                    href="/#how-it-works"
                     className="transition-colors hover:text-mbiu-indigo dark:hover:text-white"
                   >
                     How It Works
@@ -124,14 +124,6 @@ export function Footer({ className = "" }: FooterProps) {
                     className="transition-colors hover:text-mbiu-indigo dark:hover:text-white"
                   >
                     Our Team
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/report"
-                    className="transition-colors hover:text-mbiu-indigo dark:hover:text-white"
-                  >
-                    Report Incorrect Info
                   </Link>
                 </li>
               </ul>

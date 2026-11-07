@@ -28,10 +28,9 @@ describe("Footer Component", () => {
     expect(markup).toContain("Platform");
     expect(markup).toContain("About");
     expect(markup).toContain("Privacy &amp; Legal");
-    expect(markup).toContain('href="/how-it-works"');
+    expect(markup).toContain('href="/#how-it-works"');
     expect(markup).toContain('href="/privacy"');
     expect(markup).toContain('href="/terms"');
-    expect(markup).toContain('href="/report"');
     expect(markup).toContain('href="/team"');
   });
 
