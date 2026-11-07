@@ -5,9 +5,10 @@ import Image from "next/image";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function Navbar() {
+export function Navbar({ basePath = "" }: { basePath?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const href = (hash: string) => `${basePath}${hash}`;
 
   // Close menu on ESC key
   useEffect(() => {
@@ -46,7 +47,7 @@ export function Navbar() {
       >
         {/* Brand Logo */}
         <a
-          href="#"
+          href={basePath || "#"}
           className="flex shrink-0 items-center gap-1 sm:gap-1.5 pl-0.5 transition hover:opacity-90"
           aria-label="Mbiu home"
           onClick={closeMenu}
@@ -67,19 +68,19 @@ export function Navbar() {
         {/* Desktop Navigation Links */}
         <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
           <a
-            href="#how-it-works"
+            href={href("#how-it-works")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             How it works
           </a>
           <a
-            href="#privacy"
+            href={href("#privacy")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             Privacy
           </a>
           <a
-            href="#about"
+            href={href("#about")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             About
@@ -93,7 +94,7 @@ export function Navbar() {
           {/* Desktop CTA Button */}
           <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
             <a
-              href="#upload"
+              href={href("#upload")}
               className="inline-flex h-10 lg:h-11 items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-4 lg:px-6 text-[0.9rem] font-semibold text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark"
             >
               <span>Upload your contract</span>
@@ -128,7 +129,7 @@ export function Navbar() {
         >
           <div className="flex flex-col gap-2.5">
             <a
-              href="#how-it-works"
+              href={href("#how-it-works")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -137,7 +138,7 @@ export function Navbar() {
             </a>
 
             <a
-              href="#privacy"
+              href={href("#privacy")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -146,7 +147,7 @@ export function Navbar() {
             </a>
 
             <a
-              href="#about"
+              href={href("#about")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -158,7 +159,7 @@ export function Navbar() {
 
             {/* Mobile Upload CTA */}
             <a
-              href="#upload"
+              href={href("#upload")}
               onClick={closeMenu}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-5 text-[0.98rem] font-bold text-white shadow-lg transition hover:bg-mbiu-indigo-hover focus-visible:outline-2 dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea]"
             >
