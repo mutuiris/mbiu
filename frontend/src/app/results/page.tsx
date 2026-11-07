@@ -3,6 +3,7 @@
 import { ArrowRight, Lock } from "lucide-react";
 import React, { useState } from "react";
 
+import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { LiveResults } from "@/components/results/LiveResults";
 import { SiteBackdrop } from "@/components/SiteBackdrop";
@@ -85,6 +86,8 @@ export default function ResultsPage() {
           </div>
         )}
       </main>
+
+      <Footer basePath="/" />
     </div>
   );
 }
