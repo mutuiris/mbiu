@@ -152,7 +152,17 @@ async def plan_clauses(texts: Sequence[str], contract_type: str | None) -> list[
             if snapshot is None:
                 plans.append(ClausePlan(retrieve_simple_evidence(text), topic))
             elif not has_standard:
-                plans.append(ClausePlan([], topic, note=NO_STANDARD_NOTE))
+                # When the specific contract type lacks a template, search across the corpus
+                # for the closest standard evidence
+                matches = search(snapshot, text, vector, contract_type=None, k=2)
+                plans.append(
+                    ClausePlan(
+                        [_evidence(m) for m in matches[:EVIDENCE_PER_CLAUSE]],
+                        topic,
+                        note=NO_STANDARD_NOTE if not matches else None,
+                        context=disagreement(text, [m.chunk for m in matches]),
+                    )
+                )
             else:
                 # Two matches: the best is sent to the model, the second shows disagreement
                 matches = search(snapshot, text, vector, contract_type=contract_type, k=2)

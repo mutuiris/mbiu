@@ -29,6 +29,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from mbiu.api.schemas import (
     ClauseResultEvent,
+    ClauseStatus,
     ContractMapEvent,
     DocumentEvent,
     DoneEvent,
@@ -637,7 +638,7 @@ def test_when_the_token_budget_runs_out_the_rest_are_not_checked(
     assert isinstance(events[-1], DoneEvent)
 
 
-def test_without_a_standard_for_the_contract_type_clauses_are_explained_not_compared(
+def test_without_a_standard_for_the_contract_type_clauses_are_evaluated_with_notes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from mbiu.retrieval.evidence import NO_STANDARD_NOTE, ClausePlan
@@ -649,7 +650,7 @@ def test_without_a_standard_for_the_contract_type_clauses_are_explained_not_comp
     proposal = ClauseComparisonProposal(
         comparison=Outcome.WORSE_FOR_YOU,
         headline="Your royalty is paid after costs",
-        what_it_says="You get 10% of net receipts.",
+        what_it_says="You get 10% of net receipts (what is left after costs).",
         what_it_means="Costs come off before you are paid.",
         clause_quote="10% of net receipts",
         evidence_quote=None,
@@ -664,7 +665,8 @@ def test_without_a_standard_for_the_contract_type_clauses_are_explained_not_comp
     results = [e for e in asyncio.run(run_test()) if isinstance(e, ClauseResultEvent)]
     assert results
     for event in results:
-        assert event.payload.comparison == "cannot_compare"
+        assert event.payload.comparison == Outcome.WORSE_FOR_YOU
+        assert event.payload.status == ClauseStatus.EVALUATED
         assert event.payload.comparison_note is not None
         assert NO_STANDARD_NOTE in event.payload.comparison_note
 

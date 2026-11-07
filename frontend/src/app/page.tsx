@@ -64,7 +64,7 @@ function ClausePreviewCard() {
 
       <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-mbiu-peach px-3.5 py-1.5 text-[0.82rem] font-bold text-mbiu-warning-text sm:px-4 sm:text-[0.88rem]">
         <TriangleAlert className="h-4 w-4 shrink-0 fill-[#c2410c] text-[#c2410c]" strokeWidth={1.5} />
-        Worth asking about
+        Worth inquiry
       </span>
 
       <p className="mt-4 font-serif text-[0.98rem] italic leading-6 text-mbiu-ink/90 dark:text-[#E7DFD2]/85 sm:text-[1.02rem] sm:leading-7">
