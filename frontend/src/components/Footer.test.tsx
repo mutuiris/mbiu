@@ -6,7 +6,7 @@ import { Footer } from "./Footer";
 describe("Footer Component", () => {
   it("renders the brand logo and name", () => {
     const markup = renderToStaticMarkup(<Footer />);
-    expect(markup).toContain("Mbiu");
+    expect(markup).toContain("mbiu");
     expect(markup).toContain("mbiu-horn.png");
   });
 
@@ -19,7 +19,7 @@ describe("Footer Component", () => {
   it("renders plain-language explanation and disclaimer", () => {
     const markup = renderToStaticMarkup(<Footer />);
     expect(markup).toContain(
-      "Helps Kenyan musicians understand a music contract before they sign"
+      "A tool that helps Kenyan musicians understand a music contract before they sign"
     );
     expect(markup).toContain("Not legal advice.");
   });
@@ -35,9 +35,9 @@ describe("Footer Component", () => {
     expect(markup).toContain('href="/team"');
   });
 
-  it("renders copyright and Kenya Music Contract Project note in bottom bar", () => {
+  it("renders centered copyright notice and omits old project subtitle", () => {
     const markup = renderToStaticMarkup(<Footer />);
     expect(markup).toContain("© 2026 Mbiu. All rights reserved.");
-    expect(markup).toContain("Kenya Music Contract Project");
+    expect(markup).not.toContain("Kenya Music Contract Project");
   });
 });

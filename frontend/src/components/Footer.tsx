@@ -16,23 +16,25 @@ export function Footer({ className = "" }: FooterProps) {
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
           {/* Brand & Overview Column */}
           <div className="flex flex-col gap-4 lg:col-span-5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mbiu-ink text-white dark:bg-[#1a2c35] dark:text-[#F6F2E9]">
-                <Image
-                  src="/brand/mbiu-horn.png"
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="h-5 w-auto object-contain invert dark:invert-0"
-                />
-              </div>
-              <span className="font-serif text-[1.35rem] font-bold tracking-[-0.03em] text-mbiu-ink dark:text-[#F6F2E9]">
-                Mbiu
+            <Link
+              href="/"
+              className="flex items-center gap-1 sm:gap-1.5 transition hover:opacity-90"
+              aria-label="Mbiu home"
+            >
+              <Image
+                src="/brand/mbiu-horn.png"
+                alt=""
+                width={972}
+                height={590}
+                className="h-8 w-auto dark:invert object-contain sm:h-9"
+              />
+              <span className="text-[1.25rem] font-extrabold tracking-[-0.06em] leading-none text-mbiu-ink sm:text-[1.4rem] dark:text-[#F6F2E9]">
+                mbiu
               </span>
-            </div>
+            </Link>
 
             <p className="text-[0.9rem] leading-relaxed text-mbiu-ink/80 dark:text-[#B9C1C5]">
-              Helps Kenyan musicians understand a music contract before they sign:
+              A tool that helps Kenyan musicians understand a music contract before they sign:
               clause-by-clause comparison with reviewed standard templates, in plain language. Not
               legal advice.
             </p>
@@ -131,12 +133,8 @@ export function Footer({ className = "" }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[#e2d5c3] pt-6 text-[0.84rem] text-mbiu-ink/60 dark:border-white/10 dark:text-[#88949b] sm:flex-row">
-          <div>© 2026 Mbiu. All rights reserved.</div>
-          <div className="flex items-center gap-2">
-            <span>Kenya Music Contract Project</span>
-            <span>·</span>
-          </div>
+        <div className="mt-12 flex items-center justify-center border-t border-[#e2d5c3] pt-6 text-[0.84rem] text-mbiu-ink/60 dark:border-white/10 dark:text-[#88949b]">
+          <p className="text-center">© 2026 Mbiu. All rights reserved.</p>
         </div>
       </div>
     </footer>
