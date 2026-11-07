@@ -254,7 +254,6 @@ describe("impact.ts calculations in shillings", () => {
       comparison_note: null,
       impact_inputs: null,
       linked_clauses: [],
-      fairer_wording: null,
       ask_them: null,
       standard_template_id: null,
       standard_excerpt: null,

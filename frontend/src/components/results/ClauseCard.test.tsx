@@ -20,7 +20,6 @@ const mockWorseResult: ClauseResult = {
   evidence_ids: [],
   comparison_note: "12% Net vs standard 18-25% with capped deductions.",
   evidence_quote: null,
-  fairer_wording: "Company shall pay Artist an 18% royalty based on net receipts, with deductions capped strictly at third-party distribution fees.",
   standard_excerpt: "Standard indie royalty is 18-25% on net receipts with capped deductions.",
   standard_template_id: "std-rec-kenya-2024",
   ask_them: "Can we cap allowable deductions at 20% of gross receipts?",
@@ -51,7 +50,6 @@ const mockBetterResult: ClauseResult = {
   evidence_ids: [],
   comparison_note: null,
   evidence_quote: null,
-  fairer_wording: null,
   standard_excerpt: "Standard reversion term is 5 to 7 years.",
   standard_template_id: "std-rec-kenya-2024",
   ask_them: null,
@@ -107,40 +105,36 @@ describe("ClauseCard Component", () => {
     expect(html).toContain("Clause 19 (Suspension)");
     const alsoAffectedIndex = html.indexOf("data-testid=\"also-affected-by\"");
 
-    // 6. Fairer wording from template with Copy button
-    expect(html).toContain("data-testid=\"fairer-wording-section\"");
-    expect(html).toContain("Fairer wording");
-    expect(html).toContain("📋 Copy");
-    expect(html).toContain("Company shall pay Artist an 18% royalty based on net receipts");
-    const fairerWordingIndex = html.indexOf("data-testid=\"fairer-wording-section\"");
+    // Fairer wording is strictly omitted to avoid legal drafting advice under Kenya Advocates Act
+    expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
+    expect(html).not.toContain("Fairer wording");
 
-    // 7. Ask them, with Copy and Share to WhatsApp
+    // Ask them, with Copy and Share to WhatsApp
     expect(html).toContain("data-testid=\"ask-them-section\"");
     expect(html).toContain("Ask them");
     expect(html).toContain("WhatsApp");
     expect(html).toContain("Can we cap allowable deductions at 20% of gross receipts?");
     const askThemIndex = html.indexOf("data-testid=\"ask-them-section\"");
 
-    // 8. Show exact wording collapsed by default (<details>)
+    // Show exact wording collapsed by default (<details>)
     expect(html).toContain("data-testid=\"exact-wording-section\"");
     expect(html).toContain("<details class=\"exact-wording-details\"");
     expect(html).toContain("Show exact wording");
     expect(html).toContain("Original contract clause (unaltered):");
     const exactWordingIndex = html.indexOf("data-testid=\"exact-wording-section\"");
 
-    // 9. Read aloud with browser speech synthesis
+    // Read aloud with browser speech synthesis
     expect(html).toContain("data-testid=\"read-aloud-section\"");
     expect(html).toContain("Read aloud");
     const readAloudIndex = html.indexOf("data-testid=\"read-aloud-section\"");
 
-    // Verify STRICT sequential ordering: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
+    // Verify STRICT sequential ordering
     expect(headlineIndex).toBeGreaterThan(-1);
     expect(statusTopicLocationIndex).toBeGreaterThan(headlineIndex);
     expect(contractVsStandardIndex).toBeGreaterThan(statusTopicLocationIndex);
     expect(shillingsCalcIndex).toBeGreaterThan(contractVsStandardIndex);
     expect(alsoAffectedIndex).toBeGreaterThan(shillingsCalcIndex);
-    expect(fairerWordingIndex).toBeGreaterThan(alsoAffectedIndex);
-    expect(askThemIndex).toBeGreaterThan(fairerWordingIndex);
+    expect(askThemIndex).toBeGreaterThan(alsoAffectedIndex);
     expect(exactWordingIndex).toBeGreaterThan(askThemIndex);
     expect(readAloudIndex).toBeGreaterThan(exactWordingIndex);
   });
@@ -239,7 +233,7 @@ describe("ClauseCard Component", () => {
       expect(html).toContain("data-testid=\"contract-vs-standard\"");
       expect(html).toContain("data-testid=\"shillings-calculator\"");
       expect(html).toContain("data-testid=\"also-affected-by\"");
-      expect(html).toContain("data-testid=\"fairer-wording-section\"");
+      expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
       expect(html).toContain("data-testid=\"ask-them-section\"");
       expect(html).toContain("data-testid=\"exact-wording-section\"");
       expect(html).toContain("data-testid=\"read-aloud-section\"");
@@ -251,7 +245,6 @@ describe("ClauseCard Component", () => {
 
       expect(cssContent).toContain("@media (max-width: 380px)");
       expect(cssContent).toContain(".shillings-calculator");
-      expect(cssContent).toContain(".card-fairer-section");
       expect(cssContent).toContain(".card-ask-them-section");
       expect(cssContent).toContain("overflow-wrap: break-word");
       expect(cssContent).toContain("word-break: break-word");

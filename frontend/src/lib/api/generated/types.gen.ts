@@ -204,12 +204,6 @@ export type ClauseResult = {
      */
     evidence_quote: string | null;
     /**
-     * Fairer Wording
-     *
-     * The template clause, unchanged
-     */
-    fairer_wording: string | null;
-    /**
      * Headline
      */
     headline: string;

@@ -129,7 +129,6 @@ def _error_clause_result(
         comparison_note=None,
         impact_inputs=None,
         linked_clauses=links,
-        fairer_wording=None,
         ask_them=None,
         standard_template_id=standard_template_id,
         standard_excerpt=standard_excerpt,
@@ -659,7 +658,6 @@ async def _evaluate_single_clause(
                 comparison_note=note,
                 impact_inputs=None,
                 linked_clauses=links,
-                fairer_wording=None,
                 ask_them=None,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
                 standard_excerpt=primary_ev.excerpt if primary_ev else None,
@@ -685,7 +683,6 @@ async def _evaluate_single_clause(
             )
         comp_note = " ".join(notes) or None
 
-        fairer = primary_ev.excerpt if outcome == Outcome.WORSE_FOR_YOU and primary_ev else None
         return ClauseResult(
             clause_id=clause.clause_id,
             pages=clause.pages,
@@ -701,7 +698,6 @@ async def _evaluate_single_clause(
             # Verified quotes only; the frontend does the arithmetic
             impact_inputs=proposal.impact_inputs,
             linked_clauses=links,
-            fairer_wording=fairer,
             ask_them=proposal.ask_them,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,

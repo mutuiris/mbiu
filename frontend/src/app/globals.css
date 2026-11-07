@@ -2003,50 +2003,8 @@ body {
   text-decoration: underline;
 }
 
-/* Fairer Wording Section */
-.card-fairer-section {
-  background-color: var(--better-bg);
-  border: 1px solid var(--better-border);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
-  margin: 1rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-.fairer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.fairer-title-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.fairer-badge-tag {
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--better-text);
-}
-
-.fairer-hint {
-  font-size: 0.75rem;
-  color: var(--better-text);
-  opacity: 0.85;
-}
-
 .copy-btn {
-  background-color: var(--better-badge);
+  background-color: var(--primary-color);
   color: #ffffff;
   border: none;
   border-radius: var(--radius-sm);
@@ -2067,18 +2025,6 @@ body {
 
 .copy-btn.copied {
   background-color: #15803d;
-}
-
-.fairer-quote {
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: var(--better-text);
-  background-color: rgba(255, 255, 255, 0.6);
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--better-badge);
-  overflow-wrap: break-word;
-  word-break: break-word;
 }
 
 /* Ask Them Section with WhatsApp Share */
@@ -2308,12 +2254,10 @@ body {
   }
 
   .shillings-calculator,
-  .card-fairer-section,
   .card-ask-them-section {
     padding: 0.75rem 0.5rem;
   }
 
-  .fairer-header,
   .ask-them-header {
     flex-direction: column;
     align-items: flex-start;

@@ -292,26 +292,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         )}
       </section>
 
-      {/* 6. Fairer wording from the template with a Copy button (on cards worse than standard) */}
-      {result.comparison === "worse_for_you" && result.fairer_wording && (
-        <section className="card-fairer-section" data-testid="fairer-wording-section">
-          <div className="fairer-header">
-            <div className="fairer-title-row">
-              <span className="fairer-badge-tag">Fairer wording</span>
-              <span className="fairer-hint">Recommended alternative from reviewed standard</span>
-            </div>
-            <CopyButton
-              text={result.fairer_wording}
-              label="📋 Copy"
-              copiedLabel="✓ Copied!"
-              className="copy-btn"
-            />
-          </div>
-          <blockquote className="fairer-quote">“{result.fairer_wording}”</blockquote>
-        </section>
-      )}
-
-      {/* 7. Ask them, with Copy and Share to WhatsApp */}
+      {/* Ask them, with Copy and Share to WhatsApp */}
       {result.ask_them && (
         <section className="card-ask-them-section" data-testid="ask-them-section">
           <div className="ask-them-header">

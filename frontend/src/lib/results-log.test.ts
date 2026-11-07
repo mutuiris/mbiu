@@ -34,7 +34,6 @@ function result(id: string, status: ClauseResult["status"]): EvaluationEvent {
       comparison_note: null,
       impact_inputs: null,
       linked_clauses: [],
-      fairer_wording: null,
       ask_them: null,
       standard_template_id: null,
       standard_excerpt: null,
