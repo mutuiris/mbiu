@@ -16,7 +16,7 @@ import { Navbar } from "@/components/Navbar";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
 import { LiveResults } from "@/components/results/LiveResults";
-import { SiteBackdrop } from "@/components/SiteBackdrop";
+import { SiteBackdrop, SunburstRays } from "@/components/SiteBackdrop";
 import { Turnstile } from "@/components/Turnstile";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import {
@@ -332,9 +332,12 @@ export default function Home() {
           className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
         >
           <div className="mx-auto flex w-full max-w-[720px] flex-col items-center text-center xl:mx-0 xl:items-start xl:text-left">
-            <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
-              Understand your contract before you sign it.
-            </h1>
+            <div className="relative inline-block">
+              <SunburstRays className="pointer-events-none absolute -left-7 -top-9 h-11 w-10 text-mbiu-ink dark:text-[#F6F2E9] sm:-left-11 sm:-top-11 sm:h-13 sm:w-12 xl:-left-14 xl:-top-12 xl:h-15 xl:w-13" />
+              <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
+                Understand your contract before you sign it.
+              </h1>
+            </div>
 
             <p className="mt-5 text-[1.1rem] font-bold tracking-[-0.01em] text-mbiu-ink dark:text-[#F6F2E9] sm:mt-6 sm:text-[1.28rem]">
               Your music. Your rights. Your decisions.

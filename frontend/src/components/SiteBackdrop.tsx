@@ -1,12 +1,12 @@
 import { Music, Music2, Sparkles } from "lucide-react";
 import Image from "next/image";
 
-function Rays({ className }: { className?: string }) {
+export function SunburstRays({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 84 92" fill="none" className={className}>
-      <path d="M36 88 20 36" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="M54 78V20" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="m70 84 12-42" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
+    <svg viewBox="0 0 70 80" fill="currentColor" aria-hidden="true" className={className}>
+      <polygon points="44,5 58,7 63,41" />
+      <polygon points="10,32 20,23 46,51" />
+      <polygon points="6,64 6,73 38,67" />
     </svg>
   );
 }
@@ -44,7 +44,7 @@ export function SiteBackdrop({ variant = "landing" }: { variant?: "landing" | "r
           className="absolute -right-20 top-[4%] w-[62%] max-w-[520px] opacity-[0.18] mix-blend-multiply dark:-right-10 dark:invert dark:opacity-[0.05] dark:mix-blend-screen sm:w-[46%]"
         />
 
-        <Rays className="absolute left-[3%] top-[2%] hidden h-12 w-11 text-mbiu-ink/80 sm:block dark:text-white/50" />
+        <SunburstRays className="absolute left-[3%] top-[2%] hidden h-12 w-11 text-mbiu-ink/80 sm:block dark:text-white/50" />
         <Music2 className="absolute right-[7%] top-[1%] h-7 w-7 rotate-[10deg] text-mbiu-ink/60 dark:text-white/40" />
 
         <Music2 className="absolute left-[4%] top-[46%] hidden h-8 w-8 -rotate-[12deg] text-mbiu-ink/45 sm:block dark:text-white/30" />
@@ -72,7 +72,6 @@ export function SiteBackdrop({ variant = "landing" }: { variant?: "landing" | "r
         className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-35 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-45 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
       />
 
-      <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
       <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[170px] text-mbiu-ink/15 sm:h-[240px] sm:w-[205px] dark:text-white/20" />
 
       <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />

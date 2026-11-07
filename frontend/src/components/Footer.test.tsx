@@ -19,19 +19,20 @@ describe("Footer Component", () => {
 
   it("renders legal disclaimer and short concise guidance", () => {
     const markup = renderToStaticMarkup(<Footer />);
-    expect(markup).toContain("Independent Creator Resource:");
-    expect(markup).toContain("It is not a law firm.");
+    expect(markup).toContain("Independent Civic Resource:");
     expect(markup).toContain("It does not provide legal advice.");
   });
 
-  it("renders navigation columns: Platform, About, and Privacy & Legal", () => {
+  it("renders navigation columns with working routes: Platform, About, and Privacy & Legal", () => {
     const markup = renderToStaticMarkup(<Footer />);
     expect(markup).toContain("Platform");
     expect(markup).toContain("About");
     expect(markup).toContain("Privacy &amp; Legal");
-    expect(markup).toContain('href="#how-it-works"');
-    expect(markup).toContain('href="#upload"');
-    expect(markup).toContain('href="#privacy"');
+    expect(markup).toContain('href="/how-it-works"');
+    expect(markup).toContain('href="/privacy"');
+    expect(markup).toContain('href="/terms"');
+    expect(markup).toContain('href="/report"');
+    expect(markup).toContain('href="/team"');
   });
 
   it("renders copyright and Kenya Music Contract Project note in bottom bar", () => {
