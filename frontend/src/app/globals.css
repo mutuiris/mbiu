@@ -1099,6 +1099,125 @@ body {
   line-height: 1.3;
 }
 
+/* Result Card 8 Sections Architecture Format */
+.card-heading-container {
+  margin-bottom: 0.85rem;
+}
+
+.card-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.35rem 0;
+}
+
+.card-heading-title {
+  color: var(--text-primary);
+}
+
+.heading-separator {
+  color: var(--border-color);
+  font-weight: normal;
+}
+
+.card-location-row {
+  margin-bottom: 0.5rem;
+}
+
+.card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.card-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.card-contract-quote {
+  font-style: italic;
+  background-color: var(--bg-color);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--border-color);
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.card-plain-language-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.card-meaning-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.card-standard-excerpt {
+  font-size: 0.925rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+  font-style: italic;
+  background-color: var(--bg-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.card-comparison-note {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+.card-sources {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.sources-title {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.card-notice {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.card-notice-disclaimer {
+  font-size: 0.775rem;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
 .card-comparison-section {
   display: flex;
   flex-direction: column;

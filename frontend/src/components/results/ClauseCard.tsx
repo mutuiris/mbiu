@@ -137,20 +137,40 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   };
 
   const badge = getBadgeConfig(result.comparison);
+  const formattedClauseNumber = clauseNumber
+    ? clauseNumber.trim().toLowerCase().startsWith("clause")
+      ? clauseNumber.trim()
+      : `Clause ${clauseNumber.trim()}`
+    : null;
   const topicText = topic || clauseHeading || "Contract Term";
+  const headingTitle = formattedClauseNumber
+    ? `${formattedClauseNumber}, ${topicText}`
+    : topicText;
+
   const firstPage = result.pages[0] ?? 1;
   const locationLabel = `Page ${result.pages.join(", ")}${
     clauseNumber ? `, clause ${clauseNumber}` : ""
   }`;
 
+  let sourcesText: string | null = null;
+  if (result.evidence && result.evidence.length > 0) {
+    sourcesText = result.evidence
+      .map((ev) => `[${ev.source_title}]`)
+      .filter((val, idx, arr) => arr.indexOf(val) === idx)
+      .join(" · ");
+  } else if (result.standard_template_id) {
+    sourcesText = `[${result.standard_template_id}]`;
+  }
+
   const speechText = [
-    result.headline,
-    `Status: ${badge.label}.`,
-    `Topic: ${topicText}.`,
+    `${headingTitle}. ${badge.label}.`,
     `Location: ${locationLabel}.`,
-    `Your contract says: ${result.what_it_says}.`,
-    result.standard_excerpt ? `Reviewed standard says: ${result.standard_excerpt}.` : "",
-    `What this means for you: ${result.what_it_means}.`,
+    `What your contract says: ${result.what_it_says}.`,
+    `In plain language: ${result.headline}.`,
+    `Why this may matter to you: ${result.what_it_means}.`,
+    result.standard_excerpt ? `How it compares: ${result.standard_excerpt}.` : "",
+    result.comparison_note ? `Note: ${result.comparison_note}.` : "",
+    result.ask_them ? `Question you could ask: ${result.ask_them}.` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -167,7 +187,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
       className={`result-card ${badge.className} ${isHighlighted ? "highlighted" : ""} ${
         isUpdated ? "card-updated" : ""
       }`}
-      aria-labelledby={`headline-${result.clause_id}`}
+      aria-labelledby={`heading-${result.clause_id}`}
       data-testid={`card-${result.clause_id}`}
     >
       {/* Whole-contract update notice */}
@@ -184,81 +204,71 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         </div>
       )}
 
-      {/* 1. Headline in artist's terms */}
-      <div className="card-headline-wrapper">
-        <h3
-          id={`headline-${result.clause_id}`}
-          className="card-headline"
-          data-testid="clause-headline"
-        >
-          {result.headline}
-        </h3>
-      </div>
-
-      {/* 2. Status, topic and location (tapping jumps to the clause in the PDF viewer) */}
-      <div className="card-status-topic-location" data-testid="status-topic-location">
-        <button
-          type="button"
-          onClick={() => onJumpToPdfClause?.(result.clause_id, firstPage)}
-          className="jump-to-pdf-trigger"
-          aria-label={`Jump to page ${firstPage} in PDF viewer`}
-          title={`Click to jump to page ${firstPage} in PDF viewer`}
-        >
-          <span className={`status-badge-inline ${badge.className}`}>{badge.display}</span>
-          <span className="meta-separator" aria-hidden="true">
-            ·
-          </span>
-          <span className="meta-topic">{topicText}</span>
-          <span className="meta-separator" aria-hidden="true">
-            ·
-          </span>
-          <span className="meta-location">
-            {locationLabel}
-            <span className="pdf-jump-icon" aria-hidden="true">
-              {" "}
-              ↗
+      {/* 1. Heading: Clause number, plain-language topic title, and label symbol + text */}
+      <header className="card-heading-container" data-testid="clause-header">
+        <div className="card-heading-line">
+          <h3
+            id={`heading-${result.clause_id}`}
+            className="card-heading"
+            data-testid="clause-heading"
+          >
+            <span className="card-heading-title">{headingTitle}</span>
+            <span className="heading-separator" aria-hidden="true">
+              {" "}·{" "}
             </span>
-          </span>
-        </button>
-      </div>
-
-      {/* 3, 4, 5 Comparison Section */}
-      <section className="card-comparison-section" data-testid="contract-vs-standard">
-        {/* 3. Your contract vs the standard, one line each */}
-        <div className="comparison-line your-contract-line">
-          <span className="line-label">Your contract:</span>
-          <p className="line-content text-contract">“{result.what_it_says}”</p>
+            <span className={`status-badge-inline ${badge.className}`}>
+              {badge.display}
+            </span>
+          </h3>
         </div>
 
-        {result.standard_excerpt && (
-          <div className="comparison-line standard-line">
-            <span className="line-label">The standard:</span>
-            <p className="line-content text-standard">{result.standard_excerpt}</p>
-          </div>
-        )}
-
-        <div className="card-meaning-box">
-          <span className="meaning-title">What this means for you:</span>
-          <p className="meaning-text">{result.what_it_means}</p>
-        </div>
-
-        {result.comparison_note && (
-          <div className="card-comparison-note" data-testid="clause-comparison-note">
-            <span className="note-icon" aria-hidden="true">
-              ℹ️
+        <div className="card-location-row" data-testid="status-topic-location">
+          <button
+            type="button"
+            onClick={() => onJumpToPdfClause?.(result.clause_id, firstPage)}
+            className="jump-to-pdf-trigger"
+            aria-label={`Jump to page ${firstPage} in PDF viewer`}
+            title={`Click to jump to page ${firstPage} in PDF viewer`}
+          >
+            <span className="meta-topic">{topicText}</span>
+            <span className="meta-separator" aria-hidden="true">
+              {" "}·{" "}
             </span>
-            <p className="note-text">{result.comparison_note}</p>
-          </div>
-        )}
+            <span className="meta-location">
+              {locationLabel}
+              <span className="pdf-jump-icon" aria-hidden="true">
+                {" "}↗
+              </span>
+            </span>
+          </button>
+        </div>
+      </header>
 
-        {/* 4. In shillings: worked example from impact_inputs */}
+      {/* 2. What your contract says: Exact quote from the contract */}
+      <section className="card-section card-what-it-says" data-testid="what-it-says-section">
+        <h4 className="card-section-title">What your contract says</h4>
+        <blockquote className="card-contract-quote text-contract">“{result.what_it_says}”</blockquote>
+      </section>
+
+      {/* 3. In plain language: 1-2 short, jargon-free sentences */}
+      <section className="card-section card-plain-language" data-testid="plain-language-section">
+        <h4 className="card-section-title">In plain language</h4>
+        <p className="card-plain-language-text" data-testid="clause-headline">{result.headline}</p>
+      </section>
+
+      {/* 4. Why this may matter to you: Practical consequences + KES worked example for money */}
+      <section className="card-comparison-section" data-testid="why-it-matters-section">
+        <h4 className="card-section-title">Why this may matter to you</h4>
+        <p className="card-meaning-text">{result.what_it_means}</p>
+
+        {/* Illustrative KES worked example for money clauses */}
         {result.impact_inputs && (
-          <div className="card-shillings-section">
+          <div className="card-shillings-section" data-testid="shillings-calculator">
             <ShillingsCalculator inputs={result.impact_inputs} />
           </div>
         )}
 
-        {/* 5. Also affected by */}
+        {/* Linked clauses / overrides / conflicts */}
         {linkedClauses && linkedClauses.length > 0 && (
           <div className="card-affected-by" data-testid="also-affected-by">
             <span className="affected-label">Also affected by:</span>
@@ -292,11 +302,29 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         )}
       </section>
 
-      {/* Ask them, with Copy and Share to WhatsApp */}
+      {/* 5. How it compares: What standard templates usually do (or comparison note) */}
+      <section className="card-section card-how-it-compares" data-testid="how-it-compares-section">
+        <h4 className="card-section-title">How it compares</h4>
+        {result.standard_excerpt && (
+          <p className="card-standard-excerpt text-standard">{result.standard_excerpt}</p>
+        )}
+        {result.comparison_note && (
+          <p className="card-comparison-note" data-testid="clause-comparison-note">
+            {result.comparison_note}
+          </p>
+        )}
+        {!result.standard_excerpt && !result.comparison_note && (
+          <p className="card-comparison-note text-muted">
+            Standard reference templates on this topic were not compared.
+          </p>
+        )}
+      </section>
+
+      {/* 6. Questions you could ask: 1 to 3 neutral, specific questions */}
       {result.ask_them && (
-        <section className="card-ask-them-section" data-testid="ask-them-section">
+        <section className="card-section card-ask-them-section" data-testid="ask-them-section">
           <div className="ask-them-header">
-            <span className="ask-them-badge">Ask them</span>
+            <h4 className="card-section-title">Questions you could ask</h4>
             <div className="ask-them-actions">
               <CopyButton
                 text={result.ask_them}
@@ -322,7 +350,24 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         </section>
       )}
 
-      {/* 8. Show the exact wording: original clause and template excerpt, collapsed by default */}
+      {/* 7. Sources: Reference contract title and page when cited */}
+      {sourcesText && (
+        <section className="card-section card-sources-section" data-testid="sources-section">
+          <div className="card-sources">
+            <span className="sources-title">Sources: </span>
+            <span className="sources-content">{sourcesText}</span>
+          </div>
+        </section>
+      )}
+
+      {/* 8. Notice: Standard disclaimer */}
+      <div className="card-notice" data-testid="clause-notice">
+        <p className="card-notice-disclaimer">
+          <em>This explains what the contract says compared with reference material. It doesn’t say whether a clause is lawful or enforceable, and it isn’t legal advice.</em>
+        </p>
+      </div>
+
+      {/* Collapsible raw clause inspection */}
       <section className="card-exact-wording-section" data-testid="exact-wording-section">
         <details className="exact-wording-details">
           <summary className="exact-wording-summary">
@@ -351,7 +396,7 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         </details>
       </section>
 
-      {/* 9. Read aloud with the browser's speech synthesis, on the device */}
+      {/* Read aloud with the browser's speech synthesis */}
       <footer className="card-read-aloud-footer" data-testid="read-aloud-section">
         <ReadAloudButton text={speechText} />
       </footer>

@@ -59,7 +59,7 @@ const mockBetterResult: ClauseResult = {
 };
 
 describe("ClauseCard Component", () => {
-  it("renders all 9 card sections in exact specified order for worse_for_you clause", () => {
+  it("renders all 8 card sections strictly following architecture doc format in exact specified order for worse_for_you clause", () => {
     const html = renderToStaticMarkup(
       <ClauseCard
         result={mockWorseResult}
@@ -76,30 +76,32 @@ describe("ClauseCard Component", () => {
       />,
     );
 
-    // 1. Headline in artist's terms
-    expect(html).toContain("You could earn very little from your songs for years");
-    const headlineIndex = html.indexOf("data-testid=\"clause-headline\"");
-
-    // 2. Status, topic, and location ("Worth asking about · Royalties · Page 4, clause 7.2")
-    expect(html).toContain("Worth asking about");
-    expect(html).toContain("Royalties");
+    // 1. Heading: Clause number, plain-language topic title, and label symbol + text
+    expect(html).toContain("Clause 7.2, Royalties");
+    expect(html).toContain("🟠 Worth asking about");
     expect(html).toContain("Page 4, clause 7.2");
-    const statusTopicLocationIndex = html.indexOf("data-testid=\"status-topic-location\"");
+    const headingIndex = html.indexOf("data-testid=\"clause-heading\"");
 
-    // 3. Your contract vs the standard, one line each
-    expect(html).toContain("Your contract:");
+    // 2. What your contract says: Exact quote from the contract
+    expect(html).toContain("What your contract says");
     expect(html).toContain("Artist receives 12% royalty on Net Receipts after all expenses.");
-    expect(html).toContain("The standard:");
-    expect(html).toContain("Standard indie royalty is 18-25% on net receipts with capped deductions.");
-    const contractVsStandardIndex = html.indexOf("data-testid=\"contract-vs-standard\"");
+    const whatItSaysIndex = html.indexOf("data-testid=\"what-it-says-section\"");
 
-    // 4. In shillings calculator
+    // 3. In plain language: 1-2 short, jargon-free sentences
+    expect(html).toContain("In plain language");
+    expect(html).toContain("You could earn very little from your songs for years");
+    const plainLanguageIndex = html.indexOf("data-testid=\"plain-language-section\"");
+
+    // 4. Why this may matter to you: Practical consequences + KES worked example + linked clauses
+    expect(html).toContain("Why this may matter to you");
+    expect(html).toContain("Because deductions are uncapped, production and marketing overhead can wipe out your payout.");
+    const whyItMattersIndex = html.indexOf("data-testid=\"why-it-matters-section\"");
+
     expect(html).toContain("data-testid=\"shillings-calculator\"");
     expect(html).toContain("In Shillings (Worked Example)");
     expect(html).toContain("Example figures — adjust below");
     const shillingsCalcIndex = html.indexOf("data-testid=\"shillings-calculator\"");
 
-    // 5. Also affected by
     expect(html).toContain("data-testid=\"also-affected-by\"");
     expect(html).toContain("Also affected by:");
     expect(html).toContain("Clause 19 (Suspension)");
@@ -109,33 +111,52 @@ describe("ClauseCard Component", () => {
     expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
     expect(html).not.toContain("Fairer wording");
 
-    // Ask them, with Copy and Share to WhatsApp
+    // 5. How it compares: What standard templates usually do (or comparison note)
+    expect(html).toContain("How it compares");
+    expect(html).toContain("Standard indie royalty is 18-25% on net receipts with capped deductions.");
+    const howItComparesIndex = html.indexOf("data-testid=\"how-it-compares-section\"");
+
+    // 6. Questions you could ask: 1 to 3 neutral, specific questions to ask
     expect(html).toContain("data-testid=\"ask-them-section\"");
-    expect(html).toContain("Ask them");
+    expect(html).toContain("Questions you could ask");
     expect(html).toContain("WhatsApp");
     expect(html).toContain("Can we cap allowable deductions at 20% of gross receipts?");
     const askThemIndex = html.indexOf("data-testid=\"ask-them-section\"");
 
-    // Show exact wording collapsed by default (<details>)
+    // 7. Sources: Reference contract title and page when cited
+    expect(html).toContain("data-testid=\"sources-section\"");
+    expect(html).toContain("Sources:");
+    expect(html).toContain("[std-rec-kenya-2024]");
+    const sourcesIndex = html.indexOf("data-testid=\"sources-section\"");
+
+    // 8. Notice: Standard disclaimer
+    expect(html).toContain("data-testid=\"clause-notice\"");
+    expect(html).toContain("This explains what the contract says compared with reference material. It doesn’t say whether a clause is lawful or enforceable, and it isn’t legal advice.");
+    const noticeIndex = html.indexOf("data-testid=\"clause-notice\"");
+
+    // Collapsible exact raw wording & read aloud button
     expect(html).toContain("data-testid=\"exact-wording-section\"");
     expect(html).toContain("<details class=\"exact-wording-details\"");
     expect(html).toContain("Show exact wording");
     expect(html).toContain("Original contract clause (unaltered):");
     const exactWordingIndex = html.indexOf("data-testid=\"exact-wording-section\"");
 
-    // Read aloud with browser speech synthesis
     expect(html).toContain("data-testid=\"read-aloud-section\"");
     expect(html).toContain("Read aloud");
     const readAloudIndex = html.indexOf("data-testid=\"read-aloud-section\"");
 
-    // Verify STRICT sequential ordering
-    expect(headlineIndex).toBeGreaterThan(-1);
-    expect(statusTopicLocationIndex).toBeGreaterThan(headlineIndex);
-    expect(contractVsStandardIndex).toBeGreaterThan(statusTopicLocationIndex);
-    expect(shillingsCalcIndex).toBeGreaterThan(contractVsStandardIndex);
+    // Verify STRICT sequential ordering of all 8 sections
+    expect(headingIndex).toBeGreaterThan(-1);
+    expect(whatItSaysIndex).toBeGreaterThan(headingIndex);
+    expect(plainLanguageIndex).toBeGreaterThan(whatItSaysIndex);
+    expect(whyItMattersIndex).toBeGreaterThan(plainLanguageIndex);
+    expect(shillingsCalcIndex).toBeGreaterThan(whyItMattersIndex);
     expect(alsoAffectedIndex).toBeGreaterThan(shillingsCalcIndex);
-    expect(askThemIndex).toBeGreaterThan(alsoAffectedIndex);
-    expect(exactWordingIndex).toBeGreaterThan(askThemIndex);
+    expect(howItComparesIndex).toBeGreaterThan(alsoAffectedIndex);
+    expect(askThemIndex).toBeGreaterThan(howItComparesIndex);
+    expect(sourcesIndex).toBeGreaterThan(askThemIndex);
+    expect(noticeIndex).toBeGreaterThan(sourcesIndex);
+    expect(exactWordingIndex).toBeGreaterThan(noticeIndex);
     expect(readAloudIndex).toBeGreaterThan(exactWordingIndex);
   });
 
@@ -228,13 +249,17 @@ describe("ClauseCard Component", () => {
       );
 
       // Verify all card sections render within container
-      expect(html).toContain("data-testid=\"clause-headline\"");
-      expect(html).toContain("data-testid=\"status-topic-location\"");
-      expect(html).toContain("data-testid=\"contract-vs-standard\"");
+      expect(html).toContain("data-testid=\"clause-heading\"");
+      expect(html).toContain("data-testid=\"what-it-says-section\"");
+      expect(html).toContain("data-testid=\"plain-language-section\"");
+      expect(html).toContain("data-testid=\"why-it-matters-section\"");
+      expect(html).toContain("data-testid=\"how-it-compares-section\"");
       expect(html).toContain("data-testid=\"shillings-calculator\"");
       expect(html).toContain("data-testid=\"also-affected-by\"");
       expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
       expect(html).toContain("data-testid=\"ask-them-section\"");
+      expect(html).toContain("data-testid=\"sources-section\"");
+      expect(html).toContain("data-testid=\"clause-notice\"");
       expect(html).toContain("data-testid=\"exact-wording-section\"");
       expect(html).toContain("data-testid=\"read-aloud-section\"");
     });
