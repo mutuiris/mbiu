@@ -5,11 +5,7 @@ import Image from "next/image";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
-interface NavbarProps {
-  onUploadClick?: () => void;
-}
-
-export function Navbar({ onUploadClick }: NavbarProps) {
+export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +94,6 @@ export function Navbar({ onUploadClick }: NavbarProps) {
           <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
             <a
               href="#upload"
-              onClick={onUploadClick}
               className="inline-flex h-10 lg:h-11 items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-4 lg:px-6 text-[0.9rem] font-semibold text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark"
             >
               <span>Upload your contract</span>
@@ -112,6 +107,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             onClick={() => setIsOpen(!isOpen)}
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
+            aria-controls="mobile-menu"
             className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/10 bg-white/70 text-mbiu-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/10 dark:bg-white/5 dark:text-[#F4EFE6] dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
           >
             {isOpen ? (
@@ -125,10 +121,10 @@ export function Navbar({ onUploadClick }: NavbarProps) {
 
       {/* Mobile Drawer / Dropdown Menu */}
       {isOpen && (
-        <div
+        <nav
+          id="mobile-menu"
           className="mt-2 rounded-[24px] border border-mbiu-ink/10 bg-[#fbf5eb]/98 p-4 shadow-[0_24px_50px_-15px_rgba(22,26,38,0.25)] backdrop-blur-2xl md:hidden dark:border-white/15 dark:bg-[#0e1d24]/98 sm:p-5"
-          role="dialog"
-          aria-label="Mobile Navigation"
+          aria-label="Mobile navigation"
         >
           <div className="flex flex-col gap-2.5">
             <a
@@ -170,7 +166,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
               <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
             </a>
           </div>
-        </div>
+        </nav>
       )}
     </header>
   );
