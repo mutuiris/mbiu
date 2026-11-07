@@ -129,7 +129,6 @@ def _error_clause_result(
         comparison_note=None,
         impact_inputs=None,
         linked_clauses=links,
-        fairer_wording=None,
         ask_them=None,
         standard_template_id=standard_template_id,
         standard_excerpt=standard_excerpt,
@@ -659,7 +658,6 @@ async def _evaluate_single_clause(
                 comparison_note=note,
                 impact_inputs=None,
                 linked_clauses=links,
-                fairer_wording=None,
                 ask_them=None,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
                 standard_excerpt=primary_ev.excerpt if primary_ev else None,
@@ -674,8 +672,7 @@ async def _evaluate_single_clause(
         outcome = proposal.comparison
         notes = []
         if note is not None:
-            # Nothing to compare with: keep the explanation, never a verdict
-            outcome = Outcome.CANNOT_COMPARE
+            # Include informational note without forcing cannot_compare
             notes.append(note)
         if context is not None:
             notes.append(context)
@@ -686,12 +683,13 @@ async def _evaluate_single_clause(
             )
         comp_note = " ".join(notes) or None
 
-        fairer = primary_ev.excerpt if outcome == Outcome.WORSE_FOR_YOU and primary_ev else None
         return ClauseResult(
             clause_id=clause.clause_id,
             pages=clause.pages,
             original_text=clause.text,
-            status=ClauseStatus.EVALUATED if note is None else ClauseStatus.CANNOT_COMPARE,
+            status=ClauseStatus.EVALUATED
+            if outcome != Outcome.CANNOT_COMPARE
+            else ClauseStatus.CANNOT_COMPARE,
             comparison=outcome,
             headline=proposal.headline,
             what_it_says=proposal.what_it_says,
@@ -700,7 +698,6 @@ async def _evaluate_single_clause(
             # Verified quotes only; the frontend does the arithmetic
             impact_inputs=proposal.impact_inputs,
             linked_clauses=links,
-            fairer_wording=fairer,
             ask_them=proposal.ask_them,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,

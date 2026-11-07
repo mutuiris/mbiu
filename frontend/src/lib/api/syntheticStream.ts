@@ -151,8 +151,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       evidence_ids: ["ev-1"],
       comparison_note: "Perpetual assignment vs standard 7-year exclusive license.",
       evidence_quote: "Artist retains ownership of masters, licensing them exclusively to the Label",
-      fairer_wording:
-        "Artist grants Company an exclusive license to exploit the Masters for a term of five (5) years from release, after which all rights revert to Artist.",
       standard_excerpt:
         "Artist retains ownership of masters, licensing them exclusively to the Label for a term not exceeding 7 years.",
       standard_template_id: "std-rec-kenya-2024",
@@ -192,8 +190,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       evidence_ids: [],
       comparison_note: null,
       evidence_quote: null,
-      fairer_wording:
-        "Company shall pay Artist a minimum 20% royalty based on gross receipts, with deductions capped strictly at verifiable third-party distribution fees.",
       standard_excerpt: "Standard indie royalty is 18-25% on net receipts with capped deductions.",
       standard_template_id: "std-rec-kenya-2024",
       ask_them:
@@ -249,7 +245,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       evidence_ids: [],
       comparison_note: null,
       evidence_quote: null,
-      fairer_wording: null,
       standard_excerpt: "Standard clauses require the label to pay audit fees on 10% underpayment.",
       standard_template_id: "std-rec-kenya-2024",
       ask_them: null,
@@ -304,7 +299,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       evidence_ids: [],
       comparison_note: null,
       evidence_quote: null,
-      fairer_wording: null,
       standard_excerpt: "Standard Kenyan governing law clause.",
       standard_template_id: "std-rec-kenya-2024",
       ask_them: null,
@@ -341,7 +335,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       evidence_ids: [],
       comparison_note: null,
       evidence_quote: null,
-      fairer_wording: null,
       standard_excerpt: "Standard severability clause.",
       standard_template_id: "std-rec-kenya-2024",
       ask_them: null,
@@ -380,8 +373,6 @@ export const SYNTHETIC_EVALUATION_EVENTS: EvaluationEvent[] = [
       comparison_note:
         "Perpetual assignment vs standard 7-year exclusive license. Conflicting term limits detected in contract map.",
       evidence_quote: "Artist retains ownership of masters, licensing them exclusively to the Label",
-      fairer_wording:
-        "Artist grants Company an exclusive license to exploit the Masters for a term of five (5) years from release, after which all rights revert to Artist.",
       standard_excerpt:
         "Artist retains ownership of masters, licensing them exclusively to the Label for a term not exceeding 7 years.",
       standard_template_id: "std-rec-kenya-2024",

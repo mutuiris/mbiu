@@ -3,10 +3,10 @@ import type { DocumentPayload, ClauseResult, ClauseFailure } from "@/lib/api/gen
 import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
 
 const PILL_CLASS: Record<OutcomeTone, string> = {
-  typical: "match",
-  unusual: "notice",
-  inquiry: "worse",
-  unchecked: "failed",
+  typical: "typical",
+  unusual: "unusual",
+  worth_asking_about: "worth",
+  cannot_compare: "cannot-compare",
 };
 
 interface ClauseListProps {
@@ -62,7 +62,7 @@ export const ClauseList: React.FC<ClauseListProps> = ({
                 const { label, tone } = outcomeLabel(result.comparison);
                 statusBadge = <span className={`status-pill ${PILL_CLASS[tone]}`}>{label}</span>;
               } else if (failure) {
-                statusBadge = <span className="status-pill failed">Couldn&apos;t check</span>;
+                statusBadge = <span className="status-pill cannot-compare">Couldn&apos;t compare</span>;
               }
 
               const isSelected = selectedClauseId === clause.clause_id;
