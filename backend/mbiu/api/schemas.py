@@ -216,7 +216,6 @@ class ClauseResult(Contract):
     comparison_note: str | None
     impact_inputs: ImpactInputs | None
     linked_clauses: list[ClauseId]
-    fairer_wording: str | None = Field(description="The template clause, unchanged")
     ask_them: str | None
     standard_template_id: str | None
     standard_excerpt: str | None

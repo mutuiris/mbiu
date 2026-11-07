@@ -6,7 +6,8 @@ from django.db import IntegrityError, connection, transaction
 from django.test import Client
 
 from mbiu.corpus.loader import active_snapshot, reset_snapshot
-from mbiu.corpus.models import EMBEDDING_DIM, CorpusVersion, ReferenceChunk, ReferenceSource
+from mbiu.corpus.models import CorpusVersion, ReferenceChunk, ReferenceSource
+from mbiu.corpus.snapshot import EMBEDDING_DIM
 
 pytestmark = pytest.mark.django_db
 
@@ -31,7 +32,7 @@ def _seed(version_tag: str, chunk_count: int = 2) -> CorpusVersion:
     )
     version = CorpusVersion.objects.create(
         version_tag=version_tag,
-        embedding_model_id="google/embeddinggemma-2",
+        embedding_model_id="gemini-embedding-2",
         embedding_revision="test",
     )
     for n in range(chunk_count):
@@ -123,3 +124,13 @@ def test_row_level_security_is_on_for_all_four_tables() -> None:
         "reference_chunks": True,
         "pipeline_check_results": True,
     }
+
+
+def test_readyz_fails_when_the_corpus_used_another_embedding_model() -> None:
+    _seed("old-model")
+    CorpusVersion.objects.filter(version_tag="old-model").update(embedding_model_id="other-model")
+    CorpusVersion.activate("old-model")
+
+    response = Client().get("/readyz")
+    assert response.status_code == 503
+    assert response.json() == {"status": "not_ready", "failed": ["embeddings"]}

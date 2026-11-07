@@ -29,3 +29,19 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     skip = pytest.mark.skip(reason="No Postgres reachable: run `just dev`, or rely on CI")
     for item in db_items:
         item.add_marker(skip)
+
+
+@pytest.fixture(autouse=True)
+def no_real_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never call the embeddings API or the corpus database from a test unless it asks to.
+
+    Retrieval falls back to the synthetic templates and exact-word search, as it does
+    when the API is down. Tests that need vectors or a corpus patch these themselves.
+    """
+    from mbiu.llm import ErrorCategory, LLMError
+
+    def unavailable() -> None:
+        raise LLMError(ErrorCategory.UNAVAILABLE)
+
+    monkeypatch.setattr("mbiu.retrieval.evidence.embedder", unavailable)
+    monkeypatch.setattr("mbiu.retrieval.evidence.active_snapshot", lambda: None)

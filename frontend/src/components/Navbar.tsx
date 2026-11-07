@@ -5,13 +5,15 @@ import Image from "next/image";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
-interface NavbarProps {
+export interface NavbarProps {
+  basePath?: string;
   onUploadClick?: () => void;
 }
 
-export function Navbar({ onUploadClick }: NavbarProps) {
+export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const href = (hash: string) => `${basePath}${hash}`;
 
   // Close menu on ESC key
   useEffect(() => {
@@ -50,7 +52,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
       >
         {/* Brand Logo */}
         <a
-          href="#"
+          href={basePath || "#"}
           className="flex shrink-0 items-center gap-1 sm:gap-1.5 pl-0.5 transition hover:opacity-90"
           aria-label="Mbiu home"
           onClick={closeMenu}
@@ -71,19 +73,19 @@ export function Navbar({ onUploadClick }: NavbarProps) {
         {/* Desktop Navigation Links */}
         <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
           <a
-            href="#how-it-works"
+            href={href("#how-it-works")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             How it works
           </a>
           <a
-            href="#privacy"
+            href={href("#privacy")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             Privacy
           </a>
           <a
-            href="#about"
+            href={href("#about")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             About
@@ -97,7 +99,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
           {/* Desktop CTA Button */}
           <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
             <a
-              href="#upload"
+              href={href("#upload")}
               onClick={onUploadClick}
               className="inline-flex h-10 lg:h-11 items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-4 lg:px-6 text-[0.9rem] font-semibold text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark"
             >
@@ -112,6 +114,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             onClick={() => setIsOpen(!isOpen)}
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
+            aria-controls="mobile-menu"
             className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/20 bg-white text-mbiu-ink shadow-xs transition hover:border-mbiu-ink/40 hover:bg-[#faf7f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/20 dark:bg-white/[0.06] dark:text-[#F4EFE6] dark:hover:border-white/40 dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
           >
             {isOpen ? (
@@ -125,14 +128,14 @@ export function Navbar({ onUploadClick }: NavbarProps) {
 
       {/* Mobile Drawer / Dropdown Menu */}
       {isOpen && (
-        <div
+        <nav
+          id="mobile-menu"
           className="mt-2 rounded-[24px] border border-mbiu-ink/10 bg-[#fbf5eb]/98 p-4 shadow-[0_24px_50px_-15px_rgba(22,26,38,0.25)] backdrop-blur-2xl md:hidden dark:border-white/15 dark:bg-[#0e1d24]/98 sm:p-5"
-          role="dialog"
-          aria-label="Mobile Navigation"
+          aria-label="Mobile navigation"
         >
           <div className="flex flex-col gap-2.5">
             <a
-              href="#how-it-works"
+              href={href("#how-it-works")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -141,7 +144,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             </a>
 
             <a
-              href="#privacy"
+              href={href("#privacy")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -150,7 +153,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
             </a>
 
             <a
-              href="#about"
+              href={href("#about")}
               onClick={closeMenu}
               className="flex items-center justify-between rounded-xl px-4 py-3 text-[1rem] font-semibold text-mbiu-ink transition hover:bg-black/5 dark:text-[#F6F2E9] dark:hover:bg-white/10"
             >
@@ -162,7 +165,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
 
             {/* Mobile Upload CTA */}
             <a
-              href="#upload"
+              href={href("#upload")}
               onClick={closeMenu}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-5 text-[0.98rem] font-bold text-white shadow-lg transition hover:bg-mbiu-indigo-hover focus-visible:outline-2 dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea]"
             >
@@ -170,7 +173,7 @@ export function Navbar({ onUploadClick }: NavbarProps) {
               <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
             </a>
           </div>
-        </div>
+        </nav>
       )}
     </header>
   );

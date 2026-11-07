@@ -66,7 +66,6 @@ const mockClauseResult: ClauseResult = {
   evidence_ids: [],
   comparison_note: "Subject to override in clause 19.",
   evidence_quote: null,
-  fairer_wording: "Royalties continue during non-material suspensions.",
   standard_excerpt: "Standard terms protect accrued royalties.",
   standard_template_id: "std-rec-kenya-2024",
   ask_them: "Can we ensure royalties are protected during administrative suspension?",

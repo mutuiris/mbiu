@@ -18,7 +18,6 @@ CLAUSE_RESULT: dict[str, Any] = {
     "comparison_note": None,
     "impact_inputs": None,
     "linked_clauses": [],
-    "fairer_wording": None,
     "ask_them": "Can the royalty be 15% of gross receipts?",
     "standard_template_id": None,
     "standard_excerpt": None,

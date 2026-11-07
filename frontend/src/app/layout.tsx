@@ -1,23 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
+// Fonts ship with the app, so builds never fetch from Google and visitors never contact it
+import "@fontsource-variable/fraunces/wght.css";
+import "@fontsource-variable/fraunces/wght-italic.css";
+import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
-
-const display = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-fraunces",
-  display: "swap",
-});
-
-const sans = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-manrope",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Mbiu - Understand your contract before you sign it",
@@ -31,7 +19,7 @@ const themeScript = `(function(){try{var s=localStorage.getItem("mbiu-theme");va
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${display.variable} ${sans.variable} antialiased`}>
+      <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}
       </body>

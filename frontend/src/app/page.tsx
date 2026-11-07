@@ -6,12 +6,8 @@ import {
   Diamond,
   Info,
   Lock,
-  Music,
-  Music2,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FileDropzone } from "@/components/FileDropzone";
@@ -19,6 +15,7 @@ import { Navbar } from "@/components/Navbar";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
 import { LiveResults } from "@/components/results/LiveResults";
+import { SiteBackdrop } from "@/components/SiteBackdrop";
 import { Turnstile } from "@/components/Turnstile";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import {
@@ -51,58 +48,6 @@ const steps = [
 const primaryButton =
   "inline-flex items-center justify-center gap-2.5 rounded-full bg-mbiu-indigo text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark";
 
-function Rays({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 84 92" fill="none" className={className}>
-      <path d="M36 88 20 36" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="M54 78V20" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="m70 84 12-42" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function TribalPattern({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 220 260" fill="none" className={className}>
-      <path d="M-36 252 54 132l94 120" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-62 240 54 96l120 144" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-40 216 54 60l104 156" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-14 224 54 148l70 76" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <circle cx="54" cy="132" r="3.5" fill="currentColor" />
-      <circle cx="54" cy="96" r="3.5" fill="currentColor" />
-      <circle cx="54" cy="60" r="3.5" fill="currentColor" />
-      <circle cx="118" cy="118" r="3" fill="currentColor" />
-      <circle cx="150" cy="168" r="3" fill="currentColor" />
-    </svg>
-  );
-}
-
-function Backdrop() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-[100svh] min-h-[620px] max-h-[880px] overflow-hidden"
-    >
-      <Image
-        src="/brand/mbiu-horn-watermark.png"
-        alt=""
-        width={972}
-        height={590}
-        priority
-        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-35 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-45 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
-      />
-
-      <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
-      <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[170px] text-mbiu-ink/15 sm:h-[240px] sm:w-[205px] dark:text-white/20" />
-
-      <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />
-      <Music2 className="absolute bottom-[7%] right-[7%] h-10 w-10 rotate-[14deg] text-mbiu-ink/90 dark:text-white/70" />
-      <Music className="absolute bottom-[3%] right-[3%] h-7 w-7 -rotate-[12deg] text-mbiu-ink/80 dark:text-white/60" />
-      <Sparkles className="absolute bottom-[11%] right-[2%] h-5 w-5 text-mbiu-ink/60 dark:text-white/50" />
-    </div>
-  );
-}
-
 function ClausePreviewCard() {
   return (
     <article className="relative z-10 w-full max-w-[380px] rounded-[24px] border border-white/70 bg-[#fbf1e1]/70 p-5 shadow-[0_36px_90px_-32px_rgba(30,25,15,0.5)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_36px_90px_-34px_rgba(0,0,0,0.9)] sm:rounded-[28px] sm:p-7 xl:mt-2">
@@ -119,7 +64,7 @@ function ClausePreviewCard() {
 
       <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-mbiu-peach px-3.5 py-1.5 text-[0.82rem] font-bold text-mbiu-warning-text sm:px-4 sm:text-[0.88rem]">
         <TriangleAlert className="h-4 w-4 shrink-0 fill-[#c2410c] text-[#c2410c]" strokeWidth={1.5} />
-        Worth asking about
+        Worth inquiry
       </span>
 
       <p className="mt-4 font-serif text-[0.98rem] italic leading-6 text-mbiu-ink/90 dark:text-[#E7DFD2]/85 sm:text-[1.02rem] sm:leading-7">
@@ -329,8 +274,12 @@ export default function Home() {
   if (stream) {
     const isIdle = !isStreaming && !clausesToCheck;
     return (
-      <main className="page-wrapper results-page">
-        <div className="stream-controls">
+      <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
+        <SiteBackdrop variant="results" />
+        <Navbar basePath="/" />
+
+        <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
+          <div className="stream-controls">
           <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
             Check another contract
           </button>
@@ -365,13 +314,14 @@ export default function Home() {
           onRetryClause={isIdle ? retryClause : undefined}
           file={selectedFile}
         />
-      </main>
+        </main>
+      </div>
     );
   }
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
-      <Backdrop />
+      <SiteBackdrop />
 
       <Navbar />
 

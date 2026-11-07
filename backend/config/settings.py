@@ -27,12 +27,12 @@ class Env(BaseSettings):
     gemini_model_light: str = "gemini-3.5-flash-lite"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = "gpt-4o-mini"
-    embedding_model_id: str = "google/embeddinggemma-2"
-    embedding_revision: str = ""
+    embedding_model_id: str = "gemini-embedding-2"
     failover_enabled: bool = False
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
     llm_concurrency: int = Field(default=4, gt=0)
+    token_budget_per_contract: int = Field(default=400_000, gt=0)
     deadline_per_clause_s: float = Field(default=3.0, gt=0)
     deadline_cap_s: float = Field(default=300.0, gt=0)
     max_reading_grade: float = Field(default=9.0, gt=0)
@@ -82,11 +82,11 @@ GEMINI_MODEL_LIGHT = env.gemini_model_light
 OPENAI_API_KEY = env.openai_api_key.get_secret_value()
 OPENAI_MODEL = env.openai_model
 EMBEDDING_MODEL_ID = env.embedding_model_id
-EMBEDDING_REVISION = env.embedding_revision
 FAILOVER_ENABLED = env.failover_enabled
 BATCH_TIMEOUT_S = env.batch_timeout_s
 BATCH_SIZE = env.batch_size
 LLM_CONCURRENCY = env.llm_concurrency
+TOKEN_BUDGET_PER_CONTRACT = env.token_budget_per_contract
 DEADLINE_PER_CLAUSE_S = env.deadline_per_clause_s
 DEADLINE_CAP_S = env.deadline_cap_s
 MAX_READING_GRADE = env.max_reading_grade

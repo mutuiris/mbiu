@@ -37,3 +37,6 @@ docs/problem_architecture_planning/
 
 # Corpus pipeline output, rebuilt from sources
 corpus/clauses/
+
+# Vercel CLI project link
+.vercel/

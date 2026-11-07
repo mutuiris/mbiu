@@ -322,18 +322,6 @@
             ],
             "title": "Evidence Quote"
           },
-          "fairer_wording": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The template clause, unchanged",
-            "title": "Fairer Wording"
-          },
           "headline": {
             "title": "Headline",
             "type": "string"
@@ -437,7 +425,6 @@
           "comparison_note",
           "impact_inputs",
           "linked_clauses",
-          "fairer_wording",
           "ask_them",
           "standard_template_id",
           "standard_excerpt",
