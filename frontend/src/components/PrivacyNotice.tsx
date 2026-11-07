@@ -27,8 +27,8 @@ export function PrivacyNotice({
 
       <p className="privacy-summary">
         We respect the privacy and commercial sensitivity of your music. Your
-        contract is evaluated <strong>in memory</strong> and is{" "}
-        <strong>never stored</strong> in any database, disk, or application log.
+        contract is evaluated <strong>instantly</strong>, we{" "}
+        <strong>never store</strong> your contract.
       </p>
 
       <button
