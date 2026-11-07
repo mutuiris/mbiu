@@ -58,8 +58,10 @@ jobs:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           response=$(curl --fail --silent --show-error --request POST "$HOOK")
-          deploy_id=$(echo "$response" | jq -r '.deploy.id // "unknown"')
-          echo "Render deploy $deploy_id triggered"
+          # The deploy has started once curl succeeds; the reply's format is only for the summary
+          deploy_id=$(echo "$response" | jq -r '.deploy.id // empty' 2>/dev/null || true)
+          deploy_id=${deploy_id:-see the Render dashboard}
+          echo "Render deploy triggered: $deploy_id"
           {
             echo "### API deploy triggered on Render"
             echo "Deploy: \`$deploy_id\` from \`${GITHUB_SHA::7}\`"
