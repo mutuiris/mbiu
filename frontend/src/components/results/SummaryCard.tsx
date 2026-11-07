@@ -70,6 +70,21 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary }) => {
           <span className="meta-label">Model Engine:</span>
           <span className="meta-value">{summary.versions.model}</span>
         </div>
+        <div className="summary-report-action" style={{ marginLeft: "auto" }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.print();
+              }
+            }}
+            className="secondary-btn"
+            data-testid="print-report-btn"
+            aria-label="Print or download contract summary report"
+          >
+            📄 Print / Save Report
+          </button>
+        </div>
       </footer>
     </section>
   );

