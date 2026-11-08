@@ -818,6 +818,10 @@ def segment_document(document: ExtractedDocument) -> SegmentedDocument:
                 else f"clause_{len(clauses) + 1}"
             )
 
+        # Long schedule titles and headings would pass the API's 64-character limit;
+        # 56 leaves room for the "_NN" suffix below
+        base_id = base_id[:56].rstrip("_")
+
         # Deduplicate clause_id to guarantee uniqueness across the document
         clause_id = base_id
         if clause_id in seen_clause_ids:

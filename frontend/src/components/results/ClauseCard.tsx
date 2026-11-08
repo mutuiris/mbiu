@@ -132,8 +132,8 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
     cannot_compare: "badge-cannot-compare",
   };
   const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
-    const { label, symbol, tone, display } = outcomeLabel(comparison);
-    return { label, symbol, tone, display, className: BADGE_CLASS[tone] };
+    const { label, tone } = outcomeLabel(comparison);
+    return { label, tone, className: BADGE_CLASS[tone] };
   };
 
   const badge = getBadgeConfig(result.comparison);
@@ -141,6 +141,9 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
     ? clauseNumber.trim().toLowerCase().startsWith("clause")
       ? clauseNumber.trim()
       : `Clause ${clauseNumber.trim()}`
+    : null;
+  const clauseNumberValue = formattedClauseNumber
+    ? formattedClauseNumber.replace(/^clause\s+/i, "").trim()
     : null;
   const topicText = topic || clauseHeading || "Contract Term";
   const headingTitle = formattedClauseNumber
@@ -187,9 +190,20 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
       className={`result-card ${badge.className} ${isHighlighted ? "highlighted" : ""} ${
         isUpdated ? "card-updated" : ""
       }`}
-      aria-labelledby={`heading-${result.clause_id}`}
+      aria-labelledby={`heading-${result.clause_id} outcome-${result.clause_id}`}
       data-testid={`card-${result.clause_id}`}
     >
+      {/* Outcome signal: clause number and outcome at a glance */}
+      <div className="card-status-band" data-testid="status-band">
+        <span className="band-clause">
+          {formattedClauseNumber ?? "Contract clause"}
+        </span>
+        <span className="band-outcome" id={`outcome-${result.clause_id}`}>
+          <span className="outcome-dot" aria-hidden="true" />
+          {badge.label}
+        </span>
+      </div>
+
       {/* Whole-contract update notice */}
       {isUpdated && (
         <div
@@ -204,21 +218,24 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         </div>
       )}
 
-      {/* 1. Heading: Clause number, plain-language topic title, and label symbol + text */}
+      {/* 1. Heading: Clause number and plain-language topic title */}
       <header className="card-heading-container" data-testid="clause-header">
         <div className="card-heading-line">
+          {clauseNumberValue && (
+            <span
+              className="clause-number-disc"
+              data-testid="clause-number-disc"
+              aria-hidden="true"
+            >
+              {clauseNumberValue}
+            </span>
+          )}
           <h3
             id={`heading-${result.clause_id}`}
             className="card-heading"
             data-testid="clause-heading"
           >
-            <span className="card-heading-title">{headingTitle}</span>
-            <span className="heading-separator" aria-hidden="true">
-              {" "}·{" "}
-            </span>
-            <span className={`status-badge-inline ${badge.className}`}>
-              {badge.display}
-            </span>
+            <span className="card-heading-title">{topicText}</span>
           </h3>
         </div>
 
@@ -230,10 +247,6 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
             aria-label={`Jump to page ${firstPage} in PDF viewer`}
             title={`Click to jump to page ${firstPage} in PDF viewer`}
           >
-            <span className="meta-topic">{topicText}</span>
-            <span className="meta-separator" aria-hidden="true">
-              {" "}·{" "}
-            </span>
             <span className="meta-location">
               {locationLabel}
               <span className="pdf-jump-icon" aria-hidden="true">
