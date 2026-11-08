@@ -547,3 +547,19 @@ class TestSegmenterEdgeCases:
 
         # Assert no temp files were created
         assert not new_files, f"Leaked temporary files during segmentation: {new_files}"
+
+
+def test_clause_ids_fit_the_api_limit_under_long_schedule_titles() -> None:
+    """A long schedule title must not push clause IDs past the 64-character API limit."""
+    text = (
+        "1. Term. The term is one year.\n\n"
+        "SCHEDULE 2: IRREVOCABLE MANDATE TO COLLECTIVE MANAGEMENT ORGANISATIONS AND DIGITAL "
+        "AGGREGATORS\n\n"
+        "1. The Artist appoints the Company to collect royalties.\n\n"
+        "2. The Company pays the Artist within thirty days.\n"
+    )
+    ids = [c.clause_id for c in segment_text(text).clauses]
+
+    assert any(clause_id.startswith("schedule_2") for clause_id in ids)
+    assert all(len(clause_id) <= 64 for clause_id in ids), ids
+    assert len(set(ids)) == len(ids)
