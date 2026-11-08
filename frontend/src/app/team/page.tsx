@@ -36,6 +36,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     image: "/team/bernadette.png",
     bio: "Passionate about human centered design. Leads user research, frontend development and documentation to ensure we're solving a real problem for real users.",
     email: "benadettekaranja@gmail.com",
+    linkedin: "https://www.linkedin.com/in/bernadette-karanja-0416793b8",
   },
   {
     name: "Addy Mutuiri",
