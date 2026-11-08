@@ -254,3 +254,34 @@ def test_missing_protections_say_nothing_without_known_topics(
     monkeypatch.setattr(ev, "active_snapshot", lambda: snapshot)
     assert asyncio.run(ev.missing_protections([None, None], "recording")) == []
     assert asyncio.run(ev.missing_protections(["royalties"], "recording"))
+
+
+def test_sources_yaml_and_annotated_exemplars_load_cleanly() -> None:
+    from pathlib import Path
+
+    from mbiu.corpus.synthetic import (
+        load_annotated_exemplars,
+        retrieve_annotated_exemplar,
+        retrieve_simple_evidence,
+    )
+    from mbiu.pipeline.sources import load_sources
+
+    sources_path = Path(__file__).resolve().parents[2] / "corpus" / "sources.yaml"
+    sources = load_sources(sources_path)
+    assert len(sources) >= 10
+    assert any("KECOBO" in s.reviewing_body for s in sources)
+    assert any("Kenya Law" in s.reviewing_body for s in sources)
+
+    ev_tax = retrieve_simple_evidence(
+        "The payer shall deduct 5% KRA withholding tax and issue an iTax certificate."
+    )
+    assert ev_tax[0].template_id == "tpl-kra-cap470-withholding-tax"
+
+    exemplars = load_annotated_exemplars()
+    assert len(exemplars) == 37
+    matched = retrieve_annotated_exemplar(
+        "The Brand may train generative AI voice cloning and biometric likeness models.",
+        contract_type="brand_partnership",
+    )
+    assert matched is not None
+    assert "Sample Clause" in matched.format_for_prompt()
