@@ -378,7 +378,11 @@ async def _run_evaluation_pipeline(
         with tracer.start_as_current_span("mbiu.extract") as span:
             span.set_attribute("mbiu.stage", "extract")
             extracted = await asyncio.to_thread(
-                extract_text_from_pdf, pdf_bytes, page_count=upload_meta.page_count
+                extract_text_from_pdf,
+                pdf_bytes,
+                page_count=upload_meta.page_count,
+                base_timeout_s=settings.EXTRACTION_TIMEOUT_S,
+                per_page_timeout_s=settings.EXTRACTION_TIMEOUT_PER_PAGE_S,
             )
             span.set_attribute("mbiu.extracted_pages", extracted.total_pages)
             span.set_attribute("mbiu.skipped_pages_count", len(extracted.skipped_pages))
