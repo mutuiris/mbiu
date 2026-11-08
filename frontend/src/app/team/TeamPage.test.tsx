@@ -36,11 +36,16 @@ describe("TeamPage", () => {
     expect(html).toContain("mailto:benadettekaranja@gmail.com");
     expect(html).toContain("mailto:muneneaddy@gmail.com");
     expect(html).toContain("mailto:mercylinenyaboke08@gmail.com");
+
+    expect(html).toContain("https://www.linkedin.com/in/steve-wanangwe-6a72b1254");
+    expect(html).toContain("https://www.linkedin.com/in/addymutuiri/");
+    expect(html).toContain("https://www.linkedin.com/in/mercy-line/");
   });
 
-  it("renders KamiLimu and Mozilla innovation note", () => {
+  it("renders KamiLimu innovation note", () => {
     const html = renderToStaticMarkup(<TeamPage />);
-    expect(html).toContain("Mozilla x KamiLimu Innovation");
+    expect(html).toContain("KamiLimu Innovation");
     expect(html).toContain("https://www.kamilimu.org/");
+    expect(html).not.toContain("Mozilla");
   });
 });

@@ -28,7 +28,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     image: "/team/steve.png",
     bio: "Passionate about civic tech. Leads backend development and deployment, making sure our platform is reliable and scalable.",
     email: "stevewanash1@gmail.com",
-    linkedin: "https://www.linkedin.com/in/steve-wanangwe/",
+    linkedin: "https://www.linkedin.com/in/steve-wanangwe-6a72b1254",
   },
   {
     name: "Bernadette Karanja",
@@ -36,7 +36,6 @@ const TEAM_MEMBERS: TeamMember[] = [
     image: "/team/bernadette.png",
     bio: "Passionate about human centered design. Leads user research, frontend development and documentation to ensure we're solving a real problem for real users.",
     email: "benadettekaranja@gmail.com",
-    linkedin: "https://www.linkedin.com/in/bernadette-karanja/",
   },
   {
     name: "Addy Mutuiri",
@@ -44,7 +43,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     image: "/team/addy.png",
     bio: "Passionate about civic innovation and machine learning. Oversees project architecture, Gemini and retrieval pipeline orchestration, and technical strategy.",
     email: "muneneaddy@gmail.com",
-    linkedin: "https://www.linkedin.com/in/addy-mutuiri/",
+    linkedin: "https://www.linkedin.com/in/addymutuiri/",
   },
   {
     name: "Mercyline Nyaboke",
@@ -52,7 +51,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     image: "/team/mercyline.png",
     bio: "Passionate about accessible user experiences and digital inclusion. Drives responsive mobile interfaces, accessible navigation, and community-driven design.",
     email: "mercylinenyaboke08@gmail.com",
-    linkedin: "https://www.linkedin.com/in/mercyline-nyaboke/",
+    linkedin: "https://www.linkedin.com/in/mercy-line/",
   },
 ];
 
@@ -152,10 +151,10 @@ export default function TeamPage() {
           ))}
         </div>
 
-        {/* Mozilla x KamiLimu Section */}
+        {/* KamiLimu Section */}
         <div className="mt-10 rounded-2xl border border-mbiu-ink/10 bg-white/70 p-6 dark:border-white/10 dark:bg-white/[0.04]">
           <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-            Mozilla x KamiLimu Innovation
+            KamiLimu Innovation
           </h2>
           <p className="mt-2 text-[0.92rem] leading-relaxed text-mbiu-ink/80 dark:text-[#B9C1C5]">
             Developed under the mentorship and sponsorship of{" "}
@@ -166,9 +165,8 @@ export default function TeamPage() {
               className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
             >
               KamiLimu Limited
-            </a>{" "}
-            and the Mozilla Foundation. Built to advance creative rights and fair contract literacy
-            across Kenya.
+            </a>
+            . Built to advance creative rights and fair contract literacy across Kenya.
           </p>
         </div>
 
