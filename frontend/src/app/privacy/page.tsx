@@ -31,21 +31,21 @@ export default function PrivacyPage() {
 
         {/* Full-width Card Body spanning from left edge to right edge */}
         <div className="w-full rounded-[28px] border border-white/70 bg-white/60 p-6 shadow-[0_30px_80px_-56px_rgba(22,26,38,0.6)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] sm:p-10 md:p-12">
-          <h1 className="font-serif text-[2.2rem] font-semibold tracking-[-0.03em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.8rem]">
+          <h1 className="font-serif text-[1.5rem] font-semibold tracking-[-0.025em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.85rem]">
             Privacy Policy
           </h1>
 
-          <p className="mt-3 text-[1rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
+          <p className="mt-2 text-[0.95rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
             How Mbiu protects your contracts under the Kenya Data Protection Act (KDPA) 2019.
           </p>
 
-          <div className="mt-8 space-y-8 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
+          <div className="mt-7 space-y-7 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
             {/* Section 1 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 1. Data Controller &amp; Governance
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu was created by The Agwambos through the KamiLimu Innovation Pillar competition and
                 is supported by KamiLimu Limited (Nairobi, Kenya). The legal data controller is the
                 Mbiu team, with data protection governance managed through KamiLimu. We strictly adhere
@@ -72,11 +72,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 2 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 2. We Do Not Collect Personal Data
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu is deliberately built to operate without collecting user personal identities:
               </p>
               <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[0.92rem]">
@@ -101,11 +101,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 3 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 3. Zero-Storage Evaluation
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Your uploaded PDF contract is processed entirely in temporary volatile memory (RAM).
               </p>
               <p className="mt-2">
@@ -116,11 +116,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 4 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 4. Instant Memory Purge &amp; Client Browser Storage
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 <strong>Server-side:</strong> As soon as the analysis stream completes, server memory
                 allocated to your contract is released immediately.
               </p>
@@ -133,11 +133,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 5 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 5. Cross-Border Data Transfers (KDPA Sections 48 &amp; 49)
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 To evaluate clauses, Mbiu uses secure third-party processing. Under Kenya&apos;s Data
                 Protection Act 2019, these are treated as cross-border data transfers:
               </p>
@@ -164,11 +164,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 6 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 6. Artist Rights &amp; Past Document Retrieval
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Under the Kenya Data Protection Act 2019 (Sections 26–40), data subjects possess rights
                 of access, rectification, and erasure.
               </p>
@@ -181,11 +181,11 @@ export default function PrivacyPage() {
             </section>
 
             {/* Section 7 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 7. Contact
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 For questions regarding this Privacy Policy or data protection at Mbiu, contact
                 KamiLimu at{" "}
                 <a
