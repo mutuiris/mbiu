@@ -11,6 +11,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FileDropzone } from "@/components/FileDropzone";
+import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
@@ -315,6 +316,8 @@ export default function Home() {
           file={selectedFile}
         />
         </main>
+
+        <Footer basePath="/" />
       </div>
     );
   }
@@ -325,7 +328,7 @@ export default function Home() {
 
       <Navbar />
 
-      <main className="relative z-10">
+      <main className="relative z-10" id="hero">
         <section
           id="about"
           className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
@@ -458,6 +461,8 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }
