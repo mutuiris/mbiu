@@ -15,6 +15,7 @@ interface ClauseListProps {
   failedByClauseId: Map<string, ClauseFailure>;
   selectedClauseId?: string | null;
   onSelectClause?: (clauseId: string) => void;
+  isStreaming?: boolean;
 }
 
 export const ClauseList: React.FC<ClauseListProps> = ({
@@ -23,18 +24,32 @@ export const ClauseList: React.FC<ClauseListProps> = ({
   failedByClauseId,
   selectedClauseId,
   onSelectClause,
+  isStreaming = false,
 }) => {
-  const [isExpanded, setIsExpanded] = React.useState(true);
+  // During active streaming, keep the overview open by default so the user sees clauses
+  // being labeled live. Once done, collapse it by default unless manually toggled.
+  const [userToggled, setUserToggled] = React.useState<boolean | null>(null);
+  const isExpanded = userToggled !== null ? userToggled : isStreaming;
+
+  const evaluatedCount = resultsByClauseId.size;
+  const totalCount = document.clauses.length;
 
   return (
     <section className="clauses-overview-panel" aria-label="Contract Clauses Overview">
-      <div className="overview-header" onClick={() => setIsExpanded(!isExpanded)} role="button" tabIndex={0}>
+      <div
+        className="overview-header"
+        onClick={() => setUserToggled(!isExpanded)}
+        role="button"
+        tabIndex={0}
+      >
         <div>
           <h2 className="overview-title">
-            Document Clauses ({document.clauses.length} across {document.page_count} pages)
+            Document Clauses ({evaluatedCount} of {totalCount} evaluated)
           </h2>
           <p className="overview-subtitle">
-            All extracted clauses being checked against reviewed standards.
+            {isStreaming
+              ? "Checking and labeling clauses live against reviewed standards…"
+              : "All extracted clauses evaluated against reviewed standards."}
           </p>
         </div>
         <button
@@ -43,10 +58,10 @@ export const ClauseList: React.FC<ClauseListProps> = ({
           aria-expanded={isExpanded}
           onClick={(e) => {
             e.stopPropagation();
-            setIsExpanded(!isExpanded);
+            setUserToggled(!isExpanded);
           }}
         >
-          {isExpanded ? "Hide overview" : "Show overview"}
+          {isExpanded ? "Hide overview" : "View all clauses"}
         </button>
       </div>
 

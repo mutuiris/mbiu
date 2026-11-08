@@ -24,7 +24,7 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
   if (matches.length === 0) return null;
 
   return (
-    <section className="collapsed-matches-container" aria-label="Standard & boilerplate clauses">
+    <section className="collapsed-matches-container" aria-label="Typical standard clauses">
       <div
         className="collapsed-matches-header"
         role="button"
@@ -42,16 +42,16 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
           <span className="check-icon" aria-hidden="true">✓</span>
           <span className="matches-summary-text">
             <strong>
-              {matches.length} {matches.length === 1 ? "clause is" : "clauses are"} standard & boilerplate
+              {matches.length} {matches.length === 1 ? "clause was typical of standard agreements" : "clauses were typical of standard agreements"}
             </strong>
           </span>
         </div>
         <button
           type="button"
           className="matches-toggle-btn"
-          aria-label={isOpen ? "Collapse standard clauses" : "Expand standard clauses"}
+          aria-label={isOpen ? "Collapse typical clauses" : "Expand typical clauses"}
         >
-          {isOpen ? "Hide details" : "View standard clauses"}
+          {isOpen ? "Hide details" : "View typical clauses"}
         </button>
       </div>
 
@@ -60,7 +60,7 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
           {matches.map((item) => {
             const extra = clauseLookup?.get(item.clause_id);
             const num = extra?.number ? `Clause ${extra.number}` : `Clause`;
-            const heading = extra?.heading || item.headline || "Standard clause";
+            const heading = extra?.heading || item.headline || "Typical clause";
             const pageStr = `p. ${item.pages.join(", ")}`;
             const isSelected = selectedClauseId === item.clause_id;
 
@@ -79,7 +79,7 @@ export const CollapsedMatches: React.FC<CollapsedMatchesProps> = ({
                   }
                 }}
               >
-                <span className="match-line-badge">Standard</span>
+                <span className="match-line-badge">Typical</span>
                 <span className="match-line-id">{num}</span>
                 <span className="match-line-title">{heading}</span>
                 <span className="match-line-page">{pageStr}</span>

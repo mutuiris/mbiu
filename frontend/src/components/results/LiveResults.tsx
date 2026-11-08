@@ -16,6 +16,8 @@ import {
   ServiceUnavailableError,
 } from "@/lib/api/stream";
 import { isHighImpactClause } from "@/lib/impact";
+import { outcomeLabel } from "@/lib/outcome";
+import { openEvaluationReportPdf } from "@/lib/report-pdf";
 import { ProgressBar } from "./ProgressBar";
 import { ClauseList } from "./ClauseList";
 import { ClauseCard, type LinkedClauseItem } from "./ClauseCard";
@@ -25,6 +27,8 @@ import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
 import { EvaluationReportModal } from "./EvaluationReportModal";
+
+const MAX_FEATURED_CLAUSES = 2;
 
 /** Shown when time or the token budget ran out before every clause was checked. */
 export function notCheckedMessage(count: number): string {
@@ -40,6 +44,11 @@ export interface LiveResultsProps {
    * An optional async generator stream to consume automatically on mount.
    */
   eventStream?: AsyncGenerator<EvaluationEvent, void, unknown> | null;
+  /**
+   * Pre-accumulated evaluation events log from the parent page, allowing
+   * immediate restoration of all cards, maps, and document without waiting.
+   */
+  initialLog?: ReadonlyMap<string, EvaluationEvent> | null;
   /**
    * Callback when a failed clause is retried by the user.
    */
@@ -60,18 +69,47 @@ export interface LiveResultsProps {
 
 export const LiveResults: React.FC<LiveResultsProps> = ({
   eventStream,
+  initialLog = null,
   onRetryClause,
   onRetryAll,
   initialDocument = null,
   file = null,
 }) => {
-  const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
-  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
+  const [document, setDocument] = useState<DocumentPayload | null>(() => {
+    if (initialDocument) return initialDocument;
+    const docEvent = initialLog?.get("document");
+    return docEvent?.type === "document" ? docEvent.payload : null;
+  });
+  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(() => {
+    const mapEvent = initialLog?.get("contract_map");
+    return mapEvent?.type === "contract_map" ? mapEvent.payload : null;
+  });
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [allResults, setAllResults] = useState<ClauseResult[]>([]);
-  const [failures, setFailures] = useState<ClauseFailure[]>([]);
+  const [allResults, setAllResults] = useState<ClauseResult[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseResult[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_result" || ev.type === "clause_updated") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
+  const [failures, setFailures] = useState<ClauseFailure[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseFailure[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_failed") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
   const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(() => {
+    const doneEvent = initialLog?.get("done");
+    return doneEvent?.type === "done" ? doneEvent.payload : null;
+  });
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -106,24 +144,42 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     return set;
   }, [contractMap]);
 
-  // Partition evaluated clauses into high-impact cards vs collapsed standard/boilerplate
-  const { highImpactResults, lowImpactResults } = useMemo(() => {
+  // Partition evaluated clauses into high-impact cards vs remaining clauses
+  const { highImpactResults, typicalCount, unusualCount } = useMemo(() => {
     const high: ClauseResult[] = [];
-    const low: ClauseResult[] = [];
+    let typical = 0;
+    let unusual = 0;
     for (const r of allResults) {
+      const { tone } = outcomeLabel(r.comparison);
+      if (tone === "typical") typical++;
+      else if (tone === "unusual") unusual++;
+
       const extra = clauseLookup.get(r.clause_id);
       const hasIssue = issueClauseIds.has(r.clause_id);
       if (isHighImpactClause(r, extra?.heading, hasIssue)) {
         high.push(r);
-      } else {
-        low.push(r);
       }
     }
     return {
       highImpactResults: sortByImpactOrder(high),
-      lowImpactResults: low,
+      typicalCount: typical,
+      unusualCount: unusual,
     };
   }, [allResults, clauseLookup, issueClauseIds]);
+
+  // Only clauses that actually match standard contract templates (typical tone)
+  const typicalMatches = useMemo(() => {
+    return allResults.filter((r) => outcomeLabel(r.comparison).tone === "typical");
+  }, [allResults]);
+
+  // Show at most 2 important clauses on the main page (plus any explicitly selected clause)
+  const visibleHighImpactResults = useMemo(() => {
+    const topTwo = highImpactResults.slice(0, MAX_FEATURED_CLAUSES);
+    if (!selectedClauseId) return topTwo;
+    if (topTwo.some((r) => r.clause_id === selectedClauseId)) return topTwo;
+    const selectedFromAll = allResults.find((r) => r.clause_id === selectedClauseId);
+    return selectedFromAll ? [...topTwo, selectedFromAll] : topTwo;
+  }, [highImpactResults, allResults, selectedClauseId]);
 
   // Results map for overview badges
   const resultsByClauseId = useMemo(() => {
@@ -253,15 +309,16 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
   const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
-    const target =
-      window.document.getElementById(`card-${clauseId}`) ??
-      window.document.getElementById(`clause-item-${clauseId}`);
-    if (!target) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-    // Move keyboard and screen-reader focus to the card, not just the viewport
-    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
-    target.focus({ preventScroll: true });
+    setTimeout(() => {
+      const target =
+        window.document.getElementById(`card-${clauseId}`) ??
+        window.document.getElementById(`clause-item-${clauseId}`);
+      if (!target) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    }, 30);
   }, []);
 
   // Compute linked clauses metadata for each card
@@ -317,14 +374,64 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
   const openInViewer = useCallback((clauseId: string) => {
     setViewerClauseId(clauseId);
-    setIsViewerOpen(true);
+    setIsViewerOpen((wasOpen) => {
+      if (!wasOpen && typeof window !== "undefined") {
+        window.history.pushState({ mbiuOverlay: "contract-viewer" }, "");
+      }
+      return true;
+    });
   }, []);
 
   const closeViewer = useCallback(() => {
     setIsViewerOpen(false);
+    if (
+      typeof window !== "undefined" &&
+      window.history.state &&
+      window.history.state.mbiuOverlay === "contract-viewer"
+    ) {
+      window.history.back();
+    }
     // Back to the card the artist came from
     if (viewerClauseId) handleSelectClause(viewerClauseId);
   }, [viewerClauseId, handleSelectClause]);
+
+  // Intercept phone/browser Back button when mobile contract viewer or report modal is open
+  useEffect(() => {
+    if (!isViewerOpen && !isReportOpen) return;
+    const handlePopState = () => {
+      if (isViewerOpen) {
+        setIsViewerOpen(false);
+      }
+      if (isReportOpen) {
+        setIsReportOpen(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isViewerOpen, isReportOpen]);
+
+  const handleOpenPdfReport = useCallback(
+    (download = false) => {
+      openEvaluationReportPdf(
+        {
+          document,
+          allResults,
+          highImpactResults,
+          contractMap,
+          summary,
+          clauseLookup,
+          isStreaming,
+        },
+        { download },
+      );
+    },
+    [document, allResults, highImpactResults, contractMap, summary, clauseLookup, isStreaming],
+  );
+
+  const remainingEvaluatedCount = Math.max(
+    0,
+    allResults.length - visibleHighImpactResults.length,
+  );
 
   return (
     <div className={`live-results-layout${file ? " has-viewer" : ""}`}>
@@ -342,17 +449,17 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           </div>
         )}
 
-        {/* Results Actions Bar (Download / Print Report) */}
+        {/* Results Actions Bar (Open / Download PDF Report in New Tab) */}
         {(allResults.length > 0 || isStreaming || document) && (
           <div className="results-actions-bar">
             <button
               type="button"
-              onClick={() => setIsReportOpen(true)}
+              onClick={() => handleOpenPdfReport(false)}
               className="download-report-btn"
               data-testid="download-report-btn"
-              aria-label="Download evaluation report"
+              aria-label="Open evaluation report as PDF in a new tab"
             >
-              📄 Download Report
+              📄 Download Report (PDF)
             </button>
           </div>
         )}
@@ -365,7 +472,16 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           evaluatedCount={totalEvaluated}
         />
 
-        {/* Document Clause Overview (Visible as soon as document event arrives) */}
+        {/* Evaluation Summary Card displayed prominently at the top */}
+        {summary && (
+          <SummaryCard
+            summary={summary}
+            typicalCount={typicalCount || summary.matches_count}
+            unusualCount={unusualCount}
+          />
+        )}
+
+        {/* Document Clause Overview (Expanded during streaming, collapsed when done) */}
         {document && (
           <ClauseList
             document={document}
@@ -373,10 +489,11 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
             failedByClauseId={failedByClauseId}
             selectedClauseId={selectedClauseId}
             onSelectClause={handleSelectClause}
+            isStreaming={isStreaming}
           />
         )}
 
-        {/* Contract-Wide Issues Panel (Sits above all cards, highest danger first) */}
+        {/* Contract-Wide Issues Panel (Sits above clause cards, highest danger first) */}
         {contractMap && contractMap.issues && contractMap.issues.length > 0 && (
           <ContractIssuesPanel
             issues={contractMap.issues}
@@ -384,14 +501,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
             onSelectClause={handleSelectClause}
           />
         )}
-
-        {/* Collapsed Standard & Boilerplate Matches Banner */}
-        <CollapsedMatches
-          matches={lowImpactResults}
-          clauseLookup={clauseLookup}
-          onSelectClause={handleSelectClause}
-          selectedClauseId={selectedClauseId}
-        />
 
         {/* Failed Clauses (if any) */}
         {notCheckedCount > 0 && (
@@ -421,31 +530,92 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           </section>
         )}
 
-        {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
-        <section
-          className="results-cards-feed"
-          aria-label="High-Impact Evaluated Clauses"
-        >
-          {highImpactResults.map((result) => {
-            const extra = clauseLookup.get(result.clause_id);
-            return (
-              <ClauseCard
-                key={result.clause_id}
-                result={result}
-                clauseNumber={extra?.number}
-                clauseHeading={extra?.heading}
-                isHighlighted={selectedClauseId === result.clause_id}
-                isUpdated={updatedClauseIds.has(result.clause_id)}
-                linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
-                onSelectClause={handleSelectClause}
-                onJumpToPdfClause={file ? openInViewer : undefined}
-              />
-            );
-          })}
-        </section>
+        {/* Top 2 Most Important Evaluated Clause Cards */}
+        {visibleHighImpactResults.length > 0 && (
+          <section
+            className="results-cards-feed"
+            aria-label="Key Clauses to Review First"
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <h2 className="font-serif text-[1.25rem] font-semibold tracking-tight text-mbiu-ink dark:text-[#F6F2E9]">
+                Key Clauses to Review First ({visibleHighImpactResults.length} of{" "}
+                {allResults.length} evaluated)
+              </h2>
+            </div>
+            {visibleHighImpactResults.map((result) => {
+              const extra = clauseLookup.get(result.clause_id);
+              return (
+                <ClauseCard
+                  key={result.clause_id}
+                  result={result}
+                  clauseNumber={extra?.number}
+                  clauseHeading={extra?.heading}
+                  isHighlighted={selectedClauseId === result.clause_id}
+                  isUpdated={updatedClauseIds.has(result.clause_id)}
+                  linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
+                  onSelectClause={handleSelectClause}
+                  onJumpToPdfClause={file ? openInViewer : undefined}
+                />
+              );
+            })}
+          </section>
+        )}
 
-        {/* Final Summary Card upon done event */}
-        {summary && <SummaryCard summary={summary} />}
+        {/* Prompt to Open / Download the PDF Report for the Rest of the Evaluation */}
+        {allResults.length > 0 && (
+          <section
+            className="evaluation-summary-card"
+            aria-label="Full Evaluation Report Download"
+            data-testid="full-report-prompt"
+          >
+            <h3 className="summary-title">
+              {remainingEvaluatedCount > 0
+                ? `Read the remaining ${remainingEvaluatedCount} evaluated ${
+                    remainingEvaluatedCount === 1 ? "clause" : "clauses"
+                  } in your full PDF report`
+                : "Download your full PDF evaluation report"}
+            </h3>
+            <p className="summary-subtitle" style={{ marginTop: "0.4rem", lineHeight: 1.55 }}>
+              To keep this page easy to read, Mbiu highlights the top{" "}
+              {Math.min(MAX_FEATURED_CLAUSES, visibleHighImpactResults.length)} most important
+              clauses above. Open the full PDF report in a new tab to review every evaluated
+              clause, missing protections, and a printable negotiation checklist.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.75rem",
+                marginTop: "1rem",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleOpenPdfReport(false)}
+                className="download-report-btn"
+              >
+                📄 Open Full Report (PDF in new tab)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenPdfReport(true)}
+                className="secondary-btn"
+              >
+                ⬇ Download PDF File
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Collapsed Typical Clauses Banner (only rendered when typical matches exist) */}
+        {typicalMatches.length > 0 && (
+          <CollapsedMatches
+            matches={typicalMatches}
+            clauseLookup={clauseLookup}
+            onSelectClause={handleSelectClause}
+            selectedClauseId={selectedClauseId}
+          />
+        )}
       </div>
       {file && (
         <ContractViewer

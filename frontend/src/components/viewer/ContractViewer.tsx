@@ -70,10 +70,15 @@ export default function ContractViewer({ file, clause, isOpen, onClose }: Contra
       aria-label="Your contract"
     >
       <div className="contract-viewer-bar">
-        <span className="contract-viewer-title">Your contract</span>
-        <button type="button" className="secondary-btn contract-viewer-close" onClick={onClose}>
-          Back to results
+        <button
+          type="button"
+          className="secondary-btn contract-viewer-close"
+          onClick={onClose}
+          aria-label="Back to evaluation results"
+        >
+          ← Back to evaluation
         </button>
+        <span className="contract-viewer-title">Your contract</span>
       </div>
       <div className="contract-viewer-scroll" ref={scrollRef}>
         {loadFailed ? (

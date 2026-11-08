@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
 import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
+import { formatHowItComparesSummary, isCleanShortExcerpt } from "@/lib/report-pdf";
 import { ShillingsCalculator } from "./ShillingsCalculator";
 
 export interface LinkedClauseItem {
@@ -165,14 +166,17 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
     sourcesText = `[${result.standard_template_id}]`;
   }
 
+  const howItComparesSummary = formatHowItComparesSummary(result);
+  const hasRawTemplateExcerpt =
+    Boolean(result.standard_excerpt) && !isCleanShortExcerpt(result.standard_excerpt);
+
   const speechText = [
     `${headingTitle}. ${badge.label}.`,
     `Location: ${locationLabel}.`,
     `What your contract says: ${result.what_it_says}.`,
     `In plain language: ${result.headline}.`,
     `Why this may matter to you: ${result.what_it_means}.`,
-    result.standard_excerpt ? `How it compares: ${result.standard_excerpt}.` : "",
-    result.comparison_note ? `Note: ${result.comparison_note}.` : "",
+    `How it compares: ${howItComparesSummary}`,
     result.ask_them ? `Question you could ask: ${result.ask_them}.` : "",
   ]
     .filter(Boolean)
@@ -315,20 +319,18 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
         )}
       </section>
 
-      {/* 5. How it compares: What standard templates usually do (or comparison note) */}
+      {/* 5. How it compares: Plain-language summary of how the clause compares to standards */}
       <section className="card-section card-how-it-compares" data-testid="how-it-compares-section">
         <h4 className="card-section-title">How it compares</h4>
-        {result.standard_excerpt && (
-          <p className="card-standard-excerpt text-standard">{result.standard_excerpt}</p>
-        )}
-        {result.comparison_note && (
-          <p className="card-comparison-note" data-testid="clause-comparison-note">
-            {result.comparison_note}
-          </p>
-        )}
-        {!result.standard_excerpt && !result.comparison_note && (
-          <p className="card-comparison-note text-muted">
-            Standard reference templates on this topic were not compared.
+        <p className="card-meaning-text" data-testid="clause-comparison-summary">
+          {howItComparesSummary}
+        </p>
+        {hasRawTemplateExcerpt && (
+          <p className="card-sources">
+            <em>
+              Open &ldquo;Show exact wording&rdquo; below to view the full reference template
+              excerpt.
+            </em>
           </p>
         )}
       </section>

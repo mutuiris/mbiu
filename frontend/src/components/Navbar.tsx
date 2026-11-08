@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -11,9 +12,10 @@ const emptySubscribe = () => () => {};
 export interface NavbarProps {
   basePath?: string;
   onUploadClick?: () => void;
+  onNavigateSection?: (sectionId: string) => void;
 }
 
-export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
+export function Navbar({ basePath = "", onUploadClick, onNavigateSection }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isClient = useSyncExternalStore(
     emptySubscribe,
@@ -71,6 +73,19 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
 
   const closeMenu = () => setIsOpen(false);
 
+  const handleSectionClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+    extraHandler?: () => void
+  ) => {
+    closeMenu();
+    extraHandler?.();
+    if (onNavigateSection) {
+      e.preventDefault();
+      onNavigateSection(sectionId);
+    }
+  };
+
   const drawerElement = isOpen && (
     <div className="fixed inset-0 z-[9999] md:hidden">
       {/* High-opacity Backdrop Dimmer */}
@@ -91,10 +106,10 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
       >
         {/* Drawer Header: Logo on left, Close button on right */}
         <div className="flex items-center justify-between">
-          <a
+          <Link
             href={href("/")}
             className="flex items-center gap-1.5 transition hover:opacity-90"
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "hero")}
           >
             <Image
               src="/brand/mbiu-horn.png"
@@ -107,7 +122,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
             <span className="text-[1.2rem] font-extrabold tracking-[-0.06em] leading-none text-mbiu-ink dark:text-[#F6F2E9]">
               mbiu
             </span>
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -124,57 +139,57 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
 
         {/* Vertical Navigation Links (Clean plain-text stacked list) */}
         <nav className="flex flex-col gap-5 py-2 text-[1rem] font-medium text-mbiu-ink dark:text-[#F6F2E9]">
-          <a
+          <Link
             href={href("#")}
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "hero")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             Home
-          </a>
+          </Link>
 
-          <a
+          <Link
             href={href("#how-it-works")}
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "how-it-works")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             How it works
-          </a>
+          </Link>
 
-          <a
+          <Link
             href={href("#about")}
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "about")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             About
-          </a>
+          </Link>
 
-          <a
+          <Link
             href={href("/terms")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             Terms of Service
-          </a>
+          </Link>
 
-          <a
+          <Link
             href={href("/privacy")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             Privacy Policy
-          </a>
+          </Link>
         </nav>
 
         {/* Drawer Bottom CTA */}
         <div className="mt-auto border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-          <a
+          <Link
             href={href("#upload")}
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "upload", onUploadClick)}
             className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-5 text-[0.92rem] font-semibold text-white shadow-md transition hover:bg-mbiu-indigo-hover focus-visible:outline-2 dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea]"
           >
             <span>Upload your contract</span>
             <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -188,11 +203,11 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
           aria-label="Main Navigation"
         >
           {/* Brand Logo */}
-          <a
+          <Link
             href={href("/")}
             className="flex shrink-0 items-center gap-1 sm:gap-1.5 pl-0.5 transition hover:opacity-90"
             aria-label="Mbiu home"
-            onClick={closeMenu}
+            onClick={(e) => handleSectionClick(e, "hero")}
           >
             <Image
               src="/brand/mbiu-horn.png"
@@ -205,34 +220,37 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
             <span className="text-[1.2rem] font-extrabold tracking-[-0.06em] leading-none text-mbiu-ink sm:text-[1.4rem] dark:text-[#F6F2E9]">
               mbiu
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation Links */}
           <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
-            <a
+            <Link
               href={href("#")}
+              onClick={(e) => handleSectionClick(e, "hero")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               Home
-            </a>
-            <a
+            </Link>
+            <Link
               href={href("#how-it-works")}
+              onClick={(e) => handleSectionClick(e, "how-it-works")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               How it works
-            </a>
-            <a
+            </Link>
+            <Link
               href={href("#about")}
+              onClick={(e) => handleSectionClick(e, "about")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               About
-            </a>
-            <a
+            </Link>
+            <Link
               href={href("/privacy")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               Privacy
-            </a>
+            </Link>
           </div>
 
           {/* Right Side Controls */}
@@ -241,14 +259,14 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
 
             {/* Desktop CTA Button */}
             <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
-              <a
+              <Link
                 href={href("#upload")}
-                onClick={onUploadClick}
+                onClick={(e) => handleSectionClick(e, "upload", onUploadClick)}
                 className="inline-flex h-10 lg:h-11 items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-4 lg:px-6 text-[0.9rem] font-semibold text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark"
               >
                 <span>Upload your contract</span>
                 <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-              </a>
+              </Link>
             </div>
 
             {/* Mobile Menu Trigger Button */}

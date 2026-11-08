@@ -3,9 +3,17 @@ import type { Summary } from "@/lib/api/generated/types.gen";
 
 interface SummaryCardProps {
   summary: Summary;
+  typicalCount?: number;
+  unusualCount?: number;
 }
 
-export const SummaryCard: React.FC<SummaryCardProps> = ({ summary }) => {
+export const SummaryCard: React.FC<SummaryCardProps> = ({
+  summary,
+  typicalCount,
+  unusualCount = 0,
+}) => {
+  const effectiveTypicalCount = typicalCount ?? summary.matches_count;
+
   return (
     <section className="evaluation-summary-card" aria-label="Contract Summary">
       <header className="summary-card-header">
@@ -47,24 +55,27 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ summary }) => {
         </div>
       )}
 
-      {summary.good_news && summary.good_news.length > 0 && (
+      {(effectiveTypicalCount > 0 || unusualCount > 0) && (
         <div className="summary-section good-news">
-          <h3 className="section-title">Good News in Your Contract</h3>
-          <ul className="good-news-list">
-            {summary.good_news.map((note, index) => (
-              <li key={index} className="good-news-item">
-                <span className="good-news-icon">✓</span>
-                <p className="good-news-text">{note.text}</p>
-              </li>
-            ))}
-          </ul>
+          <h3 className="section-title">Other Clauses in Your Contract</h3>
+          <div className="good-news-item">
+            <span className="good-news-icon" aria-hidden="true">✓</span>
+            <p className="good-news-text">
+              {effectiveTypicalCount}{" "}
+              {effectiveTypicalCount === 1 ? "clause was" : "clauses were"} typical, and{" "}
+              {unusualCount}{" "}
+              {unusualCount === 1
+                ? "was unusual but has no major impact."
+                : "were unusual but have no major impact."}
+            </p>
+          </div>
         </div>
       )}
 
       <footer className="summary-footer">
         <div className="summary-meta-item">
           <span className="meta-label">Typical clauses:</span>
-          <span className="meta-value">{summary.matches_count} clauses</span>
+          <span className="meta-value">{effectiveTypicalCount} clauses</span>
         </div>
         <div className="summary-meta-item">
           <span className="meta-label">Model Engine:</span>
