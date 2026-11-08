@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-describe("map-upsert", () => {
-  it("adds getOrInsert and getOrInsertComputed where the browser lacks them", async () => {
+describe("browser-polyfills", () => {
+  it("adds Map upserts and stream iteration where the browser lacks them", async () => {
     for (const proto of [Map.prototype, WeakMap.prototype] as object[]) {
       delete (proto as Record<string, unknown>).getOrInsert;
       delete (proto as Record<string, unknown>).getOrInsertComputed;
     }
-    await import("./map-upsert");
+    const streamProto = ReadableStream.prototype as unknown as Record<PropertyKey, unknown>;
+    delete streamProto[Symbol.asyncIterator];
+    delete streamProto.values;
+    await import("./browser-polyfills");
 
     type Upsert = {
       getOrInsert(key: unknown, value: unknown): unknown;
@@ -25,5 +28,16 @@ describe("map-upsert", () => {
     const weak = new WeakMap() as unknown as Upsert;
     expect(weak.getOrInsertComputed(key, () => 1)).toBe(1);
     expect(weak.getOrInsertComputed(key, () => 2)).toBe(1);
+
+    const stream = new ReadableStream<number>({
+      start(controller) {
+        controller.enqueue(1);
+        controller.enqueue(2);
+        controller.close();
+      },
+    });
+    const seen: number[] = [];
+    for await (const value of stream as unknown as AsyncIterable<number>) seen.push(value);
+    expect(seen).toEqual([1, 2]);
   });
 });
