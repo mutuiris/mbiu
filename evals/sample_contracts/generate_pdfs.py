@@ -8,7 +8,9 @@ web UI or evaluation API.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+from typing import Any
 
 import pymupdf
 
@@ -43,7 +45,9 @@ def wrap_line(text: str, fontname: str, fontsize: float, max_width: float) -> li
     current = words[0]
     for word in words[1:]:
         candidate = f"{current} {word}"
-        w = pymupdf.get_text_length(candidate, fontname=fontname, fontsize=fontsize)
+        w = float(
+            pymupdf.get_text_length(candidate, fontname=fontname, fontsize=fontsize)
+        )
         if w <= max_width:
             current = candidate
         else:
@@ -62,11 +66,12 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
     raw_md = md_path.read_text(encoding="utf-8")
     lines = raw_md.splitlines()
 
-    doc = pymupdf.open()
-    page = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
+    open_pdf: Any = pymupdf.open
+    doc: Any = open_pdf()
+    page: Any = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
     y = MARGIN_TOP
 
-    def new_page() -> pymupdf.Page:
+    def new_page() -> Any:
         nonlocal page, y
         page = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
         y = MARGIN_TOP
@@ -85,8 +90,8 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
             ensure_space(16)
             y += 6
             page.draw_line(
-                pymupdf.Point(MARGIN_X, y),
-                pymupdf.Point(PAGE_WIDTH - MARGIN_X, y),
+                (MARGIN_X, y),
+                (PAGE_WIDTH - MARGIN_X, y),
                 color=(0.75, 0.75, 0.75),
                 width=0.6,
             )
@@ -107,7 +112,7 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
             ensure_space(len(wrapped) * 18 + 10)
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X, y + fontsize),
+                    (MARGIN_X, y + fontsize),
                     wline,
                     fontname=fontname,
                     fontsize=fontsize,
@@ -126,7 +131,7 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
             y += 4
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X, y + fontsize),
+                    (MARGIN_X, y + fontsize),
                     wline,
                     fontname=fontname,
                     fontsize=fontsize,
@@ -147,7 +152,7 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
             ensure_space(len(wrapped) * 12 + 4)
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X + 6, y + fontsize),
+                    (MARGIN_X + 6, y + fontsize),
                     wline,
                     fontname=fontname,
                     fontsize=fontsize,
@@ -169,7 +174,7 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
         ensure_space(len(wrapped) * line_height + 2)
         for wline in wrapped:
             page.insert_text(
-                pymupdf.Point(MARGIN_X + indent, y + fontsize),
+                (MARGIN_X + indent, y + fontsize),
                 wline,
                 fontname=fontname,
                 fontsize=fontsize,
@@ -179,19 +184,22 @@ def render_markdown_to_pdf(md_path: Path, pdf_path: Path) -> tuple[int, int]:
 
     # Add page numbers in footer
     total_pages = len(doc)
-    for idx, p in enumerate(doc, start=1):
-        footer = f"Page {idx} of {total_pages}  |  Artist Copy: John Doe"
+    extracted_pages: list[str] = []
+    for idx in range(total_pages):
+        p: Any = doc[idx]
+        footer = f"Page {idx + 1} of {total_pages}  |  Artist Copy: John Doe"
         p.insert_text(
-            pymupdf.Point(MARGIN_X, PAGE_HEIGHT - 28),
+            (MARGIN_X, PAGE_HEIGHT - 28),
             footer,
             fontname="helv",
             fontsize=8.0,
             color=(0.4, 0.4, 0.4),
         )
+        extracted_pages.append(str(p.get_text("text")))
 
     PDF_DIR.mkdir(parents=True, exist_ok=True)
-    doc.save(str(pdf_path))
-    full_text = "\n".join(p.get_text("text") for p in doc)
+    pdf_path.write_bytes(bytes(doc.tobytes()))
+    full_text = "\n".join(extracted_pages)
     doc.close()
     return total_pages, len(full_text)
 
@@ -205,9 +213,8 @@ def main() -> None:
     for md_file in md_files:
         pdf_file = PDF_DIR / f"{md_file.stem}.pdf"
         pages, chars = render_markdown_to_pdf(md_file, pdf_file)
-        print(f"Generated {pdf_file.name}: {pages} pages, {chars:,} chars")
+        sys.stdout.write(f"Generated {pdf_file.name}: {pages} pages, {chars:,} chars\n")
 
 
 if __name__ == "__main__":
     main()
-

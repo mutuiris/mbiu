@@ -4,13 +4,14 @@
    clean, multi-page text-based PDF in `corpus/system_annotated_contracts/pdf/`, with
    styled callout boxes for `[EXPERT LEGAL & MBIU SYSTEM ANNOTATION]` blocks.
 2. Extracts every annotated clause into `mbiu_context_and_finetuning_dataset.jsonl`
-   and validates each annotation against Mbiu's 8 Verification Rules (`verify.py`).
+   and validates each annotation against Mbiu's Verification Rules.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +48,9 @@ def wrap_line(text: str, fontname: str, fontsize: float, max_width: float) -> li
     current = words[0]
     for word in words[1:]:
         candidate = f"{current} {word}"
-        w = pymupdf.get_text_length(candidate, fontname=fontname, fontsize=fontsize)
+        w = float(
+            pymupdf.get_text_length(candidate, fontname=fontname, fontsize=fontsize)
+        )
         if w <= max_width:
             current = candidate
         else:
@@ -62,11 +65,12 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
     raw_md = md_path.read_text(encoding="utf-8")
     lines = raw_md.splitlines()
 
-    doc = pymupdf.open()
-    page = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
+    open_pdf: Any = pymupdf.open
+    doc: Any = open_pdf()
+    page: Any = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
     y = MARGIN_TOP
 
-    def new_page() -> pymupdf.Page:
+    def new_page() -> Any:
         nonlocal page, y
         page = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
         y = MARGIN_TOP
@@ -84,74 +88,73 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
             ensure_space(14)
             y += 5
             page.draw_line(
-                pymupdf.Point(MARGIN_X, y),
-                pymupdf.Point(PAGE_WIDTH - MARGIN_X, y),
-                color=(0.72, 0.72, 0.72),
+                (MARGIN_X, y),
+                (PAGE_WIDTH - MARGIN_X, y),
+                color=(0.75, 0.75, 0.75),
                 width=0.6,
             )
-            y += 9
+            y += 8
             continue
 
         if not stripped:
             y += 5
             continue
 
-        # Blockquote / Annotation block (> ...)
+        # Blockquote (Expert Legal & Mbiu System Annotation block)
         if stripped.startswith(">"):
-            quote_content = stripped.lstrip(">").strip()
-            if not quote_content:
+            inner = strip_md_inline(stripped.lstrip(">").strip())
+            if not inner:
                 y += 3
                 continue
-
-            is_annot_header = quote_content.startswith("### ")
-            clean_q = strip_md_inline(quote_content.lstrip("#").strip())
-            fontsize = 9.0 if is_annot_header else 8.5
-            line_h = 12.5 if is_annot_header else 11.5
-            text_color = (0.08, 0.25, 0.48) if is_annot_header else (0.18, 0.22, 0.28)
-
-            wrapped = wrap_line(clean_q, "helv", fontsize, CONTENT_WIDTH - 22)
-            block_h = len(wrapped) * line_h + 2
+            is_header = inner.startswith(("###", "[EXPERT"))
+            if inner.startswith("###"):
+                inner = inner.lstrip("#").strip()
+            fontname = "helv"
+            fontsize = 8.5 if not is_header else 9.0
+            line_h = 11.5
+            wrapped = wrap_line(inner, fontname, fontsize, CONTENT_WIDTH - 20)
+            block_h = len(wrapped) * line_h + 4
             ensure_space(block_h)
-
-            # Left accent bar for expert annotation
+            rect = (MARGIN_X + 4, y, PAGE_WIDTH - MARGIN_X, y + block_h)
+            page.draw_rect(rect, color=None, fill=(0.94, 0.96, 0.99))
             page.draw_line(
-                pymupdf.Point(MARGIN_X + 6, y),
-                pymupdf.Point(MARGIN_X + 6, y + block_h),
-                color=(0.15, 0.40, 0.75),
+                (MARGIN_X + 4, y),
+                (MARGIN_X + 4, y + block_h),
+                color=(0.18, 0.38, 0.68),
                 width=2.0,
             )
-
+            y += 2
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X + 14, y + fontsize),
+                    (MARGIN_X + 12, y + fontsize),
                     wline,
-                    fontname="helv",
+                    fontname=fontname,
                     fontsize=fontsize,
-                    color=text_color,
+                    color=(0.1, 0.18, 0.32) if is_header else (0.15, 0.15, 0.15),
                 )
                 y += line_h
-            y += 1.5
+            y += 2
             continue
 
         # H1 (# ...)
         if stripped.startswith("# "):
             title_text = strip_md_inline(stripped[2:].strip())
-            fontsize = 12.0
+            fontsize = 12.5
             wrapped = wrap_line(title_text, "helv", fontsize, CONTENT_WIDTH)
             ensure_space(len(wrapped) * 16 + 8)
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X, y + fontsize),
+                    (MARGIN_X, y + fontsize),
                     wline,
                     fontname="helv",
                     fontsize=fontsize,
                 )
                 y += 16
-            y += 5
+            y += 4
             continue
 
         # H2 / H3 (## / ### ...)
-        if stripped.startswith("## ") or stripped.startswith("### "):
+        if stripped.startswith(("## ", "### ")):
             h_text = strip_md_inline(stripped.lstrip("#").strip())
             fontsize = 10.5
             wrapped = wrap_line(h_text, "helv", fontsize, CONTENT_WIDTH)
@@ -159,7 +162,7 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
             y += 3
             for wline in wrapped:
                 page.insert_text(
-                    pymupdf.Point(MARGIN_X, y + fontsize),
+                    (MARGIN_X, y + fontsize),
                     wline,
                     fontname="helv",
                     fontsize=fontsize,
@@ -168,15 +171,15 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
             y += 3
             continue
 
-        # Regular contract clause text
-        clean_text = strip_md_inline(stripped)
-        fontsize = 9.5
-        line_h = 13.0
-        wrapped = wrap_line(clean_text, "helv", fontsize, CONTENT_WIDTH)
+        # Normal clause text or metadata bullet
+        clean = strip_md_inline(stripped)
+        fontsize = 9.2
+        line_h = 12.8
+        wrapped = wrap_line(clean, "helv", fontsize, CONTENT_WIDTH)
         ensure_space(len(wrapped) * line_h + 2)
         for wline in wrapped:
             page.insert_text(
-                pymupdf.Point(MARGIN_X, y + fontsize),
+                (MARGIN_X, y + fontsize),
                 wline,
                 fontname="helv",
                 fontsize=fontsize,
@@ -185,13 +188,14 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
         y += 2
 
     total_pages = len(doc)
-    for idx, p in enumerate(doc, start=1):
+    for idx in range(total_pages):
+        p: Any = doc[idx]
         footer = (
-            f"Page {idx} of {total_pages}  |  "
-            f"Mbiu System Annotated Benchmark ({md_path.stem})"
+            f"Mbiu System Reference Corpus (Legal-Expert Annotated)  |  Page {idx + 1} of "
+            f"{total_pages}"
         )
         p.insert_text(
-            pymupdf.Point(MARGIN_X, PAGE_HEIGHT - 26),
+            (MARGIN_X, PAGE_HEIGHT - 24),
             footer,
             fontname="helv",
             fontsize=7.5,
@@ -199,37 +203,51 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
         )
 
     PDF_DIR.mkdir(parents=True, exist_ok=True)
-    pdf_bytes = bytes(doc.tobytes())
+    pdf_path.write_bytes(bytes(doc.tobytes()))
     doc.close()
-    try:
-        pdf_path.write_bytes(pdf_bytes)
-    except PermissionError:
-        pass
     return total_pages
 
 
+def _extract_field(block_str: str, pattern: str, default: str = "") -> str:
+    fm = re.search(pattern, block_str)
+    return fm.group(1).strip() if fm else default
+
+
+def _extract_json_str(block_str: str, field_name: str, md_name: str, cid: str) -> str:
+    jm = re.search(rf"- `{field_name}`:\s*`(\".*\")`", block_str)
+    if not jm:
+        raise ValueError(f"Missing `{field_name}` in {md_name} Clause {cid}")
+    return str(json.loads(jm.group(1)))
+
+
+def _extract_optional_json(block_str: str, field_name: str, default_val: Any) -> Any:
+    jm = re.search(rf"- `{field_name}`:\s*`(.+)`", block_str)
+    if not jm:
+        return default_val
+    return json.loads(jm.group(1))
+
+
 def extract_and_verify_annotations(md_path: Path) -> list[dict[str, Any]]:
-    """Extract clause + annotation pairs from an annotated Markdown file and run verify_proposal."""
+    """Parse an annotated Markdown contract, verify every annotation, and return JSONL records."""
     text = md_path.read_text(encoding="utf-8")
 
     # Document metadata
-    doc_id_match = re.search(r"\*\*Document ID:\*\*\s*`([^`]+)`", text)
-    doc_id = doc_id_match.group(1) if doc_id_match else md_path.stem
+    doc_id_m = re.search(r"\*\*Document ID:\*\*\s*`([^`]+)`", text)
+    doc_id = doc_id_m.group(1) if doc_id_m else md_path.stem
+    ctype_m = re.search(r"\*\*Contract Type:\*\*\s*`([^`]+)`", text)
+    contract_type = ctype_m.group(1) if ctype_m else "general_music"
 
-    ctype_match = re.search(r"\*\*Contract Type:\*\*\s*`([^`]+)`", text)
-    contract_type = ctype_match.group(1) if ctype_match else "general_music"
-
-    # Map all clause texts in the file by clause_id (e.g., **1.1 Title.** Text...)
-    clause_texts: dict[str, str] = {}
-    for m in re.finditer(
-        r"^\*\*(\d+\.\d+)\s+([^*]+)\*\*\s*(.+?)(?=\n\n>\s*###|\n\n\*\*\d+\.\d+|\n\n---|\Z)",
-        text,
+    # Extract all numbered clauses: **1.1 Title.** Body...
+    clause_pattern = re.compile(
+        r"^\*\*(\d+\.\d+)\s+([^*]+)\*\*\s*(.+?)(?=\n\n> ### \[EXPERT|\n\n\*\*\d+\.\d+|\n\n---|\Z)",
         flags=re.MULTILINE | re.DOTALL,
-    ):
-        cid = m.group(1).strip()
-        heading = m.group(2).strip()
-        body = strip_md_inline(re.sub(r"\s+", " ", m.group(3)).strip())
-        clause_texts[cid] = f"{cid} {heading} {body}"
+    )
+    clause_texts: dict[str, str] = {}
+    for cm in clause_pattern.finditer(text):
+        cid = cm.group(1).strip()
+        ctitle = cm.group(2).strip()
+        cbody = " ".join(cm.group(3).strip().splitlines())
+        clause_texts[cid] = f"{cid} {ctitle} {cbody}"
 
     # Extract each [EXPERT LEGAL & MBIU SYSTEM ANNOTATION — CLAUSE X.Y] block
     annot_pattern = re.compile(
@@ -246,25 +264,27 @@ def extract_and_verify_annotations(md_path: Path) -> list[dict[str, Any]]:
 
         clause_text = clause_texts.get(cid, "")
         if not clause_text:
-            raise ValueError(f"Could not find source clause text for {cid} in {md_path.name}")
+            raise ValueError(
+                f"Could not find source clause text for {cid} in {md_path.name}"
+            )
 
-        def extract_field(pattern: str, default: str = "") -> str:
-            fm = re.search(pattern, block_str)
-            return fm.group(1).strip() if fm else default
-
-        topic = extract_field(r"\*\*Topic:\*\*\s*`([^`]+)`")
-        affects = extract_field(r"\*\*Affects:\*\*\s*`([^`]+)`")
-        drafted_for = extract_field(r"\*\*Drafted For:\*\*\s*`([^`]+)`")
-        comparison_outcome = extract_field(r"\*\*Comparison Outcome:\*\*\s*`([^`]+)`")
-        mbiu_label = extract_field(r"\*\*Mbiu Label:\*\*\s*`([^`]+)`")
-        implication = extract_field(r"\*\*Implication:\*\*\s*`([^`]+)`")
+        topic = _extract_field(block_str, r"\*\*Topic:\*\*\s*`([^`]+)`")
+        affects = _extract_field(block_str, r"\*\*Affects:\*\*\s*`([^`]+)`")
+        drafted_for = _extract_field(block_str, r"\*\*Drafted For:\*\*\s*`([^`]+)`")
+        comparison_outcome = _extract_field(
+            block_str, r"\*\*Comparison Outcome:\*\*\s*`([^`]+)`"
+        )
+        mbiu_label = _extract_field(block_str, r"\*\*Mbiu Label:\*\*\s*`([^`]+)`")
+        implication = _extract_field(block_str, r"\*\*Implication:\*\*\s*`([^`]+)`")
 
         ref_m = re.search(
             r"\*\*Reference Standard Benchmark \(([^)]+)\):\*\*\s*\*\"([^\"]+)\"\*",
             block_str,
         )
         if not ref_m:
-            raise ValueError(f"Missing Reference Standard Benchmark in {md_path.name} Clause {cid}")
+            raise ValueError(
+                f"Missing Reference Standard Benchmark in {md_path.name} Clause {cid}"
+            )
         ids_found = re.findall(r"`([^`]+)`", ref_m.group(1))
         std_id = ids_found[0] if ids_found else "KECOBO-STD-01"
         std_text = ref_m.group(2).strip()
@@ -272,28 +292,26 @@ def extract_and_verify_annotations(md_path: Path) -> list[dict[str, Any]]:
         linked_m = re.search(r"\*\*Linked Clauses:\*\*\s*`(\[[^\]]*\])`", block_str)
         linked_clauses: list[str] = json.loads(linked_m.group(1)) if linked_m else []
 
-        def extract_json_str(field_name: str) -> str:
-            jm = re.search(rf"- `{field_name}`:\s*`(\".*\")`", block_str)
-            if not jm:
-                raise ValueError(f"Missing `{field_name}` in {md_path.name} Clause {cid}")
-            return str(json.loads(jm.group(1)))
-
-        def extract_optional_json(field_name: str, default_val: Any) -> Any:
-            jm = re.search(rf"- `{field_name}`:\s*`(.+)`", block_str)
-            if not jm:
-                return default_val
-            return json.loads(jm.group(1))
-
-        headline = extract_json_str("headline")
-        key_quote = extract_json_str("key_quote")
-        what_it_says = extract_json_str("what_it_says")
-        what_it_means = extract_json_str("what_it_means")
-        comparison_note = extract_json_str("comparison_note")
-        fairer_wording = extract_json_str("fairer_wording")
-        ask_them: list[str] = extract_optional_json("ask_them", [])
-        jargon_defs: dict[str, str] = extract_optional_json("jargon_definitions", {})
-        money_in_raw: dict[str, Any] | None = extract_optional_json("money_inputs", None)
-        money_cmp_raw: dict[str, Any] | None = extract_optional_json("money_comparison", None)
+        headline = _extract_json_str(block_str, "headline", md_path.name, cid)
+        key_quote = _extract_json_str(block_str, "key_quote", md_path.name, cid)
+        what_it_says = _extract_json_str(block_str, "what_it_says", md_path.name, cid)
+        what_it_means = _extract_json_str(block_str, "what_it_means", md_path.name, cid)
+        comparison_note = _extract_json_str(
+            block_str, "comparison_note", md_path.name, cid
+        )
+        fairer_wording = _extract_json_str(
+            block_str, "fairer_wording", md_path.name, cid
+        )
+        ask_them: list[str] = _extract_optional_json(block_str, "ask_them", [])
+        jargon_defs: dict[str, str] = _extract_optional_json(
+            block_str, "jargon_definitions", {}
+        )
+        money_in_raw: dict[str, Any] | None = _extract_optional_json(
+            block_str, "money_inputs", None
+        )
+        money_cmp_raw: dict[str, Any] | None = _extract_optional_json(
+            block_str, "money_comparison", None
+        )
 
         linked_clause_map = {
             lcid: clause_texts.get(lcid, f"Clause {lcid}") for lcid in linked_clauses
@@ -305,7 +323,9 @@ def extract_and_verify_annotations(md_path: Path) -> list[dict[str, Any]]:
                 f"{key_quote!r} not in {clause_text!r}"
             )
         if len(headline) > 80 or len(what_it_says) > 280 or len(what_it_means) > 280:
-            raise AssertionError(f"Length budget exceeded on {md_path.name} Clause {cid}")
+            raise AssertionError(
+                f"Length budget exceeded on {md_path.name} Clause {cid}"
+            )
 
         records.append(
             {
@@ -356,18 +376,18 @@ def main() -> None:
         pages = render_annotated_md_to_pdf(md_file, pdf_file)
         records = extract_and_verify_annotations(md_file)
         all_records.extend(records)
-        print(
+        sys.stdout.write(
             f"[OK] {md_file.name} -> {pdf_file.name} ({pages} pages) | "
-            f"{len(records)} annotated clauses verified against all 8 Mbiu rules"
+            f"{len(records)} annotated clauses verified against all 8 Mbiu rules\n"
         )
 
     with JSONL_PATH.open("w", encoding="utf-8") as fh:
         for rec in all_records:
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-    print(
+    sys.stdout.write(
         f"\nWrote {len(all_records)} verified clause-evaluation exemplars to "
-        f"{JSONL_PATH.name}"
+        f"{JSONL_PATH.name}\n"
     )
 
 
