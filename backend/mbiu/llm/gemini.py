@@ -160,7 +160,10 @@ class Gemini:
                         system_instruction=instructions,
                         input=content,
                         response_format={"mime_type": "application/json", "schema": schema},
-                        generation_config={"temperature": temperature},
+                        generation_config={
+                            "temperature": temperature,
+                            "thinking_level": settings.GEMINI_THINKING_LEVEL,
+                        },
                         store=False,  # never let the provider keep contract text
                         timeout=min(self._timeout_s, remaining),
                     )
