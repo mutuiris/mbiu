@@ -47,14 +47,39 @@ export default function TermsPage() {
               </h2>
               <p className="mt-2">
                 Mbiu is a legal-tech educational initiative created by The Agwambos through the
-                Innovation Pillar competition at KamiLimu. The project has been mentored and
-                supported by KamiLimu Limited (Nairobi, Kenya) from problem and solution validation
-                through to operational funding.
+                Innovation Pillar competition at{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu
+                </a>
+                . The project has been mentored and supported by{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu Limited
+                </a>{" "}
+                (Nairobi, Kenya) from problem and solution validation through to operational funding.
               </p>
               <p className="mt-2">
                 Mbiu is currently offered as a free public educational tool. We reserve the right to
                 introduce premium or paid subscription tiers in the future. Inquiries may be
-                directed via KamiLimu at{" "}
+                directed via{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu
+                </a>{" "}
+                at{" "}
                 <a
                   href="mailto:info@kamilimu.org"
                   className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"

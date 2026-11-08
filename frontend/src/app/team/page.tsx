@@ -26,7 +26,16 @@ export default function TeamPage() {
           </h1>
 
           <p className="mt-2 text-[0.95rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
-            The independent team building Mbiu as part of the 2026 Mozilla x KamiLimu Buildathon.
+            The independent team building Mbiu as part of the 2026 Mozilla x{" "}
+            <a
+              href="https://www.kamilimu.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+            >
+              KamiLimu
+            </a>{" "}
+            Buildathon.
           </p>
 
           <div className="mt-7 space-y-6 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
@@ -40,8 +49,16 @@ export default function TeamPage() {
                 Mozilla x KamiLimu Innovation
               </h2>
               <p className="mt-2 text-[0.92rem] text-mbiu-ink/80 dark:text-[#B9C1C5]">
-                Developed under the mentorship and sponsorship of KamiLimu Limited and the Mozilla
-                Foundation. Built to advance creative rights and fair contract literacy across
+                Developed under the mentorship and sponsorship of{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu Limited
+                </a>{" "}
+                and the Mozilla Foundation. Built to advance creative rights and fair contract literacy across
                 Kenya.
               </p>
             </div>
