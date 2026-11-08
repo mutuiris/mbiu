@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft, Users, Heart, Mail } from "lucide-react";
+import { ArrowLeft, Heart, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Our Team — Mbiu",
@@ -69,7 +69,7 @@ export default function TeamPage() {
     <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink transition-colors dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
       <Navbar basePath="/" />
 
-      <main className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10">
+      <main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-8 sm:py-12">
         {/* Back Link */}
         <div className="mb-6">
           <Link
@@ -82,108 +82,99 @@ export default function TeamPage() {
           </Link>
         </div>
 
-        {/* Page Container */}
-        <div className="w-full rounded-[28px] border border-white/70 bg-white/60 p-6 shadow-[0_30px_80px_-56px_rgba(22,26,38,0.6)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] sm:p-10 md:p-12">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-mbiu-peach/50 px-3 py-1 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-mbiu-warning-text dark:bg-mbiu-peach/15 dark:text-[#f3c9b8]">
-              <Users className="h-3.5 w-3.5" />
-              Contributors
-            </span>
-          </div>
+        {/* Page Title & Subtitle */}
+        <h1 className="font-serif text-[1.85rem] font-semibold tracking-[-0.025em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.25rem]">
+          Our Team
+        </h1>
 
-          <h1 className="mt-3 font-serif text-[1.65rem] font-semibold tracking-[-0.025em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
-            Our Team
-          </h1>
+        <p className="mt-2 text-[0.95rem] leading-relaxed text-[#6B7280] dark:text-[#9aa5aa]">
+          The independent developers and civic researchers behind Mbiu.
+        </p>
 
-          <p className="mt-2 text-[0.95rem] leading-relaxed text-[#6B7280] dark:text-[#9aa5aa]">
-            The independent developers and civic researchers behind Mbiu.
-          </p>
-
-          {/* Members 2-Column Grid of Individual Cards */}
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
-            {TEAM_MEMBERS.map((member) => (
-              <div
-                key={member.name}
-                className="flex flex-col justify-between rounded-[24px] border border-[#e2d5c3]/80 bg-[#fffdfa]/80 p-6 shadow-xs backdrop-blur-md transition-all hover:border-mbiu-indigo/40 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 sm:p-7"
-              >
-                <div>
-                  <div className="flex items-center gap-4 sm:gap-5">
-                    <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full border border-stone-200/90 shadow-sm dark:border-white/10 sm:h-24 sm:w-24">
-                      <Image
-                        src={member.image}
-                        alt={member.name}
-                        fill
-                        sizes="(max-width: 640px) 80px, 96px"
-                        className="object-cover"
-                      />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h2 className="font-sans text-[1.12rem] font-bold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.2rem]">
-                        {member.name}
-                      </h2>
-                      <p className="mt-0.5 text-[0.88rem] font-semibold text-mbiu-indigo dark:text-[#8c94ff]">
-                        {member.role}
-                      </p>
-
-                      <div className="mt-2.5 flex items-center gap-2">
-                        {member.linkedin && (
-                          <a
-                            href={member.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${member.name}'s LinkedIn profile`}
-                            className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e2d5c3] bg-white text-mbiu-indigo transition hover:border-mbiu-indigo hover:bg-mbiu-cream/40 hover:shadow-xs dark:border-white/15 dark:bg-white/5 dark:text-[#8c94ff] dark:hover:bg-white/10"
-                          >
-                            <LinkedInIcon className="h-4 w-4" />
-                          </a>
-                        )}
-
-                        {member.email && (
-                          <a
-                            href={`mailto:${member.email}`}
-                            aria-label={`Email ${member.name}`}
-                            className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e2d5c3] bg-white text-mbiu-ink/80 transition hover:border-mbiu-indigo hover:text-mbiu-indigo hover:bg-mbiu-cream/40 hover:shadow-xs dark:border-white/15 dark:bg-white/5 dark:text-[#c2c9cd] dark:hover:text-white dark:hover:bg-white/10"
-                          >
-                            <Mail className="h-4 w-4" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
+        {/* Members 2-Column Grid of Individual Cards */}
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
+          {TEAM_MEMBERS.map((member) => (
+            <div
+              key={member.name}
+              className="flex flex-col justify-between rounded-[24px] border border-[#e2d5c3]/80 bg-white p-6 shadow-sm transition-all hover:border-mbiu-indigo/40 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 sm:p-7"
+            >
+              <div>
+                <div className="flex items-center gap-4 sm:gap-5">
+                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full border border-stone-200/90 shadow-sm dark:border-white/10 sm:h-24 sm:w-24">
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      fill
+                      sizes="(max-width: 640px) 80px, 96px"
+                      className="object-cover"
+                    />
                   </div>
 
-                  <p className="mt-5 text-[0.93rem] leading-relaxed text-mbiu-ink/80 dark:text-[#c2c9cd]">
-                    {member.bio}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-sans text-[1.12rem] font-bold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.2rem]">
+                      {member.name}
+                    </h2>
+                    <p className="mt-0.5 text-[0.88rem] font-semibold text-mbiu-indigo dark:text-[#8c94ff]">
+                      {member.role}
+                    </p>
+
+                    <div className="mt-2.5 flex items-center gap-2">
+                      {member.linkedin && (
+                        <a
+                          href={member.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`${member.name}'s LinkedIn profile`}
+                          className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e2d5c3] bg-white text-mbiu-indigo transition hover:border-mbiu-indigo hover:bg-mbiu-cream/40 hover:shadow-xs dark:border-white/15 dark:bg-white/5 dark:text-[#8c94ff] dark:hover:bg-white/10"
+                        >
+                          <LinkedInIcon className="h-4 w-4" />
+                        </a>
+                      )}
+
+                      {member.email && (
+                        <a
+                          href={`mailto:${member.email}`}
+                          aria-label={`Email ${member.name}`}
+                          className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e2d5c3] bg-white text-mbiu-ink/80 transition hover:border-mbiu-indigo hover:text-mbiu-indigo hover:bg-mbiu-cream/40 hover:shadow-xs dark:border-white/15 dark:bg-white/5 dark:text-[#c2c9cd] dark:hover:text-white dark:hover:bg-white/10"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                <p className="mt-5 text-[0.93rem] leading-relaxed text-mbiu-ink/80 dark:text-[#c2c9cd]">
+                  {member.bio}
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Mozilla x KamiLimu Section */}
-          <div className="mt-12 rounded-2xl border border-mbiu-ink/10 bg-white/50 p-6 dark:border-white/10 dark:bg-white/[0.04]">
-            <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-              Mozilla x KamiLimu Innovation
-            </h2>
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-mbiu-ink/80 dark:text-[#B9C1C5]">
-              Developed under the mentorship and sponsorship of{" "}
-              <a
-                href="https://www.kamilimu.org/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-              >
-                KamiLimu Limited
-              </a>{" "}
-              and the Mozilla Foundation. Built to advance creative rights and fair contract literacy
-              across Kenya.
-            </p>
-          </div>
+        {/* Mozilla x KamiLimu Section */}
+        <div className="mt-10 rounded-2xl border border-mbiu-ink/10 bg-white/70 p-6 dark:border-white/10 dark:bg-white/[0.04]">
+          <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
+            Mozilla x KamiLimu Innovation
+          </h2>
+          <p className="mt-2 text-[0.92rem] leading-relaxed text-mbiu-ink/80 dark:text-[#B9C1C5]">
+            Developed under the mentorship and sponsorship of{" "}
+            <a
+              href="https://www.kamilimu.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+            >
+              KamiLimu Limited
+            </a>{" "}
+            and the Mozilla Foundation. Built to advance creative rights and fair contract literacy
+            across Kenya.
+          </p>
+        </div>
 
-          <div className="mt-6 flex items-center gap-2 text-[0.9rem] font-medium text-mbiu-ink/70 dark:text-[#9aa5aa]">
-            <Heart className="h-4 w-4 text-mbiu-indigo dark:text-mbiu-indigo-dark" />
-            <span>Built for independent artists in Nairobi and across Africa.</span>
-          </div>
+        <div className="mt-6 flex items-center gap-2 text-[0.9rem] font-medium text-mbiu-ink/70 dark:text-[#9aa5aa]">
+          <Heart className="h-4 w-4 text-mbiu-indigo dark:text-mbiu-indigo-dark" />
+          <span>Built for independent artists in Nairobi and across Africa.</span>
         </div>
       </main>
 
