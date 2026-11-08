@@ -26,9 +26,8 @@ export function PrivacyNotice({
       </h2>
 
       <p className="privacy-summary">
-        We respect the privacy and commercial sensitivity of your music. Your
-        contract is evaluated <strong>instantly</strong>, we{" "}
-        <strong>never store</strong> your contract.
+        Your contract is private. We only use it to provide your analysis. MBIU
+        does not keep a copy of your contract after the analysis is complete.
       </p>
 
       <button
