@@ -99,9 +99,18 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [summary, setSummary] = useState<Summary | null>(
     () => cachedData?.summary ?? null
   );
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [isStreaming, setIsStreaming] = useState<boolean>(() => Boolean(eventStream));
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [prevEventStream, setPrevEventStream] = useState(eventStream);
+
+  // Reset stream status during render when a new stream is provided
+  if (eventStream !== prevEventStream) {
+    setPrevEventStream(eventStream);
+    setIsStreaming(Boolean(eventStream));
+    setIsServiceUnavailable(false);
+    setErrorMessage(null);
+  }
   const [retryingClauseId, setRetryingClauseId] = useState<string | null>(null);
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
@@ -289,9 +298,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     if (!eventStream) return;
 
     let isCancelled = false;
-    setIsStreaming(true);
-    setIsServiceUnavailable(false);
-    setErrorMessage(null);
 
     async function consume() {
       try {
