@@ -38,6 +38,7 @@ describe("TeamPage", () => {
     expect(html).toContain("mailto:mercylinenyaboke08@gmail.com");
 
     expect(html).toContain("https://www.linkedin.com/in/steve-wanangwe-6a72b1254");
+    expect(html).toContain("https://www.linkedin.com/in/bernadette-karanja-0416793b8");
     expect(html).toContain("https://www.linkedin.com/in/addymutuiri/");
     expect(html).toContain("https://www.linkedin.com/in/mercy-line/");
   });
