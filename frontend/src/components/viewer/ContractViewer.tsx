@@ -1,7 +1,7 @@
 "use client";
 
 // Must load before pdf.js
-import "@/lib/map-upsert";
+import "@/lib/browser-polyfills";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
