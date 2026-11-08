@@ -280,40 +280,35 @@ export default function Home() {
         <Navbar basePath="/" />
 
         <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
-          <div className="stream-controls">
-          <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
-            Check another contract
-          </button>
-        </div>
-        <KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />
-        <div className="resume-panel" role="status" aria-live="polite">
-          {resultsStatus && <p>{resultsStatus}</p>}
-          {!isStreaming && clausesToCheck && (
-            <>
-              <p>
-                Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
-                again after a quick security check.
-              </p>
-              <Turnstile
-                key={turnstileKey}
-                onSuccess={checkClauses}
-                onError={() =>
-                  setResultsStatus("The security check could not load. Please try again.")
-                }
-              />
-            </>
-          )}
-        </div>
-        {isIdle && unfinished.length > 0 && (
-          <button type="button" className="secondary-btn" onClick={() => setToCheck(unfinished)}>
-            Check the {unfinished.length === 1 ? "unfinished clause" : `${unfinished.length} unfinished clauses`}
-          </button>
+        {(resultsStatus || (!isStreaming && clausesToCheck)) && (
+          <div className="resume-panel" role="status" aria-live="polite">
+            {resultsStatus && <p>{resultsStatus}</p>}
+            {!isStreaming && clausesToCheck && (
+              <>
+                <p>
+                  Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
+                  again after a quick security check.
+                </p>
+                <Turnstile
+                  key={turnstileKey}
+                  onSuccess={checkClauses}
+                  onError={() =>
+                    setResultsStatus("The security check could not load. Please try again.")
+                  }
+                />
+              </>
+            )}
+          </div>
         )}
         <LiveResults
           eventStream={stream}
           onRetryAll={startOver}
           onRetryClause={isIdle ? retryClause : undefined}
           file={selectedFile}
+          onCheckAnother={startOver}
+          notChecked={isIdle ? unfinished.length : 0}
+          onCheckRest={isIdle && unfinished.length > 0 ? () => setToCheck(unfinished) : undefined}
+          keep={<KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />}
         />
         </main>
 
