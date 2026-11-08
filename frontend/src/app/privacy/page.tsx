@@ -46,10 +46,35 @@ export default function PrivacyPage() {
                 1. Data Controller &amp; Governance
               </h2>
               <p className="mt-2">
-                Mbiu was created by The Agwambos through the KamiLimu Innovation Pillar competition and
-                is supported by KamiLimu Limited (Nairobi, Kenya). The legal data controller is the
-                Mbiu team, with data protection governance managed through KamiLimu. We strictly adhere
-                to the principles set out in the{" "}
+                Mbiu was created by The Agwambos through the{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu
+                </a>{" "}
+                Innovation Pillar competition and is supported by{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu Limited
+                </a>{" "}
+                (Nairobi, Kenya). The legal data controller is the Mbiu team, with data protection
+                governance managed through{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu
+                </a>
+                . We strictly adhere to the principles set out in the{" "}
                 <strong>Kenya Data Protection Act, 2019 (KDPA)</strong> and the guidelines of the
                 Office of the Data Protection Commissioner (ODPC).
               </p>
@@ -186,8 +211,16 @@ export default function PrivacyPage() {
                 7. Contact
               </h2>
               <p className="mt-2">
-                For questions regarding this Privacy Policy or data protection at Mbiu, contact
-                KamiLimu at{" "}
+                For questions regarding this Privacy Policy or data protection at Mbiu, contact{" "}
+                <a
+                  href="https://www.kamilimu.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
+                >
+                  KamiLimu
+                </a>{" "}
+                at{" "}
                 <a
                   href="mailto:info@kamilimu.org"
                   className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
