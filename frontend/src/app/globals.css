@@ -2626,15 +2626,6 @@ body {
   display: none;
 }
 
-.contract-viewer.is-open {
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background-color: var(--bg-color);
-}
-
 .contract-viewer-bar {
   display: flex;
   align-items: center;
@@ -2697,9 +2688,6 @@ body {
     overflow: hidden;
   }
 
-  .contract-viewer .contract-viewer-close {
-    display: none;
-  }
 }
 
 html {
@@ -3178,14 +3166,7 @@ html {
 
 .results-page .keep-results {
   width: 100%;
-  gap: 0.6rem;
-  padding: 1rem 1.15rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background-color: var(--card-bg);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-sm);
+  gap: 0.35rem;
 }
 
 .results-page .keep-results .consent-label {
@@ -3211,10 +3192,16 @@ html {
   align-items: flex-start;
   gap: 0.6rem;
   padding: 0.95rem 1.15rem;
-  border: 1px solid var(--notice-border);
-  border-radius: var(--radius-md);
-  background-color: var(--notice-bg);
-  color: var(--notice-text);
+  border: 1px solid #e9dec9;
+  border-radius: 20px;
+  background-color: #fffdf8;
+  color: var(--color-mbiu-ink);
+}
+
+.dark .results-page .resume-panel {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.04);
+  color: #f4efe6;
 }
 
 .results-page .resume-panel p {
@@ -3712,5 +3699,121 @@ html {
   .checklist-item,
   .report-issue-card {
     page-break-inside: avoid !important;
+  }
+}
+
+/* Report: shared motion and focus (press 160 ms, folds 200 ms, strong ease-out) */
+:root {
+  --report-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --report-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+.report-press {
+  transition:
+    transform 160ms var(--report-ease-out),
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.report-press:active {
+  transform: scale(0.97);
+}
+.report-press:focus-visible,
+.report-fold-trigger:focus-visible {
+  outline: 2px solid var(--color-mbiu-indigo);
+  outline-offset: 2px;
+}
+.report-fold-panel {
+  height: var(--collapsible-panel-height);
+  overflow: hidden;
+  transition:
+    height 200ms var(--report-ease-out),
+    opacity 200ms var(--report-ease-out);
+}
+.report-fold-panel[data-starting-style],
+.report-fold-panel[data-ending-style] {
+  height: 0;
+  opacity: 0;
+}
+.report-arrive {
+  animation: report-arrive 300ms var(--report-ease-out) both;
+  animation-delay: calc(var(--arrive-index, 0) * 40ms);
+}
+@keyframes report-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-press:active {
+    transform: none;
+  }
+  .report-arrive {
+    animation-name: report-fade;
+  }
+  @keyframes report-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+.report-crossfade {
+  animation: report-fade-in 150ms ease both;
+}
+@keyframes report-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Phone contract sheet (Base UI Drawer): slides up, follows a swipe down, drawer curve */
+.report-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background-color: rgb(22 26 38 / 0.35);
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition: opacity 400ms var(--report-ease-drawer);
+}
+.report-sheet-backdrop[data-starting-style],
+.report-sheet-backdrop[data-ending-style] {
+  opacity: 0;
+}
+.report-sheet {
+  position: fixed;
+  inset: 6vh 0 0 0;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px 20px 0 0;
+  background-color: var(--bg-color);
+  box-shadow: 0 -12px 40px -16px rgb(0 0 0 / 0.35);
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 400ms var(--report-ease-drawer);
+}
+.report-sheet[data-starting-style],
+.report-sheet[data-ending-style] {
+  transform: translateY(100%);
+}
+.report-sheet[data-swiping] {
+  transition: none;
+}
+.report-sheet .contract-viewer-bar {
+  border-radius: 20px 20px 0 0;
+}
+.report-sheet-handle {
+  width: 36px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 999px;
+  background-color: rgb(22 26 38 / 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-sheet {
+    transition: opacity 200ms ease;
+  }
+  .report-sheet[data-starting-style],
+  .report-sheet[data-ending-style] {
+    transform: none;
+    opacity: 0;
   }
 }

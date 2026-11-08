@@ -3,7 +3,8 @@
 // Must load before pdf.js
 import "@/lib/browser-polyfills";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Drawer } from "@base-ui/react/drawer";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -30,12 +31,59 @@ export interface ContractViewerProps {
   /** The artist's own file, read in the browser. It is never uploaded again or stored. */
   file: File;
   clause: ViewerClause | null;
-  /** On phones the viewer is a full-screen sheet, shown only while open. */
+  /** On phones the viewer is a bottom sheet, shown only while open. */
   isOpen: boolean;
   onClose: () => void;
 }
 
+const WIDE = "(min-width: 960px)";
+
+function useIsWide(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(WIDE);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => true,
+  );
+}
+
 export default function ContractViewer({ file, clause, isOpen, onClose }: ContractViewerProps) {
+  const isWide = useIsWide();
+
+  if (isWide) {
+    return (
+      <aside className="contract-viewer" aria-label="Your contract">
+        <div className="contract-viewer-bar">
+          <span className="contract-viewer-title">Your contract</span>
+        </div>
+        <ViewerBody file={file} clause={clause} />
+      </aside>
+    );
+  }
+
+  return (
+    <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()} swipeDirection="down">
+      <Drawer.Portal>
+        <Drawer.Backdrop className="report-sheet-backdrop" />
+        <Drawer.Popup className="report-sheet" aria-label="Your contract">
+          <div className="report-sheet-handle" aria-hidden="true" />
+          <div className="contract-viewer-bar">
+            <Drawer.Title className="contract-viewer-title">Your contract</Drawer.Title>
+            <Drawer.Close className="report-press min-h-11 px-2 text-[0.9rem] font-semibold text-mbiu-indigo underline underline-offset-4 dark:text-[#a9b0ff]">
+              Close
+            </Drawer.Close>
+          </div>
+          <ViewerBody file={file} clause={clause} />
+        </Drawer.Popup>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
+function ViewerBody({ file, clause }: { file: File; clause: ViewerClause | null }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [numPages, setNumPages] = useState(0);
   const [width, setWidth] = useState(0);
@@ -52,55 +100,29 @@ export default function ContractViewer({ file, clause, isOpen, onClose }: Contra
   useEffect(() => {
     if (!clause) return;
     const firstPage = Math.min(...clause.pages);
-    scrollRef.current
-      ?.querySelector(`#viewer-page-${firstPage}`)
-      ?.scrollIntoView({ block: "start" });
+    scrollRef.current?.querySelector(`#viewer-page-${firstPage}`)?.scrollIntoView({ block: "start" });
   }, [clause]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, onClose]);
-
   return (
-    <aside
-      className={`contract-viewer${isOpen ? " is-open" : ""}`}
-      aria-label="Your contract"
-    >
-      <div className="contract-viewer-bar">
-        <span className="contract-viewer-title">Your contract</span>
-        <button type="button" className="secondary-btn contract-viewer-close" onClick={onClose}>
-          Back to results
-        </button>
-      </div>
-      <div className="contract-viewer-scroll" ref={scrollRef}>
-        {loadFailed ? (
-          <p className="contract-viewer-message" role="alert">
-            This PDF could not be shown here. Your results are not affected.
-          </p>
-        ) : (
-          <Document
-            file={file}
-            onLoadSuccess={({ numPages: pages }) => setNumPages(pages)}
-            onLoadError={() => setLoadFailed(true)}
-            loading={<p className="contract-viewer-message">Opening your contract…</p>}
-          >
-            {width > 0 &&
-              Array.from({ length: numPages }, (_, index) => (
-                <LazyPage
-                  key={index + 1}
-                  pageNumber={index + 1}
-                  width={width}
-                  clause={clause}
-                  root={scrollRef}
-                />
-              ))}
-          </Document>
-        )}
-      </div>
-    </aside>
+    <div className="contract-viewer-scroll" ref={scrollRef}>
+      {loadFailed ? (
+        <p className="contract-viewer-message" role="alert">
+          This PDF could not be shown here. Your results are not affected.
+        </p>
+      ) : (
+        <Document
+          file={file}
+          onLoadSuccess={({ numPages: pages }) => setNumPages(pages)}
+          onLoadError={() => setLoadFailed(true)}
+          loading={<p className="contract-viewer-message">Opening your contract…</p>}
+        >
+          {width > 0 &&
+            Array.from({ length: numPages }, (_, index) => (
+              <LazyPage key={index + 1} pageNumber={index + 1} width={width} clause={clause} root={scrollRef} />
+            ))}
+        </Document>
+      )}
+    </div>
   );
 }
 

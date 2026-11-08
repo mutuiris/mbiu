@@ -26,6 +26,19 @@ describe("SummaryCard", () => {
     const html = renderToStaticMarkup(<SummaryCard summary={summary} />);
     expect(html).toContain("Missing from your contract");
     expect(html).toContain("Can we add a clause that lets me check your accounts once a year?");
-    expect(html).toContain("Typical clauses:");
+    expect(html).toContain("More from your report");
+    expect(html).not.toContain("Model Engine");
+    expect(html).not.toMatch(/[“"]Can we add/);
+  });
+
+  it("leaves questions to ask out, since they sit at the top of the report", () => {
+    const html = renderToStaticMarkup(
+      <SummaryCard summary={{ ...summary, top_asks: [{ clause_id: "1", question: "Could we change X?" }] }} />,
+    );
+    expect(html).not.toContain("Could we change X?");
+  });
+
+  it("renders nothing when there is nothing extra to say", () => {
+    expect(renderToStaticMarkup(<SummaryCard summary={{ ...summary, missing_protections: [] }} />)).toBe("");
   });
 });
