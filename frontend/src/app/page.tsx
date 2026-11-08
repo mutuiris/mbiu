@@ -316,8 +316,6 @@ export default function Home() {
           file={selectedFile}
         />
         </main>
-
-        <Footer basePath="/" />
       </div>
     );
   }
@@ -328,7 +326,7 @@ export default function Home() {
 
       <Navbar />
 
-      <main className="relative z-10" id="hero">
+      <main className="relative z-10">
         <section
           id="about"
           className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
@@ -369,94 +367,95 @@ export default function Home() {
 
         <section
           id="how-it-works"
-          className="mx-auto w-full max-w-[1280px] scroll-mt-20 px-4 pb-20 sm:scroll-mt-24 sm:px-8 sm:pb-24"
+          className="mx-auto w-full max-w-[1280px] scroll-mt-20 px-4 pb-14 sm:scroll-mt-24 sm:px-8 sm:pb-16"
         >
-          <div className="landing-upload w-full rounded-[28px] border border-white/70 bg-white/40 p-6 shadow-[0_36px_90px_-48px_rgba(22,26,38,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:rounded-[36px] sm:p-10 md:p-12">
-            <div className="mx-auto flex max-w-[1120px] items-center gap-3 sm:gap-8">
-              <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
-              <h2 className="whitespace-nowrap font-serif text-[1.5rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.1rem]">
-                How it works
-              </h2>
-              <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
-            </div>
+          <div className="mx-auto flex max-w-[1120px] items-center gap-3 sm:gap-8">
+            <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
+            <h2 className="whitespace-nowrap font-serif text-[1.5rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.1rem]">
+              How it works
+            </h2>
+            <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
+          </div>
 
-            <ol className="mx-auto mt-8 grid max-w-[980px] gap-6 sm:mt-10 sm:grid-cols-3 sm:gap-0">
-              {steps.map((step, index) => (
-                <li
-                  key={step.number}
-                  className={`flex items-center gap-4 sm:px-6 md:px-7 ${
-                    index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
-                  }`}
-                >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mbiu-peach-strong text-[1.05rem] font-semibold text-[#1b2430] sm:h-14 sm:w-14 sm:text-[1.15rem]">
-                    {step.number}
-                  </span>
-                  <div>
-                    <p className="text-[0.98rem] font-semibold leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
-                      {step.title}
-                    </p>
-                    <p className="text-[0.98rem] leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
-                      {step.body}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+          <ol className="mx-auto mt-8 grid max-w-[980px] gap-6 sm:mt-10 sm:grid-cols-3 sm:gap-0">
+            {steps.map((step, index) => (
+              <li
+                key={step.number}
+                className={`flex items-center gap-4 sm:px-6 md:px-7 ${
+                  index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
+                }`}
+              >
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mbiu-peach-strong text-[1.05rem] font-semibold text-[#1b2430] sm:h-14 sm:w-14 sm:text-[1.15rem]">
+                  {step.number}
+                </span>
+                <div>
+                  <p className="text-[0.98rem] font-semibold leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
+                    {step.title}
+                  </p>
+                  <p className="text-[0.98rem] leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
+                    {step.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-            <div className="my-10 h-px w-full bg-mbiu-ink/15 dark:bg-white/15 sm:my-12" />
+        <section
+          id="upload"
+          className="mx-auto w-full max-w-[880px] scroll-mt-20 px-4 pb-20 sm:scroll-mt-24 sm:px-8 sm:pb-24"
+        >
+          <div className="landing-upload rounded-[24px] border border-white/70 bg-white/40 p-4 shadow-[0_36px_90px_-48px_rgba(22,26,38,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:rounded-[32px] sm:p-8">
+            <h2 className="font-serif text-[1.65rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
+              Upload your contract
+            </h2>
+            <p className="mt-2 text-[0.92rem] text-mbiu-ink/70 dark:text-[#B9C1C5] sm:text-[0.95rem]">
+              We read it once, explain each clause, and give you the questions to ask.
+            </p>
 
-            <div id="upload" className="mx-auto w-full max-w-[880px] scroll-mt-28">
-              <h3 className="font-serif text-[1.65rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
-                Upload your contract
-              </h3>
-              <p className="mt-2 text-[0.92rem] text-mbiu-ink/70 dark:text-[#B9C1C5] sm:text-[0.95rem]">
-                We read it once, explain each clause, and give you the questions to ask.
-              </p>
+            {notice && (
+              <div className="status-alert info mt-6" role="status">
+                {notice}
+              </div>
+            )}
 
-              {notice && (
-                <div className="status-alert info mt-6" role="status">
-                  {notice}
+            <form onSubmit={handleUpload} className="mt-6">
+              <div id="privacy" className="scroll-mt-28">
+                <PrivacyNotice consentChecked={consentChecked} onConsentChange={setConsentChecked} />
+              </div>
+
+              <FileDropzone
+                selectedFile={selectedFile}
+                onFileSelect={handleFileSelect}
+                onError={setErrorMessage}
+                disabled={isUploading}
+              />
+
+              <div className="turnstile-wrapper">
+                <Turnstile
+                  key={turnstileKey}
+                  onSuccess={setTurnstileToken}
+                  onError={() =>
+                    setErrorMessage("The security check could not load. Please refresh the page.")
+                  }
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </div>
+
+              {errorMessage && (
+                <div className="status-alert error" role="alert">
+                  <strong>Error: </strong>
+                  {errorMessage}
                 </div>
               )}
 
-              <form onSubmit={handleUpload} className="mt-6">
-                <div id="privacy" className="scroll-mt-28">
-                  <PrivacyNotice consentChecked={consentChecked} onConsentChange={setConsentChecked} />
-                </div>
-
-                <FileDropzone
-                  selectedFile={selectedFile}
-                  onFileSelect={handleFileSelect}
-                  onError={setErrorMessage}
-                  disabled={isUploading}
-                />
-
-                <div className="turnstile-wrapper">
-                  <Turnstile
-                    key={turnstileKey}
-                    onSuccess={setTurnstileToken}
-                    onError={() =>
-                      setErrorMessage("The security check could not load. Please refresh the page.")
-                    }
-                    onExpire={() => setTurnstileToken(null)}
-                  />
-                </div>
-
-                {errorMessage && (
-                  <div className="status-alert error" role="alert">
-                    <strong>Error: </strong>
-                    {errorMessage}
-                  </div>
-                )}
-
-                <div className="action-section">
-                  <button type="submit" className="submit-btn" disabled={!isSubmitEnabled}>
-                    {isUploading && <span className="spinner" />}
-                    {isUploading ? "Uploading contract…" : "Check my contract"}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="action-section">
+                <button type="submit" className="submit-btn" disabled={!isSubmitEnabled}>
+                  {isUploading && <span className="spinner" />}
+                  {isUploading ? "Uploading contract…" : "Check my contract"}
+                </button>
+              </div>
+            </form>
           </div>
         </section>
       </main>

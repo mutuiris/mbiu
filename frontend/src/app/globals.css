@@ -213,7 +213,7 @@ body {
 }
 
 .brand-title {
-  font-size: 1.65rem;
+  font-size: 2.25rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
@@ -2745,16 +2745,16 @@ html {
 }
 
 .results-page .card-headline {
-  font-size: 1.2rem;
-  line-height: 1.25;
+  font-size: 1.38rem;
+  line-height: 1.2;
 }
 
 .results-page .overview-title {
-  font-size: 1.12rem;
+  font-size: 1.15rem;
 }
 
 .results-page .summary-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 .results-page .section-title {

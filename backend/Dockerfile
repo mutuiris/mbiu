@@ -11,10 +11,10 @@ COPY mbiu ./mbiu
 COPY manage.py ./
 
 FROM python:3.14.8-slim-trixie@sha256:fbecd461fc72d21b2143c6eaba25143738079154a6d0ea3da3aec724f50eed4a
-# Security updates for system packages (resolves CVE-2026-109518 in apt, CVE-2026-85091 in zlib);
+# Security updates for system packages (resolves CVE-2026-109518 in apt);
 # pip is not needed at runtime; removing it also removes its bundled libraries
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends apt libapt-pkg7.0 zlib1g \
+    && apt-get install -y --no-install-recommends apt libapt-pkg7.0 \
     && rm -rf /var/lib/apt/lists/* \
     && python -m pip uninstall --yes --quiet pip \
     && useradd --system --uid 10001 --no-create-home mbiu

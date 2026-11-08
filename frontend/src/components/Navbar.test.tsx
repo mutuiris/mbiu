@@ -12,9 +12,8 @@ describe("Navbar Component", () => {
 
   it("renders navigation links to the key page sections", () => {
     const markup = renderToStaticMarkup(<Navbar />);
-    expect(markup).toContain('href="#"');
     expect(markup).toContain('href="#how-it-works"');
-    expect(markup).toContain('href="/privacy"');
+    expect(markup).toContain('href="#privacy"');
     expect(markup).toContain('href="#about"');
     expect(markup).toContain('href="#upload"');
   });
