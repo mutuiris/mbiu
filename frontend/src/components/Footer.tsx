@@ -13,7 +13,7 @@ export function Footer({ className = "" }: FooterProps) {
     <footer
       className={`app-footer relative z-10 w-full border-t border-[#e2d5c3] bg-transparent text-mbiu-ink transition-colors dark:border-white/10 dark:text-[#E7E0D4] ${className}`}
     >
-      <div className="mx-auto max-w-[1280px] px-4 py-12 sm:px-8 sm:py-16">
+      <div className="mx-auto max-w-[1280px] px-4 pt-12 pb-5 sm:px-8 sm:pt-16 sm:pb-6">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
           {/* Brand & Overview Column */}
           <div className="flex flex-col gap-4 lg:col-span-5">
@@ -134,7 +134,7 @@ export function Footer({ className = "" }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 flex items-center justify-center border-t border-[#e2d5c3] pt-6 text-[0.84rem] text-mbiu-ink/60 dark:border-white/10 dark:text-[#88949b]">
+        <div className="mt-8 flex items-center justify-center border-t border-[#e2d5c3] pt-4 text-[0.84rem] text-mbiu-ink/60 dark:border-white/10 dark:text-[#88949b] sm:mt-10 sm:pt-4">
           <p className="text-center">© 2026 Mbiu. All rights reserved.</p>
         </div>
       </div>
