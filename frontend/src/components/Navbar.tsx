@@ -82,16 +82,16 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         {/* Desktop Navigation Links */}
         <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
           <a
+            href={href("#")}
+            className="transition hover:text-mbiu-indigo dark:hover:text-white"
+          >
+            Home
+          </a>
+          <a
             href={href("#how-it-works")}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
             How it works
-          </a>
-          <a
-            href={href("#privacy")}
-            className="transition hover:text-mbiu-indigo dark:hover:text-white"
-          >
-            Privacy
           </a>
           <a
             href={href("#about")}
@@ -203,14 +203,6 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
                 className="transition hover:text-mbiu-indigo dark:hover:text-white"
               >
                 How it works
-              </a>
-
-              <a
-                href={href("#privacy")}
-                onClick={closeMenu}
-                className="transition hover:text-mbiu-indigo dark:hover:text-white"
-              >
-                Privacy
               </a>
 
               <a
