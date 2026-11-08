@@ -125,7 +125,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         {/* Vertical Navigation Links (Clean plain-text stacked list) */}
         <nav className="flex flex-col gap-5 py-2 text-[1rem] font-medium text-mbiu-ink dark:text-[#F6F2E9]">
           <a
-            href={href("/")}
+            href={href("#")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
@@ -210,22 +210,28 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
           {/* Desktop Navigation Links */}
           <div className="hidden items-center gap-7 text-[0.95rem] font-medium text-mbiu-ink/90 md:flex lg:gap-9 dark:text-[#F6F2E9]">
             <a
+              href={href("#")}
+              className="transition hover:text-mbiu-indigo dark:hover:text-white"
+            >
+              Home
+            </a>
+            <a
               href={href("#how-it-works")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               How it works
             </a>
             <a
-              href={href("/privacy")}
-              className="transition hover:text-mbiu-indigo dark:hover:text-white"
-            >
-              Privacy
-            </a>
-            <a
               href={href("#about")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               About
+            </a>
+            <a
+              href={href("/privacy")}
+              className="transition hover:text-mbiu-indigo dark:hover:text-white"
+            >
+              Privacy
             </a>
           </div>
 

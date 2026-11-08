@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 
 interface PrivacyNoticeProps {
   consentChecked: boolean;
@@ -26,20 +27,27 @@ export function PrivacyNotice({
       </h2>
 
       <p className="privacy-summary">
-        Your contract is private. We only use it to provide your analysis. MBIU
-        does not keep a copy of your contract after the analysis is complete.
+        We respect the privacy and commercial sensitivity of your music. Your
+        contract is evaluated <strong>instantly</strong>, we{" "}
+        <strong>never store</strong> your contract.
       </p>
 
-      <button
-        type="button"
-        className="text-toggle-btn"
-        aria-expanded={detailsExpanded}
-        onClick={() => setDetailsExpanded((prev) => !prev)}
-      >
-        {detailsExpanded
-          ? "Hide provider details"
-          : "Read full privacy & data transfer details"}
-      </button>
+      <div className="flex flex-wrap items-center gap-4">
+        <Link
+          href="/privacy"
+          className="text-toggle-btn inline-block"
+        >
+          Read full privacy &amp; data transfer details
+        </Link>
+        <button
+          type="button"
+          className="text-toggle-btn opacity-80 hover:opacity-100"
+          aria-expanded={detailsExpanded}
+          onClick={() => setDetailsExpanded((prev) => !prev)}
+        >
+          {detailsExpanded ? "Hide provider details" : "Show provider details"}
+        </button>
+      </div>
 
       {detailsExpanded && (
         <div className="privacy-details">

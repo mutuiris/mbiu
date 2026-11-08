@@ -16,7 +16,7 @@ import { Navbar } from "@/components/Navbar";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
 import { LiveResults } from "@/components/results/LiveResults";
-import { SiteBackdrop, SunburstRays } from "@/components/SiteBackdrop";
+import { SiteBackdrop } from "@/components/SiteBackdrop";
 import { Turnstile } from "@/components/Turnstile";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import {
@@ -59,7 +59,7 @@ function ClausePreviewCard() {
         </span>
       </div>
 
-      <h2 className="mt-1 text-[1.12rem] font-bold leading-tight tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.25rem]">
+      <h2 className="mt-1 text-[1.35rem] font-extrabold leading-tight tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.55rem]">
         Post-term exclusivity
       </h2>
 
@@ -316,6 +316,8 @@ export default function Home() {
           file={selectedFile}
         />
         </main>
+
+        <Footer basePath="/" />
       </div>
     );
   }
@@ -326,20 +328,17 @@ export default function Home() {
 
       <Navbar />
 
-      <main className="relative z-10">
+      <main className="relative z-10" id="hero">
         <section
           id="about"
           className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
         >
           <div className="mx-auto flex w-full max-w-[720px] flex-col items-center text-center xl:mx-0 xl:items-start xl:text-left">
-            <div className="relative inline-block">
-              <SunburstRays className="pointer-events-none absolute -left-7 -top-9 h-11 w-10 text-mbiu-ink dark:text-[#F6F2E9] sm:-left-11 sm:-top-11 sm:h-13 sm:w-12 xl:-left-14 xl:-top-12 xl:h-15 xl:w-13" />
-              <h1 className="font-serif text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-[-0.03em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[1.04]">
-                Understand your contract before you sign it.
-              </h1>
-            </div>
+            <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
+              Understand your contract before you sign it.
+            </h1>
 
-            <p className="mt-4 text-[1.05rem] font-bold tracking-[-0.01em] text-mbiu-ink dark:text-[#F6F2E9] sm:mt-5 sm:text-[1.18rem]">
+            <p className="mt-5 text-[1.1rem] font-bold tracking-[-0.01em] text-mbiu-ink dark:text-[#F6F2E9] sm:mt-6 sm:text-[1.28rem]">
               Your music. Your rights. Your decisions.
             </p>
             <p className="mt-3 max-w-[480px] text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#B9C1C5] sm:mt-4 sm:text-[1.02rem] sm:leading-7">
@@ -374,7 +373,7 @@ export default function Home() {
         >
           <div className="mx-auto flex max-w-[1120px] items-center gap-3 sm:gap-8">
             <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
-            <h2 className="whitespace-nowrap font-serif text-[1.2rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.45rem]">
+            <h2 className="whitespace-nowrap font-serif text-[1.5rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.1rem]">
               How it works
             </h2>
             <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
@@ -409,7 +408,7 @@ export default function Home() {
           className="mx-auto w-full max-w-[880px] scroll-mt-20 px-4 pb-20 sm:scroll-mt-24 sm:px-8 sm:pb-24"
         >
           <div className="landing-upload rounded-[24px] border border-white/70 bg-white/40 p-4 shadow-[0_36px_90px_-48px_rgba(22,26,38,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:rounded-[32px] sm:p-8">
-            <h2 className="font-serif text-[1.25rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.45rem]">
+            <h2 className="font-serif text-[1.65rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
               Upload your contract
             </h2>
             <p className="mt-2 text-[0.92rem] text-mbiu-ink/70 dark:text-[#B9C1C5] sm:text-[0.95rem]">
