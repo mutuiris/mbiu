@@ -1,14 +1,18 @@
 "use client";
 
+// Must load before pdf.js
+import "@/lib/browser-polyfills";
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 
 import { escapeHtml, highlightedItems, pagePosition } from "@/lib/highlight";
 
-// Bundled with the app, so the browser never fetches pdf.js code from a third party
+// Bundled with the app, so the browser never fetches pdf.js code from a third party.
+// The legacy worker carries its own polyfills for browsers without the newest JavaScript.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
+  "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 

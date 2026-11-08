@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 from urllib.parse import unquote, urlsplit
 
 from pydantic import Field, SecretStr
@@ -25,6 +26,8 @@ class Env(BaseSettings):
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model_main: str = "gemini-3.8-flash"
     gemini_model_light: str = "gemini-3.5-flash-lite"
+    # Hidden reasoning before answering: more is slower and costs output tokens
+    gemini_thinking_level: Literal["minimal", "low", "medium", "high"] = "low"
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = "gpt-4o-mini"
     embedding_model_id: str = "gemini-embedding-2"
@@ -82,6 +85,7 @@ OTEL_SERVICE_NAME = env.otel_service_name
 GEMINI_API_KEY = env.gemini_api_key.get_secret_value()
 GEMINI_MODEL_MAIN = env.gemini_model_main
 GEMINI_MODEL_LIGHT = env.gemini_model_light
+GEMINI_THINKING_LEVEL = env.gemini_thinking_level
 OPENAI_API_KEY = env.openai_api_key.get_secret_value()
 OPENAI_MODEL = env.openai_model
 EMBEDDING_MODEL_ID = env.embedding_model_id

@@ -44,11 +44,28 @@ export function SiteBackdrop({ variant = "landing" }: { variant?: "landing" | "r
           className="absolute -right-20 top-[4%] w-[62%] max-w-[520px] opacity-[0.18] mix-blend-multiply dark:-right-10 dark:invert dark:opacity-[0.05] dark:mix-blend-screen sm:w-[46%]"
         />
 
+        {/* Oversized horn stamp behind the feed, quiet enough to read cards over */}
+        <Image
+          src="/brand/mbiu-horn.png"
+          alt=""
+          width={972}
+          height={590}
+          className="absolute left-1/2 top-[26vh] w-[128%] max-w-[820px] -translate-x-1/2 opacity-[0.045] mix-blend-multiply dark:opacity-[0.055] dark:invert dark:mix-blend-screen"
+        />
+
+        <span className="absolute left-1/2 top-[68vh] -translate-x-1/2 select-none font-serif text-[30vw] font-semibold leading-none tracking-tight text-[#161a26]/[0.045] dark:text-white/[0.035]">
+          mbiu
+        </span>
+
         <Rays className="absolute left-[3%] top-[2%] hidden h-12 w-11 text-mbiu-ink/80 sm:block dark:text-white/50" />
         <Music2 className="absolute right-[7%] top-[1%] h-7 w-7 rotate-[10deg] text-mbiu-ink/60 dark:text-white/40" />
+        <Sparkles className="absolute right-[13%] top-[8%] hidden h-5 w-5 text-mbiu-ink/45 sm:block dark:text-white/30" />
 
+        <Music2 className="absolute left-[4%] top-[24%] hidden h-8 w-8 -rotate-[12deg] text-mbiu-ink/45 sm:block dark:text-white/30" />
         <Music2 className="absolute left-[4%] top-[46%] hidden h-8 w-8 -rotate-[12deg] text-mbiu-ink/45 sm:block dark:text-white/30" />
         <Sparkles className="absolute right-[4%] top-[38%] hidden h-5 w-5 text-mbiu-ink/45 sm:block dark:text-white/30" />
+        <Sparkles className="absolute left-[11%] top-[64%] hidden h-5 w-5 text-mbiu-ink/45 sm:block dark:text-white/30" />
+        <Music className="absolute right-[9%] top-[58%] hidden h-7 w-7 rotate-[8deg] text-mbiu-ink/40 sm:block dark:text-white/25" />
 
         <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[172px] text-mbiu-ink/75 dark:text-white/40" />
         <Music2 className="absolute bottom-8 right-[5%] h-9 w-9 rotate-[14deg] text-mbiu-ink/60 dark:text-white/40" />
@@ -72,7 +89,6 @@ export function SiteBackdrop({ variant = "landing" }: { variant?: "landing" | "r
         className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-35 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-45 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
       />
 
-      <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
       <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[170px] text-mbiu-ink/15 sm:h-[240px] sm:w-[205px] dark:text-white/20" />
 
       <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />
