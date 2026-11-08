@@ -31,21 +31,21 @@ export default function TermsPage() {
 
         {/* Full-width Card Body spanning from left edge to right edge */}
         <div className="w-full rounded-[28px] border border-white/70 bg-white/60 p-6 shadow-[0_30px_80px_-56px_rgba(22,26,38,0.6)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] sm:p-10 md:p-12">
-          <h1 className="font-serif text-[2.2rem] font-semibold tracking-[-0.03em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.8rem]">
+          <h1 className="font-serif text-[1.5rem] font-semibold tracking-[-0.025em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.85rem]">
             Terms of Service
           </h1>
 
-          <p className="mt-3 text-[1rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
+          <p className="mt-2 text-[0.95rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
             Clear, binding rules governing your use of the Mbiu platform.
           </p>
 
-          <div className="mt-8 space-y-8 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
+          <div className="mt-7 space-y-7 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
             {/* Section 1 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 1. About Mbiu &amp; Support
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu is a legal-tech educational initiative created by The Agwambos through the
                 Innovation Pillar competition at KamiLimu. The project has been mentored and
                 supported by KamiLimu Limited (Nairobi, Kenya) from problem and solution validation
@@ -66,11 +66,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 2 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 2. Eligibility, Authority &amp; Confidentiality
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 <strong>Age limit (18+):</strong> You must be at least 18 years old to use Mbiu.
                 Minors may not submit documents directly.
               </p>
@@ -87,11 +87,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 3 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 3. Informational Purpose &amp; Not Legal Advice
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu provides plain-language clause explanations, comparative analysis against
                 industry standard templates, and suggested inquiry questions for educational and
                 civic contract literacy purposes. The content provided on this platform does{" "}
@@ -107,11 +107,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 4 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 4. 100% Artist Intellectual Property Ownership
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 You retain full, exclusive copyright and moral rights over your musical works, sound
                 recordings, master tracks, lyrics, and uploaded contract text under the Kenya
                 Copyright Act (Cap 130).
@@ -123,11 +123,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 5 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 5. Zero-Storage Architecture
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu operates on a strict zero-storage architecture. Your contract is evaluated purely
                 in volatile computer memory (RAM).
               </p>
@@ -139,11 +139,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 6 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 6. Acceptable Use
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 You agree to use Mbiu solely for lawful, authorized contract review. You agree not to:
               </p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.92rem]">
@@ -155,11 +155,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 7 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 7. Limitations of Liability (&ldquo;As-Is&rdquo;)
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 Mbiu is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis
                 without warranty of any kind, whether express or implied.
               </p>
@@ -171,11 +171,11 @@ export default function TermsPage() {
             </section>
 
             {/* Section 8 */}
-            <section className="border-t border-mbiu-ink/10 pt-6 dark:border-white/10">
-              <h2 className="font-serif text-[1.25rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 8. Governing Law &amp; Jurisdiction
               </h2>
-              <p className="mt-2.5">
+              <p className="mt-2">
                 These Terms are governed by and construed in accordance with the Laws of the
                 Republic of Kenya, including the Law of Contract Act (Cap 23) and the Copyright Act
                 (Cap 130).

@@ -27,27 +27,27 @@ export default function ResultsPage() {
             Contract check
           </p>
           <h1
-            className={`mt-3 font-serif font-medium leading-[0.95] tracking-[-0.035em] text-mbiu-ink transition-all dark:text-[#F6F2E9] ${
+            className={`mt-3 font-serif font-medium leading-[1.05] tracking-[-0.03em] text-mbiu-ink transition-all dark:text-[#F6F2E9] ${
               stream
-                ? "text-[2.1rem] sm:text-[2.6rem]"
-                : "text-[clamp(2.5rem,5.4vw,3.6rem)]"
+                ? "text-[1.45rem] sm:text-[1.75rem]"
+                : "text-[clamp(1.6rem,2.8vw,2.25rem)]"
             }`}
           >
             Your contract, clause by clause.
           </h1>
-          <p className="mt-4 text-[1rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
+          <p className="mt-3 text-[0.95rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
             Real-time clause analysis. Cards appear in order of importance to you as they finish
             checking.
           </p>
         </header>
 
         {!stream ? (
-          <section className="mt-10" aria-label="Start evaluation options">
+          <section className="mt-8" aria-label="Start evaluation options">
             <div className="rounded-[28px] border border-white/70 bg-white/55 p-7 shadow-[0_30px_80px_-56px_rgba(22,26,38,0.65)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] sm:p-9">
               <span className="inline-flex items-center gap-2 rounded-full bg-mbiu-peach/40 px-3.5 py-1.5 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-mbiu-warning-text dark:bg-mbiu-peach/15 dark:text-[#f3c9b8]">
                 Live preview
               </span>
-              <h2 className="mt-5 font-serif text-[1.9rem] font-medium leading-tight tracking-[-0.02em] dark:text-[#F6F2E9] sm:text-[2.2rem]">
+              <h2 className="mt-4 font-serif text-[1.25rem] font-medium leading-tight tracking-[-0.02em] dark:text-[#F6F2E9] sm:text-[1.45rem]">
                 See how a contract check works.
               </h2>
               <p className="mt-3 max-w-[560px] text-[0.98rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">

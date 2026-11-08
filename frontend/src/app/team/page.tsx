@@ -21,22 +21,22 @@ export default function TeamPage() {
             Contributors
           </span>
 
-          <h1 className="mt-4 font-serif text-[2.2rem] font-semibold tracking-[-0.03em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.8rem]">
+          <h1 className="mt-3 font-serif text-[1.5rem] font-semibold tracking-[-0.025em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.85rem]">
             Our Team
           </h1>
 
-          <p className="mt-3 text-[1rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
+          <p className="mt-2 text-[0.95rem] leading-relaxed text-mbiu-ink-muted dark:text-[#c2c9cd]">
             The independent team building Mbiu as part of the 2026 Mozilla x KamiLimu Buildathon.
           </p>
 
-          <div className="mt-8 space-y-6 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
+          <div className="mt-7 space-y-6 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d2d9de]">
             <p>
               We are software engineers, researchers, and creators based in Nairobi, Kenya. We build
               open-access technology to protect independent musicians and creative workers.
             </p>
 
             <div className="rounded-2xl border border-mbiu-ink/10 bg-white/50 p-6 dark:border-white/10 dark:bg-white/[0.04]">
-              <h2 className="font-serif text-[1.2rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9]">
+              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 Mozilla x KamiLimu Innovation
               </h2>
               <p className="mt-2 text-[0.92rem] text-mbiu-ink/80 dark:text-[#B9C1C5]">
