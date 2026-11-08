@@ -5,7 +5,12 @@ import Image from "next/image";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function Navbar({ basePath = "" }: { basePath?: string }) {
+export interface NavbarProps {
+  basePath?: string;
+  onUploadClick?: () => void;
+}
+
+export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const href = (hash: string) => `${basePath}${hash}`;
@@ -95,6 +100,7 @@ export function Navbar({ basePath = "" }: { basePath?: string }) {
           <div className="hidden md:block rounded-full bg-mbiu-ink/[0.04] p-1 dark:bg-white/[0.05]">
             <a
               href={href("#upload")}
+              onClick={onUploadClick}
               className="inline-flex h-10 lg:h-11 items-center justify-center gap-2 rounded-full bg-mbiu-indigo px-4 lg:px-6 text-[0.9rem] font-semibold text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark"
             >
               <span>Upload your contract</span>
@@ -109,7 +115,7 @@ export function Navbar({ basePath = "" }: { basePath?: string }) {
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isOpen}
             aria-controls="mobile-menu"
-            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/10 bg-white/70 text-mbiu-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/10 dark:bg-white/5 dark:text-[#F4EFE6] dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
+            className="grid h-10 w-10 place-items-center rounded-full border border-mbiu-ink/20 bg-white text-mbiu-ink shadow-xs transition hover:border-mbiu-ink/40 hover:bg-[#faf7f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo md:hidden dark:border-white/20 dark:bg-white/[0.06] dark:text-[#F4EFE6] dark:hover:border-white/40 dark:hover:bg-white/10 dark:focus-visible:outline-mbiu-indigo-dark"
           >
             {isOpen ? (
               <X className="h-5 w-5" strokeWidth={2.2} />
