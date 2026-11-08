@@ -358,7 +358,7 @@ export default function Home() {
 
             <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Mbiu does not store your contracts on our servers.
+              Mbiu does not store your contracts
             </p>
           </div>
 
