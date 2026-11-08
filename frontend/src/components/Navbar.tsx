@@ -21,7 +21,17 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
     () => false
   );
   const menuRef = useRef<HTMLDivElement>(null);
-  const href = (hash: string) => `${basePath}${hash}`;
+  const href = (target: string) => {
+    if (target.startsWith("#")) {
+      return basePath ? `${basePath}${target}` : target;
+    }
+    if (!basePath || basePath === "/") {
+      return target.startsWith("/") ? target : `/${target}`;
+    }
+    const cleanBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+    const cleanTarget = target.startsWith("/") ? target : `/${target}`;
+    return `${cleanBase}${cleanTarget}`;
+  };
 
   // Close menu on ESC key
   useEffect(() => {
@@ -82,7 +92,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         {/* Drawer Header: Logo on left, Close button on right */}
         <div className="flex items-center justify-between">
           <a
-            href={basePath || "#"}
+            href={href("/")}
             className="flex items-center gap-1.5 transition hover:opacity-90"
             onClick={closeMenu}
           >
@@ -115,7 +125,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         {/* Vertical Navigation Links (Clean plain-text stacked list) */}
         <nav className="flex flex-col gap-5 py-2 text-[1rem] font-medium text-mbiu-ink dark:text-[#F6F2E9]">
           <a
-            href={href("#")}
+            href={href("/")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
@@ -131,14 +141,6 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
           </a>
 
           <a
-            href={href("#privacy")}
-            onClick={closeMenu}
-            className="transition hover:text-mbiu-indigo dark:hover:text-white"
-          >
-            Privacy
-          </a>
-
-          <a
             href={href("#about")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
@@ -147,7 +149,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
           </a>
 
           <a
-            href={basePath ? `${basePath}/terms` : "/terms"}
+            href={href("/terms")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
@@ -155,7 +157,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
           </a>
 
           <a
-            href={basePath ? `${basePath}/privacy` : "/privacy"}
+            href={href("/privacy")}
             onClick={closeMenu}
             className="transition hover:text-mbiu-indigo dark:hover:text-white"
           >
@@ -187,7 +189,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
         >
           {/* Brand Logo */}
           <a
-            href={basePath || "#"}
+            href={href("/")}
             className="flex shrink-0 items-center gap-1 sm:gap-1.5 pl-0.5 transition hover:opacity-90"
             aria-label="Mbiu home"
             onClick={closeMenu}
@@ -214,7 +216,7 @@ export function Navbar({ basePath = "", onUploadClick }: NavbarProps) {
               How it works
             </a>
             <a
-              href={href("#privacy")}
+              href={href("/privacy")}
               className="transition hover:text-mbiu-indigo dark:hover:text-white"
             >
               Privacy
