@@ -127,22 +127,6 @@ describe("ClauseCard", () => {
     expect(html).toContain("+2");
   });
 
-  it("shows the shillings steps when the contract quotes figures", () => {
-    const html = render();
-    expect(html).toContain('data-testid="shillings-calculator"');
-    expect(html).toContain("If the label receives");
-  });
-
-  it("draws no calculator box when nothing is quoted as a number", () => {
-    const html = render({
-      result: {
-        ...mockWorseResult,
-        impact_inputs: { royalty_rate_percent: null, money_basis: null, deductions: [{ quote: "fees", value: "fees" }] },
-      },
-    });
-    expect(html).not.toContain('data-testid="shillings-calculator"');
-  });
-
   it("links to the clause's page in the contract", () => {
     const html = render({ onJumpToPdfClause: () => {} });
     expect(html).toContain("View on page 4");

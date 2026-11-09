@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
 
 // Fonts ship with the app, so builds never fetch from Google and visitors never contact it
 import "@fontsource-variable/fraunces/wght.css";

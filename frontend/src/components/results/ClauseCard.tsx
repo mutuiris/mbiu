@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
 import { outcomeLabel } from "@/lib/outcome";
 import { cleanReferenceText, displayNumber, readableClauseName } from "@/lib/report";
-import { ShillingsCalculator } from "./ShillingsCalculator";
 import { Fold, OutcomePill, ReportCard } from "./ui";
 
 export interface LinkedClauseItem {
@@ -203,8 +202,6 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
       <Fold summary="Why it matters" className="lg:hidden">
         <p className="pb-1 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d6dadc]">{result.what_it_means}</p>
       </Fold>
-
-      <ShillingsCalculator inputs={result.impact_inputs} />
 
       {(comparison || sources) && (
         <div className="mt-4" data-testid="how-it-compares-section">
