@@ -3,7 +3,6 @@
 > **Severity:** Critical  
 > **Target Audience:** On-call engineer (2 a.m. playbook)  
 > **System Component:** `backend/config/settings.py`, Supabase PostgreSQL / Supavisor  
-> **Relevant Tickets:** MB-10, MB-28, MB-30  
 
 ---
 
@@ -26,7 +25,7 @@ If the Supabase project enters a **PAUSED** state (due to free-tier inactivity, 
 Mbiu configures two distinct database connection URLs:
 1. **`DATABASE_URL` (Port 6543 — Transaction Mode Pooler):**
    * Connects via Supavisor / PgBouncer for API traffic.
-   * **Mandatory Setting:** `CONN_MAX_AGE: 0` in [`backend/config/settings.py`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/backend/config/settings.py) to ensure connections are released immediately after each query. A saturated pooler usually indicates another client holding connections.
+   * **Mandatory Setting:** `CONN_MAX_AGE: 0` in [`backend/config/settings.py`](../../backend/config/settings.py) to ensure connections are released immediately after each query. A saturated pooler usually indicates another client holding connections.
 2. **`DATABASE_DIRECT_URL` (Port 5432 — Session Mode / Direct):**
    * Used strictly for running schema migrations (`manage.py migrate`) and heavy corpus batch ingestion scripts.
 
@@ -66,7 +65,7 @@ curl -i http://localhost:8000/readyz
 ### Scenario B: Connection Pooler (Supavisor) Exhaustion
 If the database is active but connections are timing out with pooler errors:
 1. **Verify `CONN_MAX_AGE` Setting:**
-   Confirm in [`backend/config/settings.py`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/backend/config/settings.py) that `CONN_MAX_AGE` is set to `0`:
+   Confirm in [`backend/config/settings.py`](../../backend/config/settings.py) that `CONN_MAX_AGE` is set to `0`:
    ```python
    # Must be 0 for transaction-mode poolers
    "CONN_MAX_AGE": 0,

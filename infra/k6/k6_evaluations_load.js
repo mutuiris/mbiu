@@ -1,5 +1,5 @@
 /**
- * Mbiu Load & Stress Test Suite — Ticket MB-30
+ * Mbiu load and stress test suite
  * 
  * Benchmark scenarios for evaluation stream at the maximum upload cap (40 pages).
  * Evaluates three primary scenarios:

@@ -42,11 +42,20 @@ describe("SummaryCard", () => {
     expect(renderToStaticMarkup(<SummaryCard summary={{ ...summary, missing_protections: [] }} />)).toBe("");
   });
 
-  it("summarizes typical and unusual clauses concisely instead of repeating Typical rows", () => {
+  it("summarizes typical and unusual clauses without claiming they have no impact", () => {
     const html = renderToStaticMarkup(
       <SummaryCard summary={{ ...summary, matches_count: 16 }} typicalCount={16} unusualCount={3} />,
     );
-    expect(html).toContain("16 clauses were typical, and 3 were unusual but have no major impact.");
+    expect(html).toContain("16 clauses were typical and 3 were unusual.");
+    expect(html).not.toContain("no major impact");
     expect(html).not.toContain("Typical: it matches the reviewed standard.");
+  });
+
+  it("keeps the good news the analysis found", () => {
+    const html = renderToStaticMarkup(
+      <SummaryCard summary={{ ...summary, good_news: [{ clause_id: "c-1", text: "You keep your masters." }] }} />,
+    );
+    expect(html).toContain("Good news");
+    expect(html).toContain("You keep your masters.");
   });
 });

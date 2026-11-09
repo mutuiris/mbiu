@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Mbiu Load Testing Runner Script — Ticket MB-30
+# Mbiu load testing runner script
 #
 # Runs k6 evaluation stream load benchmarks against a target Mbiu API instance.
 # Usage:
