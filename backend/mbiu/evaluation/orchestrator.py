@@ -274,6 +274,7 @@ async def _compare_clauses(
                         provider=provider,
                         model=model,
                         raise_on_error=raise_on_error,
+                        contract_type=contract_type,
                     )
                 except LLMError as err:
                     return err
@@ -579,6 +580,7 @@ async def _evaluate_single_clause(
     provider: Provider = Provider.GEMINI,
     model: str = settings.GEMINI_MODEL_MAIN,
     raise_on_error: bool = False,
+    contract_type: str | None = None,
 ) -> ClauseResult:
     """Evaluate one clause against the template evidence retrieved for it."""
     links = linked_clauses or []
@@ -601,7 +603,7 @@ async def _evaluate_single_clause(
                 source=primary_ev.source_title,
             )
         )
-    exemplar = retrieve_annotated_exemplar(clause.text)
+    exemplar = retrieve_annotated_exemplar(clause.text, contract_type=contract_type)
     if exemplar is not None:
         content_parts.append(
             as_data(
