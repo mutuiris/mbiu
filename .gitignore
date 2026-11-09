@@ -20,6 +20,8 @@ node_modules/
 out/
 .vercel/
 *.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo
 next-env.d.ts
 
 # OS / editors
@@ -34,3 +36,9 @@ env.sh
 docs/implementation_specific/
 docs/problem_architecture_planning/
 .agents/
+
+# Corpus pipeline output, rebuilt from sources
+corpus/clauses/
+
+# Vercel CLI project link
+.vercel/

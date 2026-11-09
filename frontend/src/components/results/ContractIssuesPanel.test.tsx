@@ -1,10 +1,9 @@
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
-import { ClauseCard } from "./ClauseCard";
 import { parseNDJSONStream } from "../../lib/api/stream";
 import type { ContractIssue, ClauseResult } from "../../lib/api/generated/types.gen";
 
@@ -66,7 +65,6 @@ const mockClauseResult: ClauseResult = {
   evidence_ids: [],
   comparison_note: "Subject to override in clause 19.",
   evidence_quote: null,
-  fairer_wording: "Royalties continue during non-material suspensions.",
   standard_excerpt: "Standard terms protect accrued royalties.",
   standard_template_id: "std-rec-kenya-2024",
   ask_them: "Can we ensure royalties are protected during administrative suspension?",
@@ -75,197 +73,80 @@ const mockClauseResult: ClauseResult = {
   model_version: "gemini-3.8-flash",
 };
 
-describe("ContractIssuesPanel (MB-15)", () => {
+describe("ContractIssuesPanel", () => {
+  const five: ContractIssue[] = Array.from({ length: 5 }, (_, i) => ({
+    ...mockIssues[i % 2],
+    explanation: `Issue number ${i + 1}.`,
+  }));
+
   it("renders nothing when issues array is empty or undefined", () => {
-    const markupEmpty = renderToStaticMarkup(<ContractIssuesPanel issues={[]} />);
-    expect(markupEmpty).toBe("");
-
+    expect(renderToStaticMarkup(<ContractIssuesPanel issues={[]} />)).toBe("");
     // @ts-expect-error testing falsy issues prop
-    const markupUndefined = renderToStaticMarkup(<ContractIssuesPanel issues={undefined} />);
-    expect(markupUndefined).toBe("");
+    expect(renderToStaticMarkup(<ContractIssuesPanel issues={undefined} />)).toBe("");
   });
 
-  it("renders all contract-wide issues with counts, explanations, and disclaimer", () => {
-    const html = renderToStaticMarkup(
-      <ContractIssuesPanel issues={mockIssues} clauseLookup={mockClauseLookup} />
-    );
-
-    // Section container and header count
+  it("names clashes in plain words and says the disclaimer once", () => {
+    const html = renderToStaticMarkup(<ContractIssuesPanel issues={mockIssues} clauseLookup={mockClauseLookup} />);
     expect(html).toContain('data-testid="contract-issues-panel"');
-    expect(html).toContain("Contract-Wide Issues (2)");
-
-    // Plain-language explanations
-    expect(html).toContain(
-      "Clause 19 claims to override all royalty rights granted in clause 7.2"
-    );
-    expect(html).toContain("Clause 3.1 states masters revert after 3 years");
-
-    // Both badges present
-    expect(html).toContain("Override Claim");
-    expect(html).toContain("Contradiction / Conflict");
-
-    // Impartial disclaimer (Mbiu reports override claims; never decides court application)
-    expect(html).toContain(
-      "Mbiu reports that one clause claims to override another; it never decides which a court would apply."
-    );
-
-    // Verbatim quotes in collapsible details
-    expect(html).toContain("Artist shall receive 15% royalty on all net sales.");
-    expect(html).toContain(
-      "Notwithstanding clause 7.2 or any other provision, no royalties accrue during suspension."
-    );
+    expect(html).toContain("Clauses that clash");
+    expect(html).toContain("One clause cancels another");
+    expect(html).toContain("Two clauses disagree");
+    expect(html).toContain("Clause 19 claims to override all royalty rights granted in clause 7.2");
+    const disclaimer = "Mbiu shows where one clause claims to override another. It never decides which a court would apply.";
+    expect(html.split(disclaimer)).toHaveLength(2);
+    expect(html).not.toContain("Contract-Wide");
   });
 
-  it('formats both clause locations in plain language ("Page 4, clause 7.2 and page 11, clause 19")', () => {
+  it("names both clauses for artists and offers to show them", () => {
     const html = renderToStaticMarkup(
-      <ContractIssuesPanel issues={[mockIssues[0]]} clauseLookup={mockClauseLookup} />
+      <ContractIssuesPanel issues={[mockIssues[0]]} clauseLookup={mockClauseLookup} onSelectClause={() => {}} />,
     );
-
-    // Plain language location formatting
-    expect(html).toContain("Page 4, clause 7.2");
-    expect(html).toContain("Page 11, clause 19");
-    expect(html).toContain('class="locations-separator"> and </span>');
+    expect(html).toContain("Clause 7.2 · Royalties");
+    expect(html).toContain("Clause 19 · Suspension");
+    expect(html).toContain("See both");
+    expect(html).toContain("See the exact words");
   });
 
-  it("handles fallback formatting when clause lookup has no metadata", () => {
-    const issueWithoutMeta: ContractIssue = {
-      clause_ids: ["raw-id-A", "raw-id-B"],
-      pages: [2, 6],
-      kind: "conflict",
-      explanation: "Direct clause conflict.",
-      quotes: ["quote 1", "quote 2"],
-    };
-
+  it("never shows internal clause ids", () => {
     const html = renderToStaticMarkup(
-      <ContractIssuesPanel issues={[issueWithoutMeta]} />
+      <ContractIssuesPanel
+        issues={[{ clause_ids: ["raw-id-A", "raw-id-B"], pages: [2, 6], kind: "conflict", explanation: "Direct clause conflict.", quotes: ["quote 1", "quote 2"] }]}
+      />,
     );
-
-    expect(html).toContain("Page 2, clause raw-id-A");
-    expect(html).toContain("Page 2, clause raw-id-B");
+    expect(html).not.toContain("raw-id-A");
+    expect(html).toContain("Direct clause conflict.");
   });
 
-  it("triggers onSelectClause callback when clause location button is tapped", () => {
-    const onSelectClause = vi.fn();
+  it("shows the first three of five and offers the rest", () => {
+    const html = renderToStaticMarkup(<ContractIssuesPanel issues={five} clauseLookup={mockClauseLookup} />);
+    expect(html).toContain("Issue number 3.");
+    expect(html).not.toContain("Issue number 4.");
+    expect(html).toContain("Show all 5");
+  });
 
-    // Render component pure function to inspect React elements
-    const element = ContractIssuesPanel({
-      issues: [mockIssues[0]],
-      clauseLookup: mockClauseLookup,
-      onSelectClause,
-    });
+  it("drops the disclaimer the rules append to each explanation", () => {
+    const html = renderToStaticMarkup(
+      <ContractIssuesPanel
+        issues={[
+          {
+            ...mockIssues[0],
+            explanation:
+              "Clause 6.2 claims to override clause 6.1. Mbiu reports that one clause claims to override another; it never decides which a court would apply.",
+          },
+        ]}
+      />,
+    );
+    expect(html).toContain("Clause 6.2 claims to override clause 6.1.");
+    expect(html).not.toContain("Mbiu reports that one clause");
+  });
 
-    expect(element).not.toBeNull();
-    const sectionChildren = React.Children.toArray((element as React.ReactElement<{ children: React.ReactNode }>).props.children);
-    const issuesList = sectionChildren[1] as React.ReactElement<{ children: React.ReactNode }>;
-    const issueArticles = React.Children.toArray(issuesList.props.children) as React.ReactElement<{ children: React.ReactNode }>[];
-    const firstArticle = issueArticles[0];
-    const articleChildren = React.Children.toArray(firstArticle.props.children);
-    const metaDiv = articleChildren[0] as React.ReactElement<{ children: React.ReactNode }>;
-    const metaChildren = React.Children.toArray(metaDiv.props.children);
-    const locationsDiv = metaChildren[1] as React.ReactElement<{ children: React.ReactNode }>;
-    const locationElements = React.Children.toArray(locationsDiv.props.children);
-
-    const btn1 = locationElements[0] as React.ReactElement<{ onClick?: () => void }>;
-    const btn2 = locationElements[2] as React.ReactElement<{ onClick?: () => void }>;
-
-    btn1.props.onClick?.();
-    expect(onSelectClause).toHaveBeenCalledWith("c-1");
-
-    btn2.props.onClick?.();
-    expect(onSelectClause).toHaveBeenCalledWith("c-4");
+  it("offers no 'show all' for three or fewer", () => {
+    expect(renderToStaticMarkup(<ContractIssuesPanel issues={mockIssues} />)).not.toContain("Show all");
   });
 });
 
-describe("ClauseCard 'Also affected by' & clause_updated Notice (MB-15)", () => {
-  it("renders 'Also affected by' links with kind badges on ClauseCard", () => {
-    const onSelectClause = vi.fn();
-    const linkedClauses = [
-      {
-        clauseId: "c-4",
-        label: "Clause 19 (Suspension)",
-        kind: "override",
-      },
-      {
-        clauseId: "c-6",
-        label: "Clause 22 (Notice)",
-        kind: "explicit_ref",
-      },
-    ];
 
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockClauseResult}
-        linkedClauses={linkedClauses}
-        onSelectClause={onSelectClause}
-      />
-    );
-
-    expect(html).toContain('data-testid="also-affected-by"');
-    expect(html).toContain("Also affected by:");
-    expect(html).toContain("Clause 19 (Suspension)");
-    expect(html).toContain("Clause 22 (Notice)");
-    expect(html).toContain("override");
-  });
-
-  it("renders subtle update notice when isUpdated is true", () => {
-    const htmlUpdated = renderToStaticMarkup(
-      <ClauseCard
-        result={mockClauseResult}
-        isUpdated={true}
-      />
-    );
-
-    expect(htmlUpdated).toContain('data-testid="clause-updated-notice"');
-    expect(htmlUpdated).toContain("Result updated based on whole-contract check");
-
-    const htmlNotUpdated = renderToStaticMarkup(
-      <ClauseCard
-        result={mockClauseResult}
-        isUpdated={false}
-      />
-    );
-
-    expect(htmlNotUpdated).not.toContain('data-testid="clause-updated-notice"');
-  });
-
-  it("calls onSelectClause when an affected-by button is clicked", () => {
-    const onSelectClause = vi.fn();
-    const linkedClauses = [
-      {
-        clauseId: "c-4",
-        label: "Clause 19 (Suspension)",
-        kind: "override",
-      },
-    ];
-
-    const element = ClauseCard({
-      result: mockClauseResult,
-      linkedClauses,
-      onSelectClause,
-    });
-
-    const rootChildren = React.Children.toArray((element as React.ReactElement<{ children: React.ReactNode }>).props.children);
-    const comparisonSection = rootChildren.find(
-      (child) => React.isValidElement(child) && (child as React.ReactElement<{ className?: string }>).props.className === "card-comparison-section"
-    ) as React.ReactElement<{ children: React.ReactNode }>;
-
-    expect(comparisonSection).toBeDefined();
-    const compChildren = React.Children.toArray(comparisonSection.props.children);
-    const affectedDiv = compChildren.find(
-      (child) => React.isValidElement(child) && (child as React.ReactElement<{ className?: string }>).props.className === "card-affected-by"
-    ) as React.ReactElement<{ children: React.ReactNode }>;
-
-    expect(affectedDiv).toBeDefined();
-    const affectedChildren = React.Children.toArray(affectedDiv.props.children);
-    const linksDiv = affectedChildren[1] as React.ReactElement<{ children: React.ReactNode }>;
-    const linkBtn = React.Children.toArray(linksDiv.props.children)[0] as React.ReactElement<{ onClick?: () => void }>;
-
-    linkBtn.props.onClick?.();
-    expect(onSelectClause).toHaveBeenCalledWith("c-4");
-  });
-});
-
-describe("Stream parsing for contract_map and clause_updated (MB-15)", () => {
+describe("Stream parsing for contract_map and clause_updated", () => {
   it("parses contract_map event from stream", async () => {
     const contractMapLine = JSON.stringify({
       type: "contract_map",
@@ -327,7 +208,7 @@ describe("Stream parsing for contract_map and clause_updated (MB-15)", () => {
   });
 });
 
-describe("Responsive design at 360px wide (MB-15)", () => {
+describe("Responsive design at 360px wide", () => {
   it("includes responsive rules for narrow viewports (<=400px down to 360px)", () => {
     const cssPath = resolve(process.cwd(), "src/app/globals.css");
     const cssContent = readFileSync(cssPath, "utf-8");

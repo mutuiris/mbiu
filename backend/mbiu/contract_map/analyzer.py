@@ -1,4 +1,4 @@
-"""AI-assisted whole-contract map analyzer and quote verification (MB-14).
+"""AI-assisted whole-contract map analyzer and quote verification.
 
 Runs overview or batched checks using Gemini with store=False.
 Enforces the core safety rule:
@@ -21,6 +21,7 @@ from mbiu.contract_map.candidates import CandidatePair
 from mbiu.contract_map.deterministic import OverrideOccurrence
 from mbiu.contract_map.rules import check_deterministic_issues
 from mbiu.documents.segment import Clause, SegmentedDocument
+from mbiu.llm import as_data
 from mbiu.llm.gemini import Gemini
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,8 @@ class IssueProposal(BaseModel):
     """Proposal for a contract-wide issue returned by the LLM."""
 
     kind: Literal["conflict", "override"]
-    clause_ids: list[str] = Field(min_length=2, max_length=2)
-    quotes: list[str] = Field(min_length=2, max_length=2)
+    clause_ids: list[str]
+    quotes: list[str]
     explanation: str
 
 
@@ -63,6 +64,9 @@ def verify_issue_quotes(
 
     Code verification ensures hallucinated quotes are never admitted.
     """
+    if len(proposal.clause_ids) != 2 or len(proposal.quotes) != 2:
+        return False
+
     id_1, id_2 = proposal.clause_ids[0], proposal.clause_ids[1]
     if id_1 == id_2:
         return False
@@ -121,27 +125,29 @@ async def analyze_contract_issues(
     if llm is None or not candidate_pairs:
         return deterministic_issues
 
-    # 2. Model overview pass
+    # 2. Model overview pass (capped timeout so it never stalls clause evaluation)
     system_prompt = load_contract_map_prompt()
-    effective_deadline = deadline if deadline is not None else time.monotonic() + 30.0
+    now = time.monotonic()
+    effective_deadline = min(deadline, now + 15.0) if deadline is not None else now + 15.0
 
     # Build context for the candidate pairs
     prompt_lines: list[str] = [
         "Analyze the following candidate clause pairs from the contract "
         "for conflicts or overrides:\n"
     ]
-    for idx, pair in enumerate(candidate_pairs[:20], start=1):
-        prompt_lines.append(f"--- Candidate Pair {idx} (Reasons: {', '.join(pair.reasons)}) ---")
-        title_a = pair.clause_a.title or "Untitled"
-        prompt_lines.append(
-            f"Clause {pair.clause_a.clause_id} ({title_a}, "
-            f"Page {pair.clause_a.pages}):\n{pair.clause_a.text}\n"
-        )
-        title_b = pair.clause_b.title or "Untitled"
-        prompt_lines.append(
-            f"Clause {pair.clause_b.clause_id} ({title_b}, "
-            f"Page {pair.clause_b.pages}):\n{pair.clause_b.text}\n"
-        )
+    for idx, pair in enumerate(candidate_pairs[:10], start=1):
+        prompt_lines.append(f"Candidate pair {idx} (reasons: {', '.join(pair.reasons)}):")
+        # Contract text is untrusted, so it goes in data blocks the prompt treats as data
+        for clause in (pair.clause_a, pair.clause_b):
+            prompt_lines.append(
+                as_data(
+                    "contract_clause",
+                    clause.text,
+                    clause_id=clause.clause_id,
+                    title=clause.title or "Untitled",
+                    pages=",".join(str(p) for p in clause.pages),
+                )
+            )
 
     user_prompt = "\n".join(prompt_lines)
 

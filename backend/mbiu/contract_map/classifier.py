@@ -1,4 +1,4 @@
-"""Contract type classification for whole-contract mapping (MB-14).
+"""Contract type classification for whole-contract mapping.
 
 Identifies the contract type against reviewed standard templates:
 - 'recording'

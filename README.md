@@ -47,22 +47,26 @@ Lawyers feel too expensive or too slow for small deals, so many artists sign wit
 1. **Upload.** The artist reads a short privacy notice, confirms they may share the document, and uploads a text-based PDF from a phone or computer.
 2. **See the contract.** Within seconds, the contract appears split into clauses while the checks run.
 3. **Contract-wide issues first.** Clauses that contradict or override each other across pages are shown at the top.
-4. **Result cards, most important first.** Money, ownership, term, exclusivity and termination come before boilerplate. Each card shows:
-   - what the clause says and what it means for the artist;
-   - how it compares with the standard, with numbers;
-   - a worked example in shillings where money is involved;
-   - fairer wording taken from the standard template;
-   - one specific question to ask the other party.
-5. **Summary.** The top three things to ask about, protections missing from the contract, good news, and an *ask list* that gathers every question into one message.
-6. **Follow-up chat.** Questions answered from the contract and the templates only, with citations.
-7. **Take it with you.** The artist downloads the full evaluation as a PDF report, or shares it to WhatsApp or email.
+4. **High-impact clause highlighting.** Key terms governing royalties, ownership, term, exclusivity, indemnity, and termination are highlighted first. Standard boilerplate (notices, governing law, etc.) is cleanly collapsed into a compact section so the artist can focus on what matters most.
+5. **Concise result cards.** Cards follow a strict 8-part visual hierarchy:
+   - **Heading:** Clause number/title, plain-language topic title (no legal jargon), and neutral label symbol + text (e.g. `Clause 7.2, Post-term exclusivity · 🟠 Worth asking about`).
+   - **What your contract says:** Exact quote from the contract, verified by code.
+   - **In plain language:** 1–2 short, jargon-free sentences.
+   - **Why this may matter to you:** Practical consequences for money, music, time, or freedom, using objective "may" and "could" phrasing (plus illustrative KES worked examples for money clauses).
+   - **How it compares:** What standard reference templates usually do.
+   - **Questions you could ask:** 1 to 3 neutral, specific questions for the artist to ask counterparty (with Copy and WhatsApp share).
+   - **Sources:** Reference contract title and page when cited.
+   - **Notice:** Fixed educational disclaimer: *"This explains what the contract says compared with reference material. It doesn't say whether a clause is lawful or enforceable, and it isn't legal advice."*
+6. **Summary & Reverse Check.** Top 3 questions to ask, standard protections missing from the contract ("Not found in your contract"), good news, and an ask list.
+7. **Take it with you (Downloadable Report).** The artist downloads or prints a complete evaluation report formatted in strict black-and-white, Times New Roman 12pt, including a numbered negotiation checklist with checkable boxes and writing lines for meeting notes.
 
 ## What Mbiu is not
 
 - Not a lawyer, a legal opinion or a negotiator.
 - Never says "sign" or "don't sign".
-- Does not decide whether a clause is enforceable.
-- Does not generate contracts.
+- Does not judge whether a clause is lawful or enforceable.
+- Does not draft contracts or suggest substitute contract wording (preparing legal documents is restricted under Kenya's Advocates Act; Mbiu provides questions to ask).
+- Does not offer open-ended follow-up chat (to eliminate hallucination and legal drafting risks; the evaluation gives the artist the targeted questions to ask directly).
 
 ## Privacy promise
 
@@ -84,13 +88,12 @@ Every provider that receives contract text is listed in [`docs/data-transfers.md
 flowchart LR
     A[Artist's browser<br/>Next.js on Vercel] -- PDF upload --> B[Mbiu API<br/>Django on ASGI]
     B -- streamed results --> A
-    B -- clause comparison --> G[Gemini<br/>OpenAI as failover]
-    B -- in-process --> E[EmbeddingGemma 2<br/>embeddings]
+    B -- clause comparison and embeddings --> G[Gemini<br/>OpenAI as failover]
     C[(Reference corpus<br/>Supabase Postgres + pgvector)] -- loaded once at startup --> B
     P[Corpus pipeline<br/>scheduled job] -- publishes versions --> C
 ```
 
-- **Web app (Next.js):** privacy notice, upload, streamed result cards, summary, follow-up chat, PDF report.
+- **Web app (Next.js):** privacy notice, upload, streamed result cards, high-impact focus with collapsed boilerplate, summary, and printable black-and-white PDF report.
 - **API (Django + django-ninja):** validates the upload, extracts text, splits clauses, compares them and verifies each result, streaming results as they finish. It runs in one container and holds no state between requests.
 - **Reference corpus (Supabase):** reviewed standard templates, Kenyan statutes and KECOBO guidance, with their sources and versions. It is loaded into memory at startup and is never on the request path.
 - **Corpus pipeline:** an offline job that builds the corpus (see below).
@@ -110,16 +113,16 @@ flowchart LR
 
 Results stream to the browser one clause at a time, so the artist sees the first results within seconds even on long contracts.
 
-### Comparison outcomes
+### The four neutral labels
 
-| Outcome                   | Meaning                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| `matches_standard`      | Same effect as the reviewed template                    |
-| `better_for_you`        | More favourable to the artist than the standard         |
-| `worse_for_you`         | Less favourable to the artist                           |
-| `not_in_standard`       | The template has nothing like this clause               |
-| `missing_from_contract` | A protection in the template that the contract lacks    |
-| `cannot_compare`        | No matching template, or the result failed verification |
+| Label | Shown as | Meaning for the artist |
+| :---- | :---- | :---- |
+| `typical` | 🔵 Typical | Typical of contract standards in our system. Reference contracts commonly include a clause with the same effect. |
+| `unusual` | 🟡 Unusual | Not typically present in contract standard templates, but with no major adverse effect on your money, music, time, or freedom. |
+| `worth_asking_about` | 🟠 Worth asking about | Not typical of contract standards in our system, and could affect your money, music, time, or freedom to take other work. |
+| `cannot_compare` | ⚪ Couldn't compare | The system could not safely verify this clause against reference standards or verification checks failed. Plain language is still shown if safe. |
+
+**Typical does not mean safe.** A clause can be typical in the music industry and still carry serious consequences (for example, a multi-year exclusivity term or high recoupment threshold). Every card, typical ones included, explains why the clause matters. That is also why **no label is green**.
 
 ### Why the AI's answer is never shown as-is
 
@@ -142,16 +145,18 @@ The comparison is only as good as the templates behind it. The corpus pipeline i
 2. **Store** each original file with its URL, fetch date, licence and reviewing body.
 3. **Parse** PDF and DOCX files into headings, clauses and tables (Docling).
 4. **Split** them with the same clause splitter used for artists' contracts.
-5. **Tag** each clause with contract type, topic, jurisdiction and who it favours.
-6. **Check automatically.** A source is published only if every check passes:
-   - licence and source details are present;
-   - it is a real template, not an article or a signed deal;
-   - it contains no personal data;
-   - it is in English;
-   - near-duplicates are removed;
-   - two independent models agree on every tag.
-7. **Embed** each clause with EmbeddingGemma 2 and count how common each pattern is.
-8. **Publish** a new numbered version. Published versions are never edited, and rolling back means pointing back to an earlier version.
+5. **Tag** each clause with contract type, topic, jurisdiction and who it favours, once by Gemini and once by OpenAI.
+6. **Check automatically.** A clause is published only if every check passes, and each version keeps the results:
+   - licence and source details are present (otherwise the whole document is dropped);
+   - the document contains no personal data, found with Presidio (otherwise the whole document is dropped);
+   - the document is in English (otherwise the whole document is dropped);
+   - near-duplicates are removed (MinHash);
+   - both models confirm it is standard template wording, not an article, a sales page or a signed deal;
+   - both models agree on every tag.
+7. **Embed** each clause with gemini-embedding-2, the same model the API uses for contract clauses, and count how common each pattern is.
+8. **Publish** a new version and make it active. Published versions are never edited, and rolling back means pointing back to an earlier version.
+
+Steps 1 to 4 run with `python -m mbiu.pipeline fetch`, steps 5 to 8 with `python -m mbiu.pipeline publish` (install the extra tools with `uv sync --group pipeline`).
 
 The pipeline handles only public templates. It never sees an artist's contract.
 
@@ -161,15 +166,15 @@ The pipeline handles only public templates. It never sees an artist's contract.
 | --------------- | ---------------------------------------------------------------------------------------------------- |
 | Backend         | Python, [uv](https://docs.astral.sh/uv/), Django (ASGI, uvicorn), django-ninja, Pydantic              |
 | Documents       | PyMuPDF (live requests), Docling (corpus pipeline)                                                   |
-| Search          | sentence-transformers with EmbeddingGemma 2, numpy, rank-bm25                                        |
+| Search          | gemini-embedding-2 vectors and rank-bm25, fused in memory with numpy                                 |
 | AI models       | Gemini (primary), OpenAI (failover only), tenacity, pybreaker                                        |
-| Corpus pipeline | Firecrawl, Presidio, datasketch                                                                      |
+| Corpus pipeline | Firecrawl, Docling, Presidio, Lingua                                                                 |
 | Data            | Supabase Postgres + pgvector, Supabase Storage, psycopg 3                                            |
-| Frontend        | Next.js (App Router), TypeScript (strict), Zod, react-pdf, @react-pdf/renderer, Cloudflare Turnstile |
+| Frontend        | Next.js (App Router), TypeScript (strict), Zod, react-pdf, @media print CSS, Cloudflare Turnstile |
 | Observability   | OpenTelemetry, Grafana Cloud, Jaeger (local), Sentry, PostHog, GrowthBook                            |
 | Quality         | ruff, mypy, pytest, Hypothesis, promptfoo, ESLint, Vitest, Playwright, k6                            |
 | Security        | gitleaks, Semgrep, Trivy, pip-audit, Dependabot                                                      |
-| Delivery        | GitHub Actions, Docker, Cloud Run, Vercel                                                            |
+| Delivery        | GitHub Actions, Docker, Render (API), Vercel (frontend)                                              |
 
 ## Repository layout
 
@@ -294,7 +299,7 @@ All configuration comes from **environment variables**. The settings are validat
 | Django             | `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`                                                             |
 | Database           | `DATABASE_URL` (pooled), `DATABASE_DIRECT_URL` (migrations and pipeline)                                |
 | AI models          | `GEMINI_API_KEY`, `GEMINI_MODEL_MAIN`, `GEMINI_MODEL_LIGHT`, `OPENAI_API_KEY`, `FAILOVER_ENABLED` |
-| Embeddings         | `EMBEDDING_MODEL_ID`, `EMBEDDING_REVISION`, `EMBEDDING_DIM`                                           |
+| Embeddings         | `EMBEDDING_MODEL_ID`                                                                                    |
 | Limits and budgets | `MAX_UPLOAD_MB`, `MAX_PAGES`, `BATCH_SIZE`, `LLM_CONCURRENCY`, `TOKEN_BUDGET_PER_CONTRACT`        |
 | Security           | `TURNSTILE_SECRET_KEY`, `CORS_ALLOWED_ORIGINS`                                                          |
 | Telemetry          | `OTEL_EXPORTER_OTLP_ENDPOINT`, `SENTRY_DSN`                                                             |
@@ -320,7 +325,7 @@ All test contracts are **synthetic**, generated by [`evals/generator/`](evals/ge
 
 | Part            | Where                                                   | Deployed from                                                        |
 | --------------- | ------------------------------------------------------- | -------------------------------------------------------------------- |
-| API             | Container on Cloud Run (portable to any container host) | `develop` → staging, `prod` → production                       |
+| API             | Docker container on Render (portable to any container host) | `develop` → staging, `prod` → production                       |
 | Corpus pipeline | Same container image, run as a scheduled job            | Manual or scheduled                                                  |
 | Frontend        | Vercel                                                  | Feature branches and `develop` → previews; `prod` → production |
 

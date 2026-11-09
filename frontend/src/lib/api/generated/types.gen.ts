@@ -86,6 +86,23 @@ export type Clause = {
 };
 
 /**
+ * ClauseEvaluationRequest
+ *
+ * Clauses the browser already holds, sent back to be checked again: a retry, the
+ * clauses left unfinished when a stream dropped or the page reloaded, or "Check them".
+ */
+export type ClauseEvaluationRequest = {
+    /**
+     * Clauses
+     */
+    clauses: Array<Clause>;
+    /**
+     * Turnstile Token
+     */
+    turnstile_token: string;
+};
+
+/**
  * ClauseFailedEvent
  *
  * Sent when one clause couldn't be checked.
@@ -186,12 +203,6 @@ export type ClauseResult = {
      * Evidence Quote
      */
     evidence_quote: string | null;
-    /**
-     * Fairer Wording
-     *
-     * The template clause, unchanged
-     */
-    fairer_wording: string | null;
     /**
      * Headline
      */
@@ -411,9 +422,9 @@ export type DoneEvent = {
 /**
  * ErrorCode
  *
- * Why an upload was refused before the stream started.
+ * Why a request was refused before the stream started.
  */
-export type ErrorCode = 'invalid_file_type' | 'file_too_large' | 'too_many_pages' | 'encrypted_pdf' | 'scanned_pdf' | 'mostly_not_english' | 'bot_check_failed' | 'rate_limited' | 'service_unavailable';
+export type ErrorCode = 'invalid_file_type' | 'file_too_large' | 'too_many_pages' | 'encrypted_pdf' | 'scanned_pdf' | 'mostly_not_english' | 'bot_check_failed' | 'rate_limited' | 'service_unavailable' | 'invalid_request';
 
 /**
  * Evidence

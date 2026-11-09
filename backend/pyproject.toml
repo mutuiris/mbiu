@@ -5,14 +5,17 @@ requires-python = "==3.14.*"
 dependencies = [
     "django==6.1.2",
     "google-genai==2.31.0",
-    "httpx>=0.28.1",
+    "httpx==0.28.1",
+    "numpy==2.5.4",
     "opentelemetry-exporter-otlp-proto-http==1.45.1",
     "opentelemetry-sdk==1.45.1",
+    "pgvector==0.5.1",
     "psycopg[binary]==3.3.6",
     "pybreaker==1.4.1",
     "pydantic==2.14.1",
     "pydantic-settings==2.15.0",
-    "pymupdf>=2.0",
+    "pymupdf==2.0",
+    "rank-bm25==0.2.2",
     "tenacity==9.1.4",
     "uvicorn==0.54.0",
 ]
@@ -27,6 +30,12 @@ dev = [
     "pytest-django==4.14.0",
     "ruff==0.17.0",
 ]
+pipeline = [
+    "docling==2.142.1",
+    "en-core-web-lg==3.8.0",
+    "lingua-language-detector==2.2.0",
+    "presidio-analyzer==2.2.362",
+]
 
 [tool.uv]
 package = false
@@ -37,6 +46,9 @@ exclude-newer = "14 days"
 constraint-dependencies = ["pyasn1>=0.6.5"]
 exclude-newer-package = { pyasn1 = "2026-10-28T00:00:00Z" }
 
+[tool.uv.sources]
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl" }
+
 [tool.ruff]
 line-length = 100
 target-version = "py314"
@@ -46,6 +58,7 @@ select = ["E", "F", "I", "UP", "B", "T20", "D101", "D102", "D103"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
+"*/migrations/*" = ["D", "E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -62,6 +75,11 @@ disallow_untyped_calls = false
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+# rank-bm25 ships no type hints
+module = "rank_bm25"
+ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"

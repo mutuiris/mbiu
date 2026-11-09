@@ -2,7 +2,7 @@
   "description": "Output of the deliberately lenient prompt fixture; must be rejected.",
   "contracts": [
     {
-      "contract_id": "mb19-clean-control",
+      "contract_id": "golden-clean-control",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -99,7 +99,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-combined-risks",
+      "contract_id": "golden-combined-risks",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -196,7 +196,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-cross-clause-conflict",
+      "contract_id": "golden-cross-clause-conflict",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -293,7 +293,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-deductions-before-royalties",
+      "contract_id": "golden-deductions-before-royalties",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -390,7 +390,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-exclusivity-beyond-term",
+      "contract_id": "golden-exclusivity-beyond-term",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -487,7 +487,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-missing-payment-dates",
+      "contract_id": "golden-missing-payment-dates",
       "clause_results": [
         {
           "clause_id": "1.1",
@@ -584,7 +584,7 @@
       "contract_issues": []
     },
     {
-      "contract_id": "mb19-perpetual-rights",
+      "contract_id": "golden-perpetual-rights",
       "clause_results": [
         {
           "clause_id": "1.1",

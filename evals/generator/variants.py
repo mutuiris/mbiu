@@ -45,37 +45,37 @@ def _variant(
 
 VARIANTS: tuple[ContractVariant, ...] = (
     _variant(
-        "mb19-clean-control",
+        "golden-clean-control",
         "Clean control recording agreement",
         (),
     ),
     _variant(
-        "mb19-perpetual-rights",
+        "golden-perpetual-rights",
         "Recording agreement with perpetual rights",
         (RiskKind.PERPETUAL_RIGHTS,),
     ),
     _variant(
-        "mb19-exclusivity-beyond-term",
+        "golden-exclusivity-beyond-term",
         "Recording agreement with post-term exclusivity",
         (RiskKind.EXCLUSIVITY_BEYOND_TERM,),
     ),
     _variant(
-        "mb19-missing-payment-dates",
+        "golden-missing-payment-dates",
         "Recording agreement with no payment dates",
         (RiskKind.MISSING_PAYMENT_DATES,),
     ),
     _variant(
-        "mb19-deductions-before-royalties",
+        "golden-deductions-before-royalties",
         "Recording agreement with costs deducted before royalties",
         (RiskKind.DEDUCTIONS_BEFORE_ROYALTIES,),
     ),
     _variant(
-        "mb19-cross-clause-conflict",
+        "golden-cross-clause-conflict",
         "Recording agreement with a conflicting term",
         (RiskKind.CROSS_CLAUSE_CONFLICT,),
     ),
     _variant(
-        "mb19-combined-risks",
+        "golden-combined-risks",
         "Recording agreement with all five planted risks",
         tuple(RiskKind),
     ),

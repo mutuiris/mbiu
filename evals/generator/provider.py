@@ -19,6 +19,8 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import httpx
+from google import genai
+from google.genai import errors as genai_errors
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -39,7 +41,7 @@ DATASETS_DIR = EVALS_DIR / "datasets"
 LENIENT_PROMPT_FILE = (
     Path(__file__).resolve().parent / "prompts" / "lenient_clause_eval.txt"
 )
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 
 
 def _config(options: Mapping[str, object]) -> Mapping[str, object]:
@@ -76,6 +78,15 @@ def _api_key() -> str | None:
     return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or None
 
 
+def _openai_api_key() -> str | None:
+    return os.environ.get("OPENAI_API_KEY") or None
+
+
+def _openai_model(config: Mapping[str, object]) -> str:
+    value = os.environ.get("OPENAI_MODEL") or config.get("model") or "gpt-4o-mini"
+    return as_str(value, "config.model")
+
+
 def _parse_model_output(text: str, contract_id: str) -> ContractPrediction:
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -92,41 +103,53 @@ def _parse_model_output(text: str, contract_id: str) -> ContractPrediction:
 
 
 def _gemini_text(prompt: str, model: str, api_key: str) -> str:
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={api_key}"
+    # Same call shape as the app's adapter: Interactions API, storage off
+    client = genai.Client(api_key=api_key)
+    interaction = client.interactions.create(
+        model=model,
+        input=prompt,
+        response_format={"mime_type": "application/json"},
+        generation_config={"temperature": 0},
+        store=False,
+        timeout=120,
     )
+    text = getattr(interaction, "output_text", None)
+    if getattr(interaction, "status", "completed") != "completed" or not text:
+        raise ValueError("Gemini returned no completed output")
+    return str(text)
+
+
+def _openai_text(prompt: str, model: str, api_key: str) -> str:
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
     body = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0,
-            "responseMimeType": "application/json",
-        },
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "response_format": {"type": "json_object"},
+        "store": False,
     }
     with httpx.Client(timeout=120, follow_redirects=True) as client:
         response = client.post(
             url,
             json=body,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
         )
         response.raise_for_status()
         parsed: object = json.loads(response.content.decode("utf-8"))
     data = as_mapping(parsed, "$")
-    candidates = as_list(data.get("candidates"), "$.candidates")
-    if not candidates:
-        raise ValueError("Gemini returned no candidates")
-    candidate = as_mapping(candidates[0], "$.candidates[0]")
-    content = as_mapping(candidate.get("content"), "$.candidates[0].content")
-    parts = as_list(content.get("parts"), "$.candidates[0].content.parts")
-    texts: list[str] = []
-    for index, part in enumerate(parts):
-        part_data = as_mapping(part, f"$.candidates[0].content.parts[{index}]")
-        text = part_data.get("text")
-        if isinstance(text, str):
-            texts.append(text)
-    if not texts:
-        raise ValueError("Gemini returned no text parts")
-    return "".join(texts)
+    choices = as_list(data.get("choices"), "$.choices")
+    if not choices:
+        raise ValueError("OpenAI returned no choices")
+    choice = as_mapping(choices[0], "$.choices[0]")
+    message = as_mapping(choice.get("message"), "$.choices[0].message")
+    content = message.get("content")
+    if not isinstance(content, str):
+        raise TypeError("OpenAI returned no message content")
+    return content
 
 
 def _prediction_payload(
@@ -140,6 +163,14 @@ def _prediction_payload(
         return lenient_prediction(contract)
     if mode == "reference":
         return evaluate_contract(contract)
+    if mode == "openai":
+        api_key = _openai_api_key()
+        if api_key is None:
+            raise ValueError("OpenAI mode requires OPENAI_API_KEY")
+        model = _openai_model(config)
+        return _parse_model_output(
+            _openai_text(prompt, model, api_key), contract.contract_id
+        )
     if mode != "gemini":
         raise ValueError(f"unknown MBIU_EVAL_MODE {mode!r}")
     api_key = _api_key()
@@ -163,9 +194,20 @@ def call_api(
         contract = _expected_contract(variables)
         mode = _mode(config)
         if mode == "auto":
-            mode = "gemini" if _api_key() is not None else "reference"
+            if _api_key() is not None:
+                mode = "gemini"
+            elif _openai_api_key() is not None:
+                mode = "openai"
+            else:
+                mode = "reference"
         prediction = _prediction_payload(mode, prompt, contract, config)
-    except (OSError, httpx.HTTPError, ValueError, TypeError) as error:
+    except (
+        OSError,
+        httpx.HTTPError,
+        genai_errors.APIError,
+        ValueError,
+        TypeError,
+    ) as error:
         return {"error": f"golden-set provider failed: {error}"}
 
     metadata: dict[str, object] = {
@@ -175,6 +217,8 @@ def call_api(
     }
     if mode == "gemini":
         metadata["model"] = _model(config)
+    elif mode == "openai":
+        metadata["model"] = _openai_model(config)
     return {
         "output": json.dumps(prediction.to_dict(), indent=2, ensure_ascii=True),
         "metadata": metadata,

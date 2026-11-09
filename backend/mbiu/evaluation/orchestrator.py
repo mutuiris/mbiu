@@ -2,7 +2,7 @@
 
 The spine of Mbiu: handles the lifecycle of one contract evaluation from upload
 validation, text extraction, clause segmentation, template retrieval, batched LLM
-comparison, deterministic quote verification, to the final summary event.
+comparison, verification of every model proposal, to the final summary event.
 Emits a validated stream of StreamEvent models.
 """
 
@@ -10,18 +10,19 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from pathlib import Path
-from typing import Final, Literal
+from typing import Any, Final, Literal
 
 from django.conf import settings
 from opentelemetry import trace
-from pydantic import BaseModel, Field
 
 from mbiu.api.schemas import (
     SCHEMA_VERSION,
     Ask,
     Clause,
+    ClauseFailedEvent,
+    ClauseFailure,
     ClauseNote,
     ClauseResult,
     ClauseResultEvent,
@@ -30,6 +31,8 @@ from mbiu.api.schemas import (
     DocumentEvent,
     DocumentPayload,
     DoneEvent,
+    Evidence,
+    FailureReason,
     Heartbeat,
     HeartbeatEvent,
     Outcome,
@@ -49,16 +52,31 @@ from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
 from mbiu.documents.segment import segment_document
 from mbiu.documents.upload import validate_upload
-from mbiu.llm import LLMError, as_data
+from mbiu.evaluation.verify import ClauseComparisonProposal, Sent, verify
+from mbiu.llm import ErrorCategory, LLMError, as_data
 from mbiu.llm.gemini import Gemini, gemini
-from mbiu.security.turnstile import validate_turnstile_token
+from mbiu.llm.openai import openai
+from mbiu.retrieval.evidence import (
+    ClausePlan,
+    corpus_version,
+    missing_protections,
+    plan_clauses,
+)
+from mbiu.retrieval.topics import impact_rank
 
 tracer: Final = trace.get_tracer("mbiu.orchestrator")
+# Outcomes worth asking about, as the cards label them
+TOP_ASK_OUTCOMES: Final = frozenset(
+    {Outcome.WORSE_FOR_YOU, Outcome.MISSING_FROM_CONTRACT, Outcome.NOT_IN_STANDARD}
+)
 PROMPT_PATH: Final = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_v1.md"
+OPENAI_PROMPT_PATH: Final = (
+    Path(__file__).resolve().parents[1] / "llm" / "prompts" / "compare_openai_v1.md"
+)
 
 
 def load_compare_prompt() -> str:
-    """Load the versioned comparison prompt from disk."""
+    """Load the versioned Gemini comparison prompt from disk."""
     if PROMPT_PATH.exists():
         return PROMPT_PATH.read_text(encoding="utf-8")
     return (
@@ -67,19 +85,58 @@ def load_compare_prompt() -> str:
     )
 
 
-class ClauseComparisonProposal(BaseModel):
-    """Structured proposal returned by the LLM before verification."""
+def load_compare_openai_prompt() -> str:
+    """Load the versioned OpenAI comparison prompt from disk."""
+    if OPENAI_PROMPT_PATH.exists():
+        return OPENAI_PROMPT_PATH.read_text(encoding="utf-8")
+    return load_compare_prompt()
 
-    comparison: Outcome
-    headline: str
-    what_it_says: str
-    what_it_means: str
-    clause_quote: str = Field(description="Exact substring quoted from the contract clause")
-    evidence_quote: str | None = Field(
-        default=None, description="Exact substring quoted from the template excerpt"
-    )
-    ask_them: str | None = Field(
-        default=None, description="A specific question to ask the other party"
+
+def _error_clause_result(
+    clause: SegmentedClause,
+    err: LLMError,
+    links: list[str],
+    provider: Provider,
+    model: str,
+    evidence: list[Any] | None = None,
+    standard_template_id: str | None = None,
+    standard_excerpt: str | None = None,
+) -> ClauseResult:
+    """Build a deterministic ClauseResult when an LLM call fails."""
+    if err.category == ErrorCategory.REFUSED:
+        status = ClauseStatus.EVALUATION_FAILED
+        headline = "AI evaluation refused by provider"
+        what_it_says = "The AI provider refused to evaluate this clause."
+        what_it_means = (
+            "The clause could not be evaluated due to provider refusal or content policy."
+        )
+    else:
+        status = ClauseStatus.CANNOT_COMPARE
+        headline = "Unable to complete AI comparison"
+        what_it_says = "Mbiu was unable to verify this clause against the standard at this moment."
+        what_it_means = f"The AI evaluation encountered an error: {err.category.value}"
+
+    ev_list = evidence or []
+    return ClauseResult(
+        clause_id=clause.clause_id,
+        pages=clause.pages,
+        original_text=clause.text,
+        status=status,
+        comparison=Outcome.CANNOT_COMPARE,
+        headline=headline,
+        what_it_says=what_it_says,
+        what_it_means=what_it_means,
+        comparison_note=None,
+        impact_inputs=None,
+        linked_clauses=links,
+        ask_them=None,
+        standard_template_id=standard_template_id,
+        standard_excerpt=standard_excerpt,
+        evidence=ev_list,
+        evidence_ids=[e.evidence_id for e in ev_list],
+        evidence_quote=None,
+        provider=provider,
+        model_version=model,
     )
 
 
@@ -92,54 +149,247 @@ def _section_kind(name: str) -> Literal["body", "schedule", "annex"]:
     return "body"
 
 
-def verify_quotes(
-    clause_text: str,
-    evidence_text: str | None,
-    clause_quote: str,
-    evidence_quote: str | None,
-) -> bool:
-    """Verify that quotes in the proposal are exact verbatim substrings of what was sent.
+def _deadline(clause_count: int) -> float:
+    return time.monotonic() + min(
+        settings.DEADLINE_CAP_S,
+        10.0 + (clause_count * settings.DEADLINE_PER_CLAUSE_S),
+    )
 
-    Deterministic code verification ensuring the model never invents quotes.
-    """
-    if not clause_quote or not clause_quote.strip():
-        return False
-    if clause_quote not in clause_text:
-        return False
-    if evidence_quote is not None and evidence_quote.strip():
-        if evidence_text is None or evidence_quote not in evidence_text:
-            return False
-    return True
+
+async def _provider(
+    llm: Gemini | None,
+    clauses: list[SegmentedClause],
+    queue: asyncio.Queue[StreamEvent | None],
+) -> Gemini | None:
+    """Return the model provider, or fail each clause and return None when none is usable."""
+    if llm is not None:
+        return llm
+    try:
+        return gemini()
+    except LLMError as err:
+        # No usable provider (for example a missing or revoked key). Say so per clause
+        # instead of breaking the stream, so the artist gets an honest retry.
+        for c in clauses:
+            await queue.put(
+                ClauseFailedEvent(
+                    payload=ClauseFailure(
+                        clause_id=c.clause_id,
+                        reason=FailureReason(err.category.value),
+                        retryable=True,
+                    )
+                )
+            )
+        return None
+
+
+class _TokenBudget:
+    """Tokens one contract may use. Checked between batches, so a batch in flight finishes."""
+
+    def __init__(self, limit: int) -> None:
+        self.limit = limit
+        self.used = 0
+
+    def add(self, result: Any) -> None:
+        self.used += (result.input_tokens or 0) + (result.output_tokens or 0)
+
+    @property
+    def spent(self) -> bool:
+        return self.used >= self.limit
+
+
+async def _compare_clauses(
+    clauses: list[SegmentedClause],
+    effective_llm: Gemini,
+    queue: asyncio.Queue[StreamEvent | None],
+    *,
+    deadline: float,
+    clause_links_map: dict[str, set[str]],
+    conflicts_by_clause: dict[str, list[str]],
+    contract_type: str | None = None,
+    clause_plans: list[ClausePlan] | None = None,
+) -> list[ClauseResult]:
+    """Check clauses in batches, most important first, streaming each result as it lands."""
+    if clause_plans is None:
+        clause_plans = await plan_clauses([c.text for c in clauses], contract_type)
+    plans = dict(zip((c.clause_id for c in clauses), clause_plans, strict=True))
+    # Money, ownership, term, exclusivity and termination first; boilerplate last
+    clauses = sorted(clauses, key=lambda c: impact_rank(plans[c.clause_id].topic))
+    total_clauses = len(clauses)
+    budget = _TokenBudget(settings.TOKEN_BUDGET_PER_CONTRACT)
+    await queue.put(
+        ProgressEvent(
+            type="progress",
+            payload=Progress(stage=Stage.COMPARE, done=0, total=total_clauses),
+        )
+    )
+
+    instructions = load_compare_prompt()
+    instructions_openai = load_compare_openai_prompt()
+
+    results_list: list[ClauseResult] = []
+    done_count = 0
+    batch_size = max(1, settings.BATCH_SIZE)
+
+    # Clauses in a batch are checked in parallel, at most LLM_CONCURRENCY at a time
+    semaphore = asyncio.Semaphore(settings.LLM_CONCURRENCY)
+
+    def links_for(clause: SegmentedClause) -> list[str]:
+        return sorted(clause_links_map.get(clause.clause_id, set()))
+
+    def as_result(
+        clause: SegmentedClause,
+        outcome: ClauseResult | LLMError,
+        provider: Provider,
+        model: str,
+    ) -> ClauseResult:
+        if isinstance(outcome, ClauseResult):
+            return outcome
+        return _error_clause_result(
+            clause=clause, err=outcome, links=links_for(clause), provider=provider, model=model
+        )
+
+    async def run_batch(
+        batch: list[SegmentedClause],
+        batch_llm: Any,
+        batch_instructions: str,
+        provider: Provider,
+        model: str,
+        *,
+        raise_on_error: bool = False,
+    ) -> list[ClauseResult | LLMError]:
+        async def one(clause: SegmentedClause) -> ClauseResult | LLMError:
+            async with semaphore:
+                try:
+                    return await _evaluate_single_clause(
+                        clause=clause,
+                        llm=batch_llm,
+                        instructions=batch_instructions,
+                        deadline=deadline,
+                        linked_clauses=links_for(clause),
+                        conflict_with=conflicts_by_clause.get(clause.clause_id, []),
+                        evidence=plans[clause.clause_id].evidence,
+                        note=plans[clause.clause_id].note,
+                        context=plans[clause.clause_id].context,
+                        budget=budget,
+                        provider=provider,
+                        model=model,
+                        raise_on_error=raise_on_error,
+                    )
+                except LLMError as err:
+                    return err
+
+        return list(await asyncio.gather(*(one(c) for c in batch)))
+
+    async def run_openai(batch: list[SegmentedClause]) -> list[ClauseResult]:
+        try:
+            openai_llm = openai()
+        except LLMError as err:
+            outcomes: list[ClauseResult | LLMError] = [err] * len(batch)
+        else:
+            outcomes = await run_batch(
+                batch, openai_llm, instructions_openai, Provider.OPENAI, settings.OPENAI_MODEL
+            )
+        return [
+            as_result(c, o, Provider.OPENAI, settings.OPENAI_MODEL)
+            for c, o in zip(batch, outcomes, strict=True)
+        ]
+
+    for i in range(0, total_clauses, batch_size):
+        batch = clauses[i : i + batch_size]
+
+        # Out of time or tokens: the rest were lower impact, so they go out as not checked
+        if time.monotonic() >= deadline or budget.spent:
+            for c in clauses[i:]:
+                await queue.put(
+                    ClauseFailedEvent(
+                        payload=ClauseFailure(
+                            clause_id=c.clause_id, reason=FailureReason.NOT_CHECKED, retryable=True
+                        )
+                    )
+                )
+            break
+
+        use_openai_for_batch = False
+        if settings.FAILOVER_ENABLED:
+            breaker = getattr(effective_llm, "_breaker", None)
+            if breaker is not None and getattr(breaker, "current_state", None) == "open":
+                use_openai_for_batch = True
+
+        batch_results: list[ClauseResult]
+        if use_openai_for_batch:
+            batch_results = await run_openai(batch)
+        else:
+            outcomes = await run_batch(
+                batch,
+                effective_llm,
+                instructions,
+                Provider.GEMINI,
+                settings.GEMINI_MODEL_MAIN,
+                raise_on_error=settings.FAILOVER_ENABLED,
+            )
+            outage = settings.FAILOVER_ENABLED and any(
+                isinstance(o, LLMError)
+                and o.category in (ErrorCategory.UNAVAILABLE, ErrorCategory.TIMEOUT)
+                for o in outcomes
+            )
+            # One provider per batch: on an outage the whole batch moves to OpenAI
+            batch_results = (
+                await run_openai(batch)
+                if outage
+                else [
+                    as_result(c, o, Provider.GEMINI, settings.GEMINI_MODEL_MAIN)
+                    for c, o in zip(batch, outcomes, strict=True)
+                ]
+            )
+
+        for clause_res in batch_results:
+            results_list.append(clause_res)
+            done_count += 1
+            await queue.put(
+                ClauseResultEvent(
+                    type="clause_result",
+                    payload=clause_res,
+                )
+            )
+            await queue.put(
+                ProgressEvent(
+                    type="progress",
+                    payload=Progress(stage=Stage.COMPARE, done=done_count, total=total_clauses),
+                )
+            )
+    return results_list
 
 
 async def _run_evaluation_pipeline(
     pdf_bytes: bytes,
-    turnstile_token: str,
-    client_ip: str | None,
     llm: Gemini | None,
     queue: asyncio.Queue[StreamEvent | None],
 ) -> None:
     """Core evaluation execution pipeline running concurrently with heartbeats."""
     try:
-        # Stage 1: Validation
+        # The view has already checked the Turnstile token. Tokens are single use.
+        # Blocking stages run in threads so heartbeats and other streams keep going.
         with tracer.start_as_current_span("mbiu.upload") as span:
             span.set_attribute("mbiu.stage", "upload_check")
-            validate_turnstile_token(turnstile_token, remote_ip=client_ip)
-            upload_meta = validate_upload(pdf_bytes)
+            upload_meta = await asyncio.to_thread(validate_upload, pdf_bytes)
             span.set_attribute("mbiu.page_count", upload_meta.page_count)
             span.set_attribute("mbiu.byte_size", upload_meta.total_bytes)
 
-        # Stage 2: In-memory text extraction (isolated subprocess)
         with tracer.start_as_current_span("mbiu.extract") as span:
             span.set_attribute("mbiu.stage", "extract")
-            extracted = extract_text_from_pdf(pdf_bytes, page_count=upload_meta.page_count)
+            extracted = await asyncio.to_thread(
+                extract_text_from_pdf,
+                pdf_bytes,
+                page_count=upload_meta.page_count,
+                base_timeout_s=settings.EXTRACTION_TIMEOUT_S,
+                per_page_timeout_s=settings.EXTRACTION_TIMEOUT_PER_PAGE_S,
+            )
             span.set_attribute("mbiu.extracted_pages", extracted.total_pages)
             span.set_attribute("mbiu.skipped_pages_count", len(extracted.skipped_pages))
 
-        # Stage 3: Clause segmentation
         with tracer.start_as_current_span("mbiu.segment") as span:
             span.set_attribute("mbiu.stage", "segment")
-            segmented = segment_document(extracted)
+            segmented = await asyncio.to_thread(segment_document, extracted)
             span.set_attribute("mbiu.clause_count", segmented.total_clauses)
 
         # Build DocumentEvent payload
@@ -170,7 +420,6 @@ async def _run_evaluation_pipeline(
 
         document_event = DocumentEvent(
             type="document",
-            schema_version="1",
             payload=DocumentPayload(
                 page_count=extracted.total_pages,
                 sections=sections,
@@ -180,12 +429,10 @@ async def _run_evaluation_pipeline(
         )
         await queue.put(document_event)
 
-        effective_llm = llm if llm is not None else gemini()
-        total_clauses = len(segmented.clauses)
-        overall_deadline = time.monotonic() + min(
-            settings.DEADLINE_CAP_S,
-            10.0 + (total_clauses * settings.DEADLINE_PER_CLAUSE_S),
-        )
+        effective_llm = await _provider(llm, segmented.clauses, queue)
+        if effective_llm is None:
+            return
+        overall_deadline = _deadline(len(segmented.clauses))
 
         # Stage 3.5: Whole-contract map
         with tracer.start_as_current_span("mbiu.map_contract") as span:
@@ -202,7 +449,6 @@ async def _run_evaluation_pipeline(
 
         contract_map_event = ContractMapEvent(
             type="contract_map",
-            schema_version="1",
             payload=contract_map_payload,
         )
         await queue.put(contract_map_event)
@@ -225,89 +471,19 @@ async def _run_evaluation_pipeline(
             conflicts_by_clause.setdefault(id1, []).append(id2)
             conflicts_by_clause.setdefault(id2, []).append(id1)
 
-        # Stage 4: Batched clause evaluations
-        await queue.put(
-            ProgressEvent(
-                type="progress",
-                schema_version="1",
-                payload=Progress(stage=Stage.COMPARE, done=0, total=total_clauses),
-            )
+        clause_plans = await plan_clauses(
+            [c.text for c in segmented.clauses], contract_map_payload.contract_type
         )
-
-        instructions = load_compare_prompt()
-
-        results_list: list[ClauseResult] = []
-        done_count = 0
-        batch_size = max(1, settings.BATCH_SIZE)
-
-        for i in range(0, total_clauses, batch_size):
-            batch = segmented.clauses[i : i + batch_size]
-
-            # Check overall deadline
-            if time.monotonic() >= overall_deadline:
-                for c in segmented.clauses[i:]:
-                    c_links = sorted(list(clause_links_map.get(c.clause_id, set())))
-                    await queue.put(
-                        ClauseResultEvent(
-                            type="clause_result",
-                            schema_version="1",
-                            payload=ClauseResult(
-                                clause_id=c.clause_id,
-                                pages=c.pages,
-                                original_text=c.text,
-                                status=ClauseStatus.NOT_CHECKED,
-                                comparison=Outcome.CANNOT_COMPARE,
-                                headline="Not checked within time limit",
-                                what_it_says=(
-                                    "This clause was not checked before the contract "
-                                    "time budget ran out."
-                                ),
-                                what_it_means="Higher-priority clauses were evaluated first.",
-                                comparison_note=None,
-                                impact_inputs=None,
-                                linked_clauses=c_links,
-                                fairer_wording=None,
-                                ask_them=None,
-                                standard_template_id=None,
-                                standard_excerpt=None,
-                                evidence=[],
-                                evidence_ids=[],
-                                evidence_quote=None,
-                                provider=None,
-                                model_version=None,
-                            ),
-                        )
-                    )
-                break
-
-            for clause in batch:
-                c_links = sorted(list(clause_links_map.get(clause.clause_id, set())))
-                c_conflicts = conflicts_by_clause.get(clause.clause_id, [])
-                clause_res = await _evaluate_single_clause(
-                    clause=clause,
-                    llm=effective_llm,
-                    instructions=instructions,
-                    deadline=overall_deadline,
-                    linked_clauses=c_links,
-                    conflict_with=c_conflicts,
-                )
-                results_list.append(clause_res)
-                done_count += 1
-
-                await queue.put(
-                    ClauseResultEvent(
-                        type="clause_result",
-                        schema_version="1",
-                        payload=clause_res,
-                    )
-                )
-                await queue.put(
-                    ProgressEvent(
-                        type="progress",
-                        schema_version="1",
-                        payload=Progress(stage=Stage.COMPARE, done=done_count, total=total_clauses),
-                    )
-                )
+        results_list = await _compare_clauses(
+            segmented.clauses,
+            effective_llm,
+            queue,
+            deadline=overall_deadline,
+            clause_links_map=clause_links_map,
+            conflicts_by_clause=conflicts_by_clause,
+            contract_type=contract_map_payload.contract_type,
+            clause_plans=clause_plans,
+        )
 
         # Stage 5: Compile Summary and Done event
         with tracer.start_as_current_span("mbiu.summarise") as span:
@@ -323,49 +499,59 @@ async def _run_evaluation_pipeline(
                     good_news.append(
                         ClauseNote(
                             clause_id=res.clause_id,
-                            text="Matches the standard reviewed template.",
+                            text="Typical: it matches the reviewed standard.",
                         )
                     )
                 elif res.comparison == Outcome.BETTER_FOR_YOU:
                     good_news.append(
                         ClauseNote(
                             clause_id=res.clause_id,
-                            text="More favourable to you than the standard template.",
+                            text="Typical, and better for you than the reviewed standard.",
                         )
                     )
 
                 if res.ask_them:
                     ask_item = Ask(clause_id=res.clause_id, question=res.ask_them)
                     ask_list.append(ask_item)
-                    if (
-                        res.comparison == Outcome.WORSE_FOR_YOU
-                        or res.comparison == Outcome.NOT_IN_STANDARD
-                    ) and len(top_asks) < 3:
+                    # Results arrive in impact order, so the first three are the top three
+                    if res.comparison in TOP_ASK_OUTCOMES and len(top_asks) < 3:
                         top_asks.append(ask_item)
 
             span.set_attribute("mbiu.matches_count", matches_count)
             span.set_attribute("mbiu.asks_count", len(ask_list))
 
+            providers_used = {r.provider for r in results_list if r.provider is not None}
+            if Provider.OPENAI in providers_used and Provider.GEMINI not in providers_used:
+                summary_prompt = "compare_openai_v1"
+                summary_model = settings.OPENAI_MODEL
+            elif Provider.OPENAI in providers_used and Provider.GEMINI in providers_used:
+                summary_prompt = "compare_v1,compare_openai_v1"
+                summary_model = f"{settings.GEMINI_MODEL_MAIN},{settings.OPENAI_MODEL}"
+            else:
+                summary_prompt = "compare_v1"
+                summary_model = settings.GEMINI_MODEL_MAIN
+
             summary = Summary(
                 top_asks=top_asks,
-                contract_issues=[],
-                missing_protections=[],
+                contract_issues=contract_map_payload.issues,
+                missing_protections=await missing_protections(
+                    [p.topic for p in clause_plans], contract_map_payload.contract_type
+                ),
                 good_news=good_news[:10],
                 matches_count=matches_count,
                 skipped_pages=skipped_pages,
                 ask_list=ask_list,
                 versions=Versions(
                     schema_version=SCHEMA_VERSION,
-                    prompt="compare_v1",
-                    model=settings.GEMINI_MODEL_MAIN,
-                    corpus="synthetic-v0",
+                    prompt=summary_prompt,
+                    model=summary_model,
+                    corpus=await corpus_version(),
                 ),
             )
 
             await queue.put(
                 DoneEvent(
                     type="done",
-                    schema_version="1",
                     payload=summary,
                 )
             )
@@ -380,21 +566,26 @@ async def _run_evaluation_pipeline(
 
 async def _evaluate_single_clause(
     clause: SegmentedClause,
-    llm: Gemini,
+    llm: Any,
     instructions: str,
     deadline: float,
     linked_clauses: list[str] | None = None,
     conflict_with: list[str] | None = None,
+    *,
+    evidence: list[Evidence] | None = None,
+    note: str | None = None,
+    context: str | None = None,
+    budget: _TokenBudget | None = None,
+    provider: Provider = Provider.GEMINI,
+    model: str = settings.GEMINI_MODEL_MAIN,
+    raise_on_error: bool = False,
 ) -> ClauseResult:
-    """Evaluate one clause against retrieved synthetic template evidence."""
+    """Evaluate one clause against the template evidence retrieved for it."""
     links = linked_clauses or []
     conflicts = conflict_with or []
 
-    # Retrieve template evidence
-    with tracer.start_as_current_span("mbiu.retrieve") as span:
-        span.set_attribute("mbiu.stage", "retrieve")
+    if evidence is None:
         evidence = retrieve_simple_evidence(clause.text)
-        span.set_attribute("mbiu.evidence_count", len(evidence))
 
     primary_ev = evidence[0] if evidence else None
     content_parts = [
@@ -405,124 +596,162 @@ async def _evaluate_single_clause(
             as_data(
                 "standard_template",
                 primary_ev.excerpt,
+                evidence_id=primary_ev.evidence_id,
                 template_id=primary_ev.template_id,
                 source=primary_ev.source_title,
             )
         )
     content = "\n\n".join(content_parts)
+    sent = Sent(clause_id=clause.clause_id, clause_text=clause.text, evidence=evidence)
 
     try:
         with tracer.start_as_current_span("mbiu.compare") as span:
             span.set_attribute("mbiu.stage", "compare")
             llm_result = await llm.generate(
-                model=settings.GEMINI_MODEL_MAIN,
+                model=model,
                 instructions=instructions,
                 content=content,
                 output=ClauseComparisonProposal,
                 deadline=deadline,
             )
-            proposal = llm_result.value
+            if budget is not None:
+                budget.add(llm_result)
 
-        # Verification in code
         with tracer.start_as_current_span("mbiu.verify") as span:
             span.set_attribute("mbiu.stage", "verify")
-            quotes_valid = verify_quotes(
-                clause_text=clause.text,
-                evidence_text=primary_ev.excerpt if primary_ev else None,
-                clause_quote=proposal.clause_quote,
-                evidence_quote=proposal.evidence_quote,
-            )
-            span.set_attribute("mbiu.quotes_verified", quotes_valid)
+            failed = verify(llm_result.value, sent)
+            span.set_attribute("mbiu.verify.failed_rules", sorted(failed))
+            if failed:
+                # One repair attempt, naming each failed rule; a second failure is final
+                checks = "\n".join(f"- {name}: {reason}" for name, reason in failed.items())
+                llm_result = await llm.generate(
+                    model=model,
+                    instructions=instructions,
+                    content=(
+                        f"{content}\n\n"
+                        f"{as_data('previous_answer', llm_result.value.model_dump_json())}\n\n"
+                        "Your previous answer failed these checks. Answer again with them "
+                        f"fixed:\n{checks}"
+                    ),
+                    output=ClauseComparisonProposal,
+                    deadline=deadline,
+                )
+                if budget is not None:
+                    budget.add(llm_result)
+                failed = verify(llm_result.value, sent)
+                span.set_attribute("mbiu.verify.failed_rules_after_repair", sorted(failed))
+        proposal = llm_result.value
 
-        if not quotes_valid:
+        if failed:
+            # Never send an unverified proposal: none of its wording reaches the artist
             return ClauseResult(
                 clause_id=clause.clause_id,
                 pages=clause.pages,
                 original_text=clause.text,
                 status=ClauseStatus.CANNOT_COMPARE,
                 comparison=Outcome.CANNOT_COMPARE,
-                headline="Could not reliably verify comparison quotes",
-                what_it_says=proposal.what_it_says,
-                what_it_means=proposal.what_it_means,
-                comparison_note="The comparison could not be verified against the source text.",
+                headline="Mbiu couldn't verify this comparison",
+                what_it_says=(
+                    "Mbiu's answer for this clause didn't pass its accuracy checks, "
+                    "so it isn't shown."
+                ),
+                what_it_means=(
+                    "This clause hasn't been compared with the standard. Read it closely, "
+                    "or ask someone you trust about it."
+                ),
+                comparison_note=note,
                 impact_inputs=None,
                 linked_clauses=links,
-                fairer_wording=None,
-                ask_them=proposal.ask_them,
+                ask_them=None,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
                 standard_excerpt=primary_ev.excerpt if primary_ev else None,
                 evidence=evidence,
                 evidence_ids=[e.evidence_id for e in evidence],
                 evidence_quote=None,
-                provider=Provider.GEMINI,
+                provider=provider,
                 model_version=llm_result.model_version,
             )
 
+        # A conflict is a contract issue, not a template comparison, so the verdict stays
         outcome = proposal.comparison
-        comp_note = None
-        if conflicts and outcome == Outcome.MATCHES_STANDARD:
-            outcome = Outcome.WORSE_FOR_YOU
-            comp_note = (
+        notes = []
+        if note is not None:
+            # Include informational note without forcing cannot_compare
+            notes.append(note)
+        if context is not None:
+            notes.append(context)
+        if conflicts:
+            notes.append(
                 f"This clause conflicts with clause(s) {', '.join(conflicts)} "
                 "elsewhere in the contract."
             )
+        comp_note = " ".join(notes) or None
 
-        fairer = primary_ev.excerpt if outcome == Outcome.WORSE_FOR_YOU and primary_ev else None
         return ClauseResult(
             clause_id=clause.clause_id,
             pages=clause.pages,
             original_text=clause.text,
-            status=ClauseStatus.EVALUATED,
+            status=ClauseStatus.EVALUATED
+            if outcome != Outcome.CANNOT_COMPARE
+            else ClauseStatus.CANNOT_COMPARE,
             comparison=outcome,
             headline=proposal.headline,
             what_it_says=proposal.what_it_says,
             what_it_means=proposal.what_it_means,
             comparison_note=comp_note,
-            impact_inputs=None,
+            # Verified quotes only; the frontend does the arithmetic
+            impact_inputs=proposal.impact_inputs,
             linked_clauses=links,
-            fairer_wording=fairer,
             ask_them=proposal.ask_them,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,
             evidence=evidence,
             evidence_ids=[e.evidence_id for e in evidence],
             evidence_quote=proposal.evidence_quote,
-            provider=Provider.GEMINI,
+            provider=provider,
             model_version=llm_result.model_version,
         )
 
     except LLMError as err:
-        return ClauseResult(
-            clause_id=clause.clause_id,
-            pages=clause.pages,
-            original_text=clause.text,
-            status=ClauseStatus.CANNOT_COMPARE,
-            comparison=Outcome.CANNOT_COMPARE,
-            headline="Unable to complete AI comparison",
-            what_it_says=(
-                "Mbiu was unable to verify this clause against the standard at this moment."
-            ),
-            what_it_means=f"The AI evaluation encountered an error: {err.category.value}",
-            comparison_note=None,
-            impact_inputs=None,
-            linked_clauses=links,
-            fairer_wording=None,
-            ask_them=None,
+        if raise_on_error:
+            raise
+
+        return _error_clause_result(
+            clause=clause,
+            err=err,
+            links=links,
+            provider=provider,
+            model=model,
+            evidence=evidence,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,
-            evidence=evidence,
-            evidence_ids=[e.evidence_id for e in evidence],
-            evidence_quote=None,
-            provider=Provider.GEMINI,
-            model_version=settings.GEMINI_MODEL_MAIN,
         )
 
 
-async def evaluate_contract(
+async def _run_clause_pipeline(
+    clauses: list[SegmentedClause],
+    llm: Gemini | None,
+    queue: asyncio.Queue[StreamEvent | None],
+) -> None:
+    """Check clauses the browser sent back, without re-reading or re-mapping the contract."""
+    try:
+        effective_llm = await _provider(llm, clauses, queue)
+        if effective_llm is not None:
+            await _compare_clauses(
+                clauses,
+                effective_llm,
+                queue,
+                deadline=_deadline(len(clauses)),
+                clause_links_map={},
+                conflicts_by_clause={},
+            )
+    finally:
+        await queue.put(None)
+
+
+def evaluate_contract(
     pdf_bytes: bytes,
-    turnstile_token: str,
     *,
-    client_ip: str | None = None,
     llm: Gemini | None = None,
     heartbeat_interval_s: float = 10.0,
 ) -> AsyncGenerator[StreamEvent]:
@@ -532,16 +761,45 @@ async def evaluate_contract(
     all references upon completion, error, or client cancellation.
     Emits periodic HeartbeatEvent every heartbeat_interval_s seconds.
     """
-    queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
-    worker_task = asyncio.create_task(
-        _run_evaluation_pipeline(
-            pdf_bytes=pdf_bytes,
-            turnstile_token=turnstile_token,
-            client_ip=client_ip,
-            llm=llm,
-            queue=queue,
-        )
+    return _stream(
+        lambda queue: _run_evaluation_pipeline(pdf_bytes=pdf_bytes, llm=llm, queue=queue),
+        heartbeat_interval_s,
     )
+
+
+def evaluate_clauses(
+    clauses: list[Clause],
+    *,
+    llm: Gemini | None = None,
+    heartbeat_interval_s: float = 10.0,
+) -> AsyncGenerator[StreamEvent]:
+    """Stream results for clauses the browser already holds: retries and unfinished clauses.
+
+    Sends progress, clause_result and clause_failed events only. The browser keeps the
+    document, contract map and summary it already has.
+    """
+    segmented = [
+        SegmentedClause(
+            clause_id=c.clause_id,
+            section=c.section_id,
+            title=c.heading,
+            text=c.text,
+            pages=list(c.pages),
+            start_offset=c.start,
+            end_offset=c.end,
+        )
+        for c in clauses
+    ]
+    return _stream(lambda queue: _run_clause_pipeline(segmented, llm, queue), heartbeat_interval_s)
+
+
+async def _stream(
+    run: Callable[[asyncio.Queue[StreamEvent | None]], Coroutine[Any, Any, None]],
+    heartbeat_interval_s: float,
+) -> AsyncGenerator[StreamEvent]:
+    """Yield the worker's events, with a heartbeat whenever it is quiet for a while."""
+    queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
+    worker_task = asyncio.create_task(run(queue))
 
     try:
         while True:
@@ -557,7 +815,6 @@ async def evaluate_contract(
                 # Emit keepalive heartbeat
                 yield HeartbeatEvent(
                     type="heartbeat",
-                    schema_version="1",
                     payload=Heartbeat(),
                 )
                 continue

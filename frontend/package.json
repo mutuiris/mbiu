@@ -12,22 +12,35 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "generate:api": "openapi-ts"
+    "generate:api": "openapi-ts",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@base-ui/react": "1.9.0",
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource-variable/manrope": "5.3.0",
+    "@react-pdf/renderer": "4.9.0",
+    "lucide-react": "1.60.0",
     "next": "16.4.2",
+    "pdfjs-dist": "6.3.289",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-dropzone": "20.1.4",
+    "react-pdf": "11.0.0",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "autoprefixer": "10.6.1",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.2",
+    "postcss": "8.5.31",
+    "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vitest": "5.0.5"
   }

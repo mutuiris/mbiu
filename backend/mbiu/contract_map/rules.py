@@ -1,4 +1,4 @@
-"""Deterministic rule checks for contract-wide issues (MB-14).
+"""Deterministic rule checks for contract-wide issues.
 
 Detects explicit conflicts and overrides between linked or candidate clauses
 using deterministic text inspection and exact quote extraction.

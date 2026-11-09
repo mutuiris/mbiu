@@ -1,4 +1,4 @@
-"""Whole-contract map package (MB-14).
+"""Whole-contract map package.
 
 Discovers cross-clause relationships across the entire contract:
 - Deterministic links from cross-references ("clause 12", "Schedule B"),

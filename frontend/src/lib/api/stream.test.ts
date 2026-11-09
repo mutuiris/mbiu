@@ -7,9 +7,11 @@ import {
   StreamParseError,
   StreamValidationError,
   fetchEvaluationStream,
+  fetchClauseEvaluations,
+  ApiStreamError,
   ServiceUnavailableError,
 } from "./stream";
-import type { ClauseResult } from "./generated/types.gen";
+import type { Clause, ClauseResult } from "./generated/types.gen";
 
 function createStreamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -78,7 +80,6 @@ const mockClauseResultEvent = {
     evidence_ids: [],
     comparison_note: null,
     evidence_quote: null,
-    fairer_wording: "License for 5 years",
     standard_excerpt: null,
     standard_template_id: null,
     ask_them: "Can we do a license instead?",
@@ -211,7 +212,6 @@ describe("Impact Ordering", () => {
       evidence_ids: [],
       comparison_note: null,
       evidence_quote: null,
-      fairer_wording: null,
       standard_excerpt: null,
       standard_template_id: null,
       ask_them: null,
@@ -257,6 +257,55 @@ describe("fetchEvaluationStream error handling", () => {
         apiUrl: "http://localhost:8000",
       })
     ).rejects.toThrow(ServiceUnavailableError);
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("fetchClauseEvaluations", () => {
+  it("sends only the given clauses as JSON and streams the results", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: createStreamFromChunks([JSON.stringify(mockClauseResultEvent) + "\n"]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    const clauses = mockDocEvent.payload.clauses as Clause[];
+
+    const events = [];
+    for await (const event of await fetchClauseEvaluations({
+      clauses,
+      turnstileToken: "dummy-token",
+      apiUrl: "http://localhost:8000/",
+    })) {
+      events.push(event);
+    }
+
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("http://localhost:8000/api/v1/clause-evaluations");
+    expect(init.headers["Content-Type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({ clauses, turnstile_token: "dummy-token" });
+    expect(events).toEqual([mockClauseResultEvent]);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces a refused request as ApiStreamError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ code: "bot_check_failed", message: "Please try the check again." }),
+      })
+    );
+
+    await expect(
+      fetchClauseEvaluations({
+        clauses: mockDocEvent.payload.clauses as Clause[],
+        turnstileToken: "dummy-token",
+      })
+    ).rejects.toThrow(ApiStreamError);
 
     vi.unstubAllGlobals();
   });

@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: "0 6 * * 1" # Mondays, to catch newly published advisories
   workflow_call:
+    secrets:
+      TURNSTILE_TEST_SECRET_KEY:
+        required: true
 
 permissions:
   contents: read
@@ -21,10 +24,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg17-bookworm
+        env:
+          # Throwaway database inside the job, reachable only from this runner
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       DJANGO_ALLOWED_HOSTS: localhost
-      # Tests don't use a database yet; this only satisfies the settings check
-      DATABASE_URL: postgresql://localhost/unused
+      DATABASE_URL: postgresql://postgres@localhost:5432/postgres
+      # Cloudflare's always-pass test key: the tests depend on its behaviour
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_TEST_SECRET_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,6 +96,7 @@ jobs:
           }
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm test
       - run: pnpm audit --audit-level high
       - run: pnpm build
 

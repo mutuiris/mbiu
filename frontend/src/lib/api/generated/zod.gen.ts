@@ -29,6 +29,17 @@ export const zClause = z.object({
 });
 
 /**
+ * ClauseEvaluationRequest
+ *
+ * Clauses the browser already holds, sent back to be checked again: a retry, the
+ * clauses left unfinished when a stream dropped or the page reloaded, or "Check them".
+ */
+export const zClauseEvaluationRequest = z.object({
+    clauses: z.array(zClause).min(1),
+    turnstile_token: z.string().min(1)
+});
+
+/**
  * ClauseLink
  *
  * A link from one clause to another found in the contract map.
@@ -105,7 +116,7 @@ export const zContractMapEvent = z.object({
 /**
  * ErrorCode
  *
- * Why an upload was refused before the stream started.
+ * Why a request was refused before the stream started.
  */
 export const zErrorCode = z.enum([
     'invalid_file_type',
@@ -116,7 +127,8 @@ export const zErrorCode = z.enum([
     'mostly_not_english',
     'bot_check_failed',
     'rate_limited',
-    'service_unavailable'
+    'service_unavailable',
+    'invalid_request'
 ]);
 
 /**
@@ -291,7 +303,6 @@ export const zClauseResult = z.object({
     evidence: z.array(zEvidence),
     evidence_ids: z.array(z.string()),
     evidence_quote: z.string().nullable(),
-    fairer_wording: z.string().nullable(),
     headline: z.string(),
     impact_inputs: zImpactInputs.nullable(),
     linked_clauses: z.array(z.string().min(1).max(64)),

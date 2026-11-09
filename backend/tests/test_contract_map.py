@@ -1,11 +1,11 @@
-"""Unit and integration tests for whole-contract map (MB-14).
+"""Unit and integration tests for whole-contract map.
 
 Verifies:
 1. Deterministic link extraction (cross-references, overrides, defined terms).
 2. Candidate pair generation and O(N) linear topic clustering.
 3. Contract type classification.
 4. Code verification of exact quotes for contract issues.
-5. Golden set MB-19 cross-clause conflict detection (Definition of Done).
+5. Golden set cross-clause conflict detection (Definition of Done).
 """
 
 from __future__ import annotations
@@ -228,9 +228,9 @@ def test_exact_quote_verification_logic() -> None:
     assert verify_issue_quotes(missing_id_proposal, clause_map) is False
 
 
-def test_mb19_golden_set_cross_clause_conflict() -> None:
-    """Definition of Done: MB-19 cross-clause conflict detected with correct clause IDs."""
-    pdf_path = DATASETS_DIR / "pdfs" / "mb19-cross-clause-conflict.pdf"
+def test_golden_golden_set_cross_clause_conflict() -> None:
+    """Definition of done: golden set cross-clause conflict detected with correct clause IDs."""
+    pdf_path = DATASETS_DIR / "pdfs" / "golden-cross-clause-conflict.pdf"
     assert pdf_path.is_file(), f"Expected golden set PDF at {pdf_path}"
 
     pdf_bytes = pdf_path.read_bytes()
@@ -265,9 +265,9 @@ def test_mb19_golden_set_cross_clause_conflict() -> None:
     )
 
 
-def test_mb19_golden_set_combined_risks_conflict() -> None:
-    """Definition of Done: MB-19 combined-risks contract finds the cross-clause conflict."""
-    pdf_path = DATASETS_DIR / "pdfs" / "mb19-combined-risks.pdf"
+def test_golden_golden_set_combined_risks_conflict() -> None:
+    """Definition of done: golden set combined-risks contract finds the cross-clause conflict."""
+    pdf_path = DATASETS_DIR / "pdfs" / "golden-combined-risks.pdf"
     assert pdf_path.is_file(), f"Expected golden set PDF at {pdf_path}"
 
     pdf_bytes = pdf_path.read_bytes()
@@ -287,9 +287,9 @@ def test_mb19_golden_set_combined_risks_conflict() -> None:
     assert conflict.pages == [1]
 
 
-def test_mb19_clean_control_has_no_planted_conflicts() -> None:
+def test_golden_clean_control_has_no_planted_conflicts() -> None:
     """The clean control contract has no contradictory clause issues."""
-    pdf_path = DATASETS_DIR / "pdfs" / "mb19-clean-control.pdf"
+    pdf_path = DATASETS_DIR / "pdfs" / "golden-clean-control.pdf"
     assert pdf_path.is_file(), f"Expected golden set PDF at {pdf_path}"
 
     pdf_bytes = pdf_path.read_bytes()
