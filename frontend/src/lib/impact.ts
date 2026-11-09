@@ -10,20 +10,6 @@ export function hasClearFormula(inputs: ImpactInputs | null | undefined): boolea
 }
 
 /**
- * Formats a numeric amount into whole Kenyan Shillings.
- * Always rounds to the nearest whole integer.
- * Example: 15000 -> "KES 15,000"
- */
-export function formatShillings(amount: number): string {
-  if (!Number.isFinite(amount) || Number.isNaN(amount)) {
-    return "KES 0";
-  }
-  const rounded = Math.round(amount);
-  const normalized = Object.is(rounded, -0) || rounded === 0 ? 0 : rounded;
-  return `KES ${normalized.toLocaleString("en-KE")}`;
-}
-
-/**
  * Determines whether a clause is considered "high impact" according to Mbiu's system architecture:
  * - Direct financial implications (royalties, revenue, deductions, calculations)
  * - Rights & ownership (master recordings, copyright, moral rights, publishing, assignments)
@@ -108,63 +94,4 @@ export function isHighImpactClause(
   }
 
   return false;
-}
-
-/** Example amount the label receives in the shillings steps (KES 1,000,000). */
-export const EXAMPLE_GROSS = 1_000_000;
-
-export interface DeductionStep {
-  label: string;
-  quote: string;
-  percent: number | null;
-  amount: number | null;
-}
-
-export interface ShillingSteps {
-  gross: number;
-  steps: DeductionStep[];
-  base: number;
-  /** True when a quoted deduction has no stated amount, so the real base is lower. */
-  baseIsCeiling: boolean;
-  ratePercent: number | null;
-  ratePhrase: string | null;
-  youReceive: number | null;
-}
-
-const PERCENT = /(\d+(?:\.\d+)?)\s*%/;
-
-const sentenceCase = (text: string) => (text ? text[0].toUpperCase() + text.slice(1) : text);
-
-/**
- * Shows what quoted deductions take from an example amount. Only figures the contract quotes
- * are used: a deduction without a stated percentage is listed without an amount, and
- * "You receive" appears only when the contract states the royalty rate.
- */
-export function shillingSteps(
-  inputs: ImpactInputs | null | undefined,
-  gross: number,
-): ShillingSteps | null {
-  if (!inputs) return null;
-  const rate = inputs.royalty_rate_percent;
-  const ratePercent = rate != null && Number.isFinite(rate.value) ? rate.value : null;
-  let left = Math.max(0, Math.round(gross));
-  const start = left;
-  const steps = inputs.deductions.map((d): DeductionStep => {
-    const match = d.value.match(PERCENT) ?? d.quote.match(PERCENT);
-    const percent = match ? Number(match[1]) : null;
-    const amount = percent == null ? null : Math.min(left, Math.round((left * percent) / 100));
-    if (amount != null) left -= amount;
-    const label = sentenceCase(d.value.replace(PERCENT, "").replace(/\s+/g, " ").trim()) || d.value;
-    return { label, quote: d.quote, percent, amount };
-  });
-  if (ratePercent == null && steps.every((s) => s.percent == null)) return null;
-  return {
-    gross: start,
-    steps,
-    base: left,
-    baseIsCeiling: steps.some((s) => s.amount == null),
-    ratePercent,
-    ratePhrase: rate?.quote ?? null,
-    youReceive: ratePercent == null ? null : Math.round((left * ratePercent) / 100),
-  };
 }

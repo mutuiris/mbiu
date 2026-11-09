@@ -1,14 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  EXAMPLE_GROSS,
-  shillingSteps,
-  formatShillings,
   hasClearFormula,
   isHighImpactClause,
 } from "./impact";
 import type { ClauseResult, ImpactInputs } from "./api/generated/types.gen";
 
-describe("impact.ts calculations in shillings", () => {
+describe("impact.ts calculations", () => {
   describe("hasClearFormula", () => {
     it("returns false for null, undefined, or empty inputs", () => {
       expect(hasClearFormula(null)).toBe(false);
@@ -49,18 +46,6 @@ describe("impact.ts calculations in shillings", () => {
         royalty_rate_percent: null,
       };
       expect(hasClearFormula(inputs)).toBe(false);
-      expect(shillingSteps(inputs, 1_000_000)).toBeNull();
-    });
-  });
-
-  describe("formatShillings", () => {
-    it("formatShillings rounds to whole integer currency string", () => {
-      expect(formatShillings(15000.4)).toBe("KES 15,000");
-      expect(formatShillings(15000.7)).toBe("KES 15,001");
-      expect(formatShillings(0)).toBe("KES 0");
-      expect(formatShillings(-0)).toBe("KES 0");
-      expect(formatShillings(NaN)).toBe("KES 0");
-      expect(formatShillings(1_000_000)).toBe("KES 1,000,000");
     });
   });
 
@@ -165,73 +150,5 @@ describe("impact.ts calculations in shillings", () => {
     it("marks clauses involved in contract-wide issues as high-impact (true)", () => {
       expect(isHighImpactClause(baseClause, "Governing Law", true)).toBe(true);
     });
-  });
-});
-
-
-describe("shillingSteps", () => {
-  const inputs04: ImpactInputs = {
-    royalty_rate_percent: null,
-    money_basis: null,
-    deductions: [
-      { value: "15% free goods allowance", quote: "the Free Goods Allowance of fifteen percent (15%)" },
-      { value: "Container and Infrastructure Charge", quote: "Container and Infrastructure Charge" },
-    ],
-  };
-
-  it("applies only percentages the contract quotes, in order", () => {
-    const s = shillingSteps(inputs04, 1_000_000)!;
-    expect(s.steps.map((x) => [x.percent, x.amount])).toEqual([
-      [15, 150_000],
-      [null, null],
-    ]);
-    expect(s.base).toBe(850_000);
-    expect(s.ratePercent).toBeNull();
-    expect(s.youReceive).toBeNull();
-  });
-
-  it("flags that the base is a ceiling when a deduction has no stated amount", () => {
-    expect(shillingSteps(inputs04, 1_000_000)!.baseIsCeiling).toBe(true);
-    const allStated = shillingSteps({ ...inputs04, deductions: [inputs04.deductions[0]] }, 1_000_000)!;
-    expect(allStated.baseIsCeiling).toBe(false);
-  });
-
-  it("adds You receive only with a quoted rate", () => {
-    const s = shillingSteps(
-      { ...inputs04, royalty_rate_percent: { value: 12, quote: "twelve percent (12%)" } },
-      1_000_000,
-    )!;
-    expect(s.youReceive).toBe(102_000);
-    expect(s.ratePhrase).toBe("twelve percent (12%)");
-  });
-
-  it("returns null when nothing is quoted as a number", () => {
-    expect(
-      shillingSteps(
-        { royalty_rate_percent: null, money_basis: null, deductions: [{ value: "Container charge", quote: "Container charge" }] },
-        1_000_000,
-      ),
-    ).toBeNull();
-    expect(shillingSteps(null, 1_000_000)).toBeNull();
-  });
-
-  it("never goes below zero and rounds to whole shillings", () => {
-    const s = shillingSteps(
-      {
-        royalty_rate_percent: null,
-        money_basis: null,
-        deductions: [
-          { value: "60%", quote: "60%" },
-          { value: "70%", quote: "70%" },
-        ],
-      },
-      333,
-    )!;
-    expect(s.base).toBe(40);
-    expect(Number.isInteger(s.steps[0].amount!)).toBe(true);
-  });
-
-  it("starts from a one-million-shilling example", () => {
-    expect(EXAMPLE_GROSS).toBe(1_000_000);
   });
 });
