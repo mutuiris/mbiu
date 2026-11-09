@@ -30,7 +30,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Clause ID:** `1.1` | **Topic:** `boilerplate` (Scope of Services & Production Costs) | **Affects:** `money`
 > - **Drafted For:** `artist` | **Comparison Outcome:** `matches_standard` | **Mbiu Label:** `typical` | **Implication:** `none`
 > - **Reference Standard Benchmark (`KECOBO-SYNC-STD-01`):** *"All studio, filming, styling, transport, and production expenses required by the Sponsor shall be paid directly by the Sponsor and shall not be recoupable from the Artist's fee, with appearance dates scheduled upon at least 10 days prior written notice."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Notice Period Protection:** A 10-day advance written notice requirement protects the Artist from "on-call" ambush scheduling that forces cancellation of independent club or concert bookings.
 >   2. **Non-Recoupable Production Costs:** Explicitly stating that the Brand pays travel, security, styling, and production costs *without deducting them from the Artist's fee* prevents one of the most common Kenyan brand-deal traps where agency production budgets are quietly subtracted from the headline endorsement fee.
 > - **Mbiu Verified Card Fields:**
@@ -53,7 +53,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Linked Clauses:** `["4.3"]` (`override`: `"Subject to the archival and digital provisions of Clause 4.3"`)
 > - **Reference Standard Benchmark (`KECOBO-SYNC-STD-01`):** *"The license and endorsement term shall be for a fixed duration of 6 months within the Republic of Kenya, upon the expiry of which all commercial broadcast and digital usage of the Artist's music and likeness shall cease."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Cross-Clause Subordination Trap:** On its face, Clause 2.1 looks like a clean 6-month Kenyan term. However, the opening carve-out (*"Subject to the archival and digital provisions of Clause 4.3"*) subordinates the 6-month limit to Clause 4.3, which grants the Brand a **perpetual worldwide license** on digital and social platforms.
 >   2. **Why Mbiu Maps the Whole Contract First:** If evaluated in isolation, Clause 2.1 would falsely appear to match the 6-month standard. Whole-contract mapping links Clause 2.1 and Clause 4.3 so the artist is warned upfront that the 6-month limit does not apply to online ads.
 > - **Mbiu Verified Card Fields:**
@@ -78,7 +78,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Clause ID:** `3.1` | **Topic:** `royalties` (Compensation & Payment Schedule) | **Affects:** `money`
 > - **Drafted For:** `artist` | **Comparison Outcome:** `matches_standard` | **Mbiu Label:** `typical` | **Implication:** `none`
 > - **Reference Standard Benchmark (`KECOBO-SYNC-STD-01`):** *"The Sponsor shall pay the Artist the agreed Gross Endorsement Fee in two equal installments: 50% upon execution of the Agreement and 50% within 14 days of completion of deliverables, subject only to statutory withholding tax."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Gross Basis & 50/50 Split:** Payment is explicitly defined on a `gross` basis (KES 800,000) with zero agency commissions or hidden recoupments, and a 50% upfront payment protects the Artist's cash flow before stepping on set.
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"Fixed KES 800,000 gross fee (50/50 split)"`
@@ -95,7 +95,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Clause ID:** `3.2` | **Topic:** `accounting_audit` | **Affects:** `money`
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `minor`
 > - **Reference Standard Benchmark (`WIPO-MUSIC-STD-04`):** *"Where any compensation or bonus depends on sales, streams, or digital view metrics, the Artist shall have the right to receive verified platform statements and to inspect or audit the relevant analytics records upon reasonable written notice."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Audit Waiver on Bonus Threshold:** While the KES 200,000 bonus at 5,000,000 views is a positive incentive, the second sentence strips the Artist of any right to verify the view count (*"the Artist shall have no right to inspect or audit the Brand's platform analytics"*).
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"No audit right to verify KES 200,000 bonus"`
@@ -121,7 +121,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Clause ID:** `4.1` | **Topic:** `grant_of_rights` | **Affects:** `ownership`
 > - **Drafted For:** `artist` | **Comparison Outcome:** `matches_standard` | **Mbiu Label:** `typical` | **Implication:** `none`
 > - **Reference Standard Benchmark (`KE-CAP130-SEC32-33`):** *"In a commercial synchronization agreement, the Artist retains one hundred percent (100%) ownership of the copyright in the musical composition and master sound recording and retains the right to collect public performance and broadcast royalties via licensed CMOs."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Master & Publishing Retention:** Explicitly preserves 100% ownership of both the composition and the master recording under the Kenya Copyright Act (Cap. 130) and preserves MCSK/KAMP/PRISK royalty collection.
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"You keep 100% copyright in your song"`
@@ -138,7 +138,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Linked Clauses:** `["2.1", "4.1", "4.2"]` (`override`: `"Notwithstanding Clause 2.1, Clause 4.1, or Clause 4.2"`)
 > - **Reference Standard Benchmark (`KECOBO-SYNC-STD-01` & `KE-CAP130-SEC32-33`):** *"Any synchronization license for digital and broadcast media shall be limited to the agreed 6 months campaign Term and Territory, and pursuant to Section 32 of the Copyright Act (Cap. 130), the Artist's moral rights to be credited as author and to object to derogatory alteration or remixing of the work shall remain intact."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **"Notwithstanding" Override Trap:** Clause 4.3 uses *"Notwithstanding Clause 2.1, Clause 4.1, or Clause 4.2"* to gut the 6-month Kenyan limitation in Clause 2.1 and 4.2, granting a **worldwide license in perpetuity** for all digital platforms and waiving Moral Rights under Section 32 of the Copyright Act (Cap. 130).
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"Forever online license & moral rights waiver"`
@@ -160,7 +160,7 @@ WHEREAS, the Brand wishes to license the Artist's pre-existing hit track *"Usiku
 > - **Clause ID:** `5.1` | **Topic:** `exclusivity` | **Affects:** `freedom_to_work`
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Reference Standard Benchmark (`WIPO-MUSIC-STD-04`):** *"Exclusivity in a brand endorsement agreement shall be strictly confined to direct competitors within the specific product category being promoted and shall remain in effect only during the paid 6 months Term of the campaign."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Unpaid Post-Term Exclusivity & Sector Overreach:** The Brand pays for a 6-month campaign (Clause 2.1), yet Clause 5.1 locks the Artist out of 7 major corporate sectors—including concerts sponsored by banks, insurers, and phone brands—for **12 months** (including 6 unpaid months after the deal ends).
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"12 months ban across telco, banks & phones"`

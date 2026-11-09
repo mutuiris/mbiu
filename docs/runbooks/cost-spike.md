@@ -3,7 +3,6 @@
 > **Severity:** High  
 > **Target Audience:** On-call engineer (2 a.m. playbook)  
 > **System Component:** `backend/config/settings.py`, `backend/mbiu/llm/`, Cloudflare Turnstile  
-> **Relevant Tickets:** MB-04, MB-18, MB-20, MB-30  
 
 ---
 
@@ -117,6 +116,6 @@ Stop all spend immediately:
 ## 5. Post-Incident Review & Afterwards
 
 1. Set up a hard monthly quota cap and budget alert in Google Cloud Billing (prevents charges above the monthly grant).
-2. Review Turnstile token validation logic in [`backend/mbiu/security/turnstile.py`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/backend/mbiu/security/turnstile.py) to prevent token replay attacks.
+2. Review Turnstile token validation logic in [`backend/mbiu/security/turnstile.py`](../../backend/mbiu/security/turnstile.py) to prevent token replay attacks.
 3. Revert the model and upload caps, and resume the suspended service, once the incident is resolved.
 4. Archive traffic logs for security audit.

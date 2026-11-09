@@ -85,7 +85,6 @@ def _apply_cors[T: HttpResponseBase](response: T, origin: str | None) -> T:
     """Set restrictive CORS headers according to project security rules."""
     allowed_origins = getattr(settings, "CORS_ALLOWED_ORIGINS", ["http://localhost:3000"])
     normalized_allowed = {o.rstrip("/") for o in allowed_origins}
-    normalized_allowed.update({"http://localhost:3000", "http://127.0.0.1:3000"})
     if origin and (origin.rstrip("/") in normalized_allowed or "*" in normalized_allowed):
         response["Access-Control-Allow-Origin"] = origin
         response["Access-Control-Allow-Methods"] = "POST, OPTIONS"

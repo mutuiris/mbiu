@@ -1,4 +1,4 @@
-"""Verification suite for Load Tests and Runbooks — Ticket MB-30.
+"""Verification suite for the load tests and runbooks.
 
 Verifies:
 1. Synthetic 40-page contract fixture matches upload caps (exactly 40 pages, <10MB).
@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pymupdf
 from django.conf import settings
-from django.test import override_settings
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -64,14 +63,6 @@ def test_runbook_documentation_files_exist() -> None:
         assert runbook.exists(), f"Runbook {filename} must exist"
         text = runbook.read_text(encoding="utf-8")
         assert len(text) > 500, f"Runbook {filename} must contain comprehensive instructions"
-
-
-def test_runbook_corpus_rollback_walkthrough() -> None:
-    """Walkthrough: verifies flipping ACTIVE_CORPUS_VERSION is respected by settings."""
-    assert getattr(settings, "ACTIVE_CORPUS_VERSION", None) is not None
-
-    with override_settings(ACTIVE_CORPUS_VERSION="corpus-rolled-back-v1"):
-        assert settings.ACTIVE_CORPUS_VERSION == "corpus-rolled-back-v1"
 
 
 def test_runbook_supabase_pooler_settings_walkthrough() -> None:

@@ -69,7 +69,7 @@ export function EvaluationFloatingBanner() {
           <button
             type="button"
             onClick={handleReturnClick}
-            className="inline-flex items-center gap-1.5 rounded-full bg-mbiu-indigo px-4 py-1.5 text-[0.82rem] sm:text-[0.85rem] font-semibold text-white shadow-sm transition hover:bg-mbiu-indigo-hover dark:bg-mbiu-indigo-dark"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-mbiu-indigo px-4 py-1.5 text-[0.82rem] sm:text-[0.85rem] font-semibold text-white shadow-sm transition hover:bg-mbiu-indigo-hover dark:bg-mbiu-indigo-dark"
           >
             <span>Return to evaluation</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -77,7 +77,7 @@ export function EvaluationFloatingBanner() {
         ) : (
           <Link
             href="/?view=results"
-            className="inline-flex items-center gap-1.5 rounded-full bg-mbiu-indigo px-4 py-1.5 text-[0.82rem] sm:text-[0.85rem] font-semibold text-white shadow-sm transition hover:bg-mbiu-indigo-hover dark:bg-mbiu-indigo-dark"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-mbiu-indigo px-4 py-1.5 text-[0.82rem] sm:text-[0.85rem] font-semibold text-white shadow-sm transition hover:bg-mbiu-indigo-hover dark:bg-mbiu-indigo-dark"
           >
             <span>Return to evaluation</span>
             <ArrowRight className="h-3.5 w-3.5" />

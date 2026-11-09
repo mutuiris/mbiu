@@ -4,6 +4,8 @@ import psycopg
 import pytest
 from django.conf import settings
 
+from tests.database_guard import is_local_database_host
+
 
 def _database_reachable() -> bool:
     db = settings.DATABASES["default"]
@@ -19,6 +21,17 @@ def _database_reachable() -> bool:
     except psycopg.Error:
         return False
     return True
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Refuse to run against a remote database: test fixtures would overwrite real data."""
+    host = settings.DATABASES["default"]["HOST"]
+    if not is_local_database_host(str(host) if host else None):
+        pytest.exit(
+            f"DATABASE_URL points at {host}. Tests only run against a local database: "
+            "run `just dev`, or rely on CI.",
+            returncode=2,
+        )
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

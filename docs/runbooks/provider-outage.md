@@ -3,7 +3,6 @@
 > **Severity:** High / Critical  
 > **Target Audience:** On-call engineer (2 a.m. playbook)  
 > **System Component:** `backend/mbiu/llm/`, `backend/mbiu/evaluation/orchestrator.py`  
-> **Relevant Tickets:** MB-04, MB-20, MB-30  
 
 ---
 
@@ -64,7 +63,7 @@ Look for the error category:
 If Google Gemini is confirmed down and the circuit breaker is tripping, activate the OpenAI failover provider:
 
 1. **Verify Golden Set & Privacy Guarantees:**
-   Only fail over if OpenAI has passed the golden test set. In accordance with [`docs/data-transfers.md`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/docs/data-transfers.md), contract text is transmitted with `store: false` enforced.
+   Only fail over if OpenAI has passed the golden test set. In accordance with [`docs/data-transfers.md`](../../docs/data-transfers.md), contract text is transmitted with `store: false` enforced.
 2. **Enable Failover in Runtime Environment:**
    * **In Render:** Set `FAILOVER_ENABLED=true` in **mbiu-api → Environment → Save**.
    * **In Docker / Local:**
