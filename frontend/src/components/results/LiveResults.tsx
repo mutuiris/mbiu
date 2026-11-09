@@ -202,15 +202,19 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           const exists = prev.some((r) => r.clause_id === item.clause_id);
           return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
         });
+        // A clause that failed and then succeeded on retry is no longer a failure
+        setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
 
       case "clause_updated": {
         const item = event.payload;
-        setAllResults((prev) =>
-          prev.map((r) => (r.clause_id === item.clause_id ? item : r))
-        );
         setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
+        // Kept results store only the latest event per clause, so an update may be the first one seen
+        setAllResults((prev) => {
+          const exists = prev.some((r) => r.clause_id === item.clause_id);
+          return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
+        });
         break;
       }
 
@@ -269,10 +273,12 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   }, [eventStream, handleEvent]);
 
   // Overall failure condition: all clauses failed
-  const isEverythingUnavailable = useMemo(() => {
-    if (!document || document.clauses.length === 0) return false;
-    return failures.length === document.clauses.length && allResults.length === 0;
-  }, [document, failures, allResults]);
+  // Every clause failed because no provider was reachable: same message as a failed upload
+  const isEverythingUnavailable =
+    !!document &&
+    document.clauses.length > 0 &&
+    failures.length === document.clauses.length &&
+    failures.every((f) => f.reason === "unavailable");
 
   const handleRetry = useCallback(
     async (clauseId: string) => {
@@ -395,14 +401,12 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   }[downloadState];
 
   const notCheckedNames = useMemo(() => {
-    if (!document) return [];
-    return failures
-      .filter((f) => f.reason === "not_checked")
-      .map((f) => {
-        const clause = document.clauses.find((c) => c.clause_id === f.clause_id);
-        return clause ? readableClauseName(clause) : "Clause";
-      });
-  }, [document, failures]);
+    if (!document || isStreaming) return [];
+    const realFailures = new Set(failures.filter((f) => f.reason !== "not_checked").map((f) => f.clause_id));
+    return document.clauses
+      .filter((c) => !resultsByClauseId.has(c.clause_id) && !realFailures.has(c.clause_id))
+      .map((c) => readableClauseName(c));
+  }, [document, isStreaming, failures, resultsByClauseId]);
 
   return (
     <div className={`live-results-layout pb-24 lg:pb-0${file ? " has-viewer" : ""}`}>

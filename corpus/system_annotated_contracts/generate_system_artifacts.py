@@ -191,7 +191,7 @@ def render_annotated_md_to_pdf(md_path: Path, pdf_path: Path) -> int:
     for idx in range(total_pages):
         p: Any = doc[idx]
         footer = (
-            f"Mbiu System Reference Corpus (Legal-Expert Annotated)  |  Page {idx + 1} of "
+            f"Mbiu System Reference Corpus (Annotated examples)  |  Page {idx + 1} of "
             f"{total_pages}"
         )
         p.insert_text(

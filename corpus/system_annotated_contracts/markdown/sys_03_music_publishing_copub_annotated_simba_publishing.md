@@ -30,7 +30,7 @@ WHEREAS, the Publisher wishes to acquire and administer the Writer's musical com
 > - **Clause ID:** `1.1` | **Topic:** `grant_of_rights` | **Affects:** `ownership`
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Reference Standard Benchmark (`KECOBO-PUB-STD-01` & `WIPO-PUB-STD-03`):** *"Under a publishing administration standard, the Writer retains 100% of the copyright in the Compositions and grants the Publisher an administration license for a fixed Term of 3 years; or under a co-publishing standard, the Writer assigns at most 50% of the Publisher's Share (25% of total copyright) subject to reversion upon expiry of the Retention Period."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Old-School 100% Publishing Grab vs. Modern Admin / Co-Pub:** Assigning 100% of the entire copyright *in perpetuity*—including both the Writer's entire back catalogue and all new songs—strips the Writer of ownership forever. Modern KECOBO and WIPO standards strongly favour a **Publishing Administration** model (Writer keeps 100% copyright; Publisher takes a 15%–20% commission for 3 years) or at worst a **50/50 Co-Publishing** split with reversion.
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"Publisher takes 100% of song copyrights"`

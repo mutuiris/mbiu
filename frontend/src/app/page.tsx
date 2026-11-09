@@ -150,6 +150,13 @@ export default function Home() {
   const handleNavigateSection = useCallback(
     (sectionId: string) => {
       const cleanId = sectionId.replace(/^#/, "");
+      // Leaving the results mid-check stops it; ask first so a tap on the menu can't cancel it by accident
+      if (
+        isStreaming &&
+        !window.confirm("Mbiu is still checking your contract. Leave and stop the check?")
+      ) {
+        return;
+      }
       if (stream && isViewingResults) {
         if (typeof window !== "undefined") {
           const targetUrl =
@@ -166,7 +173,7 @@ export default function Home() {
         scrollToSection(cleanId);
       }
     },
-    [stream, isViewingResults, scrollToSection],
+    [stream, isViewingResults, isStreaming, scrollToSection],
   );
 
   const startStream = useCallback((source: EventStream, resumeIfDropped: boolean, showResults = true) => {
@@ -336,6 +343,8 @@ export default function Home() {
       });
       setLog(emptyLog);
       startStream(source, true);
+      // The token is single use; a later upload needs a fresh check
+      resetTurnstile();
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
       resetTurnstile();
@@ -403,7 +412,6 @@ export default function Home() {
         <Navbar
           basePath="/"
           onNavigateSection={handleNavigateSection}
-          onUploadClick={() => handleNavigateSection("upload")}
         />
 
         <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
@@ -564,7 +572,7 @@ export default function Home() {
                     }}
                     onError={() =>
                       setErrorMessage(
-                        "The security check could not load. Tap 'Retry security check' above or refresh the page.",
+                        "The security check could not load. Tap 'Retry security check' below or refresh the page.",
                       )
                     }
                     onExpire={() => setTurnstileToken(null)}

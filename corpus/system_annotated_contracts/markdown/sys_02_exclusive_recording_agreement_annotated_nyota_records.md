@@ -30,7 +30,7 @@ WHEREAS, the Company wishes to engage the Artist as an exclusive recording artis
 > - **Clause ID:** `1.1` | **Topic:** `term_duration` | **Affects:** `time`
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Reference Standard Benchmark (`KECOBO-REC-STD-01`):** *"The Initial Period shall be for a fixed duration of 12 months (capped at 18 months maximum), with at most one (1) mutually agreed Option Period of 12 months, and if the Company fails to commercially release the delivered Album within 6 months of delivery, the Artist may terminate the Term."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Open-Ended "Delivery + Release" Term Trap:** Because each Contract Period runs until *12 months after commercial release* AND the Company explicitly disclaims any obligation to release an Album by a fixed date, the Company can "shelf" an Album and freeze the Artist's career indefinitely across 4 Albums (1 Initial + 3 Options).
 >   2. **Absence of a Release Commitment ("Stop-Clock"):** Standard KECOBO and WIPO templates always pair delivery commitments with a mandatory 6 months release deadline and an 18 months calendar cap.
 > - **Mbiu Verified Card Fields:**
@@ -52,7 +52,7 @@ WHEREAS, the Company wishes to engage the Artist as an exclusive recording artis
 > - **Clause ID:** `2.1` | **Topic:** `grant_of_rights` | **Affects:** `ownership`
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Reference Standard Benchmark (`KECOBO-REC-STD-01` & `WIPO-REC-STD-02`):** *"The Artist grants the Company an exclusive license to exploit the Master Sound Recordings for a fixed license period of 7 years from release, or until 5 years after full recoupment of recording costs, whereupon all master rights shall revert to the Artist, and the Artist's moral rights under Section 32 of the Copyright Act (Cap. 130) are preserved."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Permanent Loss of Catalogue (`in perpetuity` + No Reversion):** Under Section 33 of the Kenya Copyright Act (Cap. 130), a written assignment transfers economic ownership permanently unless a reversion clause or license period is specified. Even after the Company recoups every shilling of its recording costs, the Company owns the Artist's Masters forever.
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"Company owns your masters forever"`
@@ -95,7 +95,7 @@ WHEREAS, the Company wishes to engage the Artist as an exclusive recording artis
 > - **Drafted For:** `label` | **Comparison Outcome:** `worse_for_you` | **Mbiu Label:** `worth_asking_about` | **Implication:** `major`
 > - **Linked Clauses:** `["7.2"]` (`override`: `"Subject to Clause 7.2"`)
 > - **Reference Standard Benchmark (`KECOBO-REC-STD-01` & `WIPO-REC-STD-02`):** *"The Company shall pay the Artist a royalty of 50% of Net Receipts on digital streaming and Skiza ringback tones (or 18% of Net Receipts on physical products), with zero packaging or free-goods deductions on digital transmissions."*
-> - **Legal Expert Analysis:**
+> - **Analysis:**
 >   1. **Artificial Deductions & 50% Digital Rate Cut (Effective 5% of Net):** Cutting the 10% rate in half to **5% of Net Receipts** for Spotify, Boomplay, Mdundo, and Skiza Tunes—after first subtracting a 20% packaging charge and a 15% free goods allowance—severely reduces the Artist's earnings compared to the 50% of Net Receipts digital standard.
 > - **Mbiu Verified Card Fields:**
 >   - `headline`: `"5% net digital royalty after 20% & 15% cuts"`
