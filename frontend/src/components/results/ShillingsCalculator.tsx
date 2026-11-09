@@ -1,192 +1,94 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import type { ImpactInputs } from "@/lib/api/generated/types.gen";
-import {
-  calculateImpact,
-  formatShillings,
-  hasClearFormula,
-  DEFAULT_EXAMPLE_GROSS,
-  DEFAULT_EXAMPLE_DEDUCTIONS,
-} from "@/lib/impact";
+import { EXAMPLE_GROSS, formatShillings, shillingSteps } from "@/lib/impact";
 
 export interface ShillingsCalculatorProps {
   inputs: ImpactInputs | null | undefined;
 }
 
+/** What the quoted deductions take from an example amount. Never invents a royalty rate. */
 export const ShillingsCalculator: React.FC<ShillingsCalculatorProps> = ({ inputs }) => {
-  const deductionCount = inputs?.deductions?.length ?? 0;
-  const [grossInput, setGrossInput] = useState<number>(DEFAULT_EXAMPLE_GROSS);
-  const [deductionsInput, setDeductionsInput] = useState<number>(
-    deductionCount > 0 ? DEFAULT_EXAMPLE_DEDUCTIONS : 0,
-  );
+  const [gross, setGross] = useState(EXAMPLE_GROSS);
+  const [changing, setChanging] = useState(false);
 
-  if (!hasClearFormula(inputs)) {
-    return null;
-  }
+  useEffect(() => {
+    if (!changing) return;
+    const timer = setTimeout(() => setChanging(false), 200);
+    return () => clearTimeout(timer);
+  }, [changing, gross]);
 
-  const calc = calculateImpact(inputs, grossInput, deductionsInput);
-  if (!calc) return null;
+  const steps = shillingSteps(inputs, gross);
+  if (!steps) return null;
 
-  const isNet = calc.basis === "net";
-  const hasDeductions = calc.deductionQuotes.length > 0 || calc.totalDeductions > 0;
-
-  const handleGrossChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setGrossInput(Number.isNaN(val) ? 0 : Math.max(0, val));
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/[^0-9]/g, "");
+    setGross(digits ? Math.min(Number(digits), 1_000_000_000_000) : 0);
+    setChanging(true);
   };
 
-  const handleDeductionsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setDeductionsInput(Number.isNaN(val) ? 0 : Math.max(0, val));
-  };
-
-  const handleReset = () => {
-    setGrossInput(DEFAULT_EXAMPLE_GROSS);
-    setDeductionsInput(deductionCount > 0 ? DEFAULT_EXAMPLE_DEDUCTIONS : 0);
-  };
+  const num = `tabular-nums transition-[opacity,filter] duration-200 ${changing ? "opacity-50 blur-[2px]" : ""}`;
 
   return (
     <section
-      className="shillings-calculator"
-      aria-labelledby="shillings-calc-title"
+      className="mt-4 rounded-2xl bg-black/[0.035] p-4 dark:bg-white/[0.05]"
+      aria-labelledby="shillings-title"
       data-testid="shillings-calculator"
     >
-      <div className="calc-header">
-        <div className="calc-title-row">
-          <span className="calc-icon" aria-hidden="true">
-            💰
-          </span>
-          <h4 id="shillings-calc-title" className="calc-title">
-            In Shillings (Worked Example)
-          </h4>
-        </div>
-        <span className="example-badge" aria-label="Notice: Figures are illustrative examples">
-          Example figures — adjust below
-        </span>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h4 id="shillings-title" className="text-[0.92rem] font-bold text-mbiu-ink dark:text-[#F4EFE6]">
+          What this means in shillings
+        </h4>
+        <span className="text-[0.78rem] text-mbiu-ink/60 dark:text-[#b9c1c5]">Example figures, change them</span>
       </div>
 
-      <p className="calc-disclaimer">
-        These figures are illustrative examples to show how the clause formula works in practice.
-        You can edit the numbers to test different revenue scenarios.
-      </p>
+      <label className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[0.9rem] text-mbiu-ink dark:text-[#F4EFE6]">
+        If the label receives
+        <input
+          type="text"
+          inputMode="numeric"
+          value={gross.toLocaleString("en-KE")}
+          onChange={onChange}
+          aria-label="Example amount the label receives, in shillings"
+          className="min-h-11 w-40 rounded-xl border border-[#e9dec9] bg-white px-3 text-right font-semibold tabular-nums text-mbiu-ink dark:border-white/15 dark:bg-white/[0.06] dark:text-[#F4EFE6]"
+        />
+      </label>
 
-      {/* Interactive Controls */}
-      <div className="calc-controls-grid">
-        <div className="calc-field">
-          <label htmlFor="example-revenue-input" className="calc-label">
-            Example gross revenue (KES)
-            <span className="label-tag">Example</span>
-          </label>
-          <input
-            id="example-revenue-input"
-            type="number"
-            min="0"
-            step="10000"
-            value={grossInput}
-            onChange={handleGrossChange}
-            className="calc-input"
-            aria-describedby="example-revenue-hint"
-          />
-          <span id="example-revenue-hint" className="field-hint">
-            Current: {formatShillings(grossInput)}
-          </span>
+      <dl className="mt-3 space-y-1.5 text-[0.9rem]">
+        {steps.steps.map((step, i) => (
+          <div key={`${step.label}-${i}`} className="flex items-start justify-between gap-3">
+            <dt className="min-w-0 text-[#9a3412] dark:text-[#f5a786]">
+              − {step.label}
+              {step.percent != null && ` ${step.percent}%`}
+              <span className="block break-words text-[0.75rem] text-mbiu-ink/55 dark:text-[#b9c1c5]">“{step.quote}”</span>
+            </dt>
+            <dd className={`shrink-0 text-right ${num} ${step.amount == null ? "text-mbiu-ink/55 dark:text-[#b9c1c5]" : "text-[#9a3412] dark:text-[#f5a786]"}`}>
+              {step.amount == null ? "Amount not stated here" : formatShillings(step.amount)}
+            </dd>
+          </div>
+        ))}
+        <div className="flex items-start justify-between gap-3 border-t border-black/10 pt-2 dark:border-white/10">
+          <dt className="text-mbiu-ink dark:text-[#F4EFE6]">
+            {steps.baseIsCeiling ? "At most, the amount your royalty is worked out on" : "The amount your royalty is worked out on"}
+            {steps.baseIsCeiling && (
+              <span className="block text-[0.75rem] text-mbiu-ink/55 dark:text-[#b9c1c5]">
+                It will be less, because one charge has no stated amount.
+              </span>
+            )}
+          </dt>
+          <dd className={`shrink-0 font-semibold text-mbiu-ink dark:text-[#F4EFE6] ${num}`}>{formatShillings(steps.base)}</dd>
         </div>
-
-        {hasDeductions && (
-          <div className="calc-field">
-            <label htmlFor="example-deductions-input" className="calc-label">
-              Example deductions before royalties (KES)
-              <span className="label-tag">Example</span>
-            </label>
-            <input
-              id="example-deductions-input"
-              type="number"
-              min="0"
-              step="5000"
-              value={deductionsInput}
-              onChange={handleDeductionsChange}
-              className="calc-input"
-              aria-describedby="example-deductions-hint"
-            />
-            <span id="example-deductions-hint" className="field-hint">
-              Current: {formatShillings(deductionsInput)}
-            </span>
+        {steps.youReceive != null && steps.ratePercent != null && (
+          <div className="flex items-start justify-between gap-3 text-[0.98rem] font-bold text-mbiu-ink dark:text-[#F4EFE6]">
+            <dt>
+              {steps.baseIsCeiling ? "At most, you receive" : "You receive"} at the contract&apos;s {steps.ratePercent}% royalty
+            </dt>
+            <dd className={`shrink-0 ${num}`}>{formatShillings(steps.youReceive)}</dd>
           </div>
         )}
-      </div>
-
-      {/* Quoted Terms & Contract Deductions */}
-      <div className="calc-terms-summary">
-        <div className="term-item">
-          <span className="term-name">Royalty rate:</span>
-          <span className="term-value font-semibold">{calc.royaltyRate}%</span>
-          {calc.quotedRateText && (
-            <span className="term-quote" title="Exact wording in contract">
-              (from “{calc.quotedRateText}”)
-            </span>
-          )}
-        </div>
-
-        <div className="term-item">
-          <span className="term-name">Basis:</span>
-          <span className={`term-value basis-badge ${isNet ? "basis-net" : "basis-gross"}`}>
-            {isNet ? "Net (Deductions taken first)" : "Gross (Calculated before deductions)"}
-          </span>
-          {calc.quotedBasisText && (
-            <span className="term-quote" title="Exact wording in contract">
-              (from “{calc.quotedBasisText}”)
-            </span>
-          )}
-        </div>
-
-        {calc.deductionQuotes.length > 0 && (
-          <div className="deductions-list-wrap">
-            <span className="term-name">Deductions stated in contract:</span>
-            <div className="deductions-tags">
-              {calc.deductionQuotes.map((quote, idx) => (
-                <span key={idx} className="deduction-tag">
-                  “{quote}”
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Results Breakdown */}
-      <div className="calc-results-card">
-        <div className="result-row primary-payout">
-          <span className="payout-label">Your calculated earnings:</span>
-          <span className="payout-amount" data-testid="artist-earnings">
-            {formatShillings(calc.artistEarnings)}
-          </span>
-        </div>
-
-        {isNet && (
-          <div className="net-comparison-block" data-testid="net-comparison">
-            <div className="comparison-metric">
-              <span className="metric-label">If calculated on Gross:</span>
-              <span className="metric-val">{formatShillings(calc.earningsUnderGross)}</span>
-            </div>
-            <div className="comparison-metric loss-warning">
-              <span className="metric-label">Loss to deductions:</span>
-              <span className="metric-val">−{formatShillings(calc.lossToDeductions)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="calc-reset-row">
-          <button
-            type="button"
-            onClick={handleReset}
-            className="calc-reset-btn"
-            aria-label="Reset example figures to defaults"
-          >
-            Reset example figures
-          </button>
-        </div>
-      </div>
+      </dl>
     </section>
   );
 };

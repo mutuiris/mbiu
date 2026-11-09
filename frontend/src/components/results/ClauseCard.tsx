@@ -1,9 +1,12 @@
 "use client";
 
+import { Square, Volume2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
-import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
+import { outcomeLabel } from "@/lib/outcome";
+import { cleanReferenceText, displayNumber, readableClauseName } from "@/lib/report";
 import { ShillingsCalculator } from "./ShillingsCalculator";
+import { Fold, OutcomePill, ReportCard } from "./ui";
 
 export interface LinkedClauseItem {
   clauseId: string;
@@ -89,15 +92,11 @@ export const ReadAloudButton: React.FC<ReadAloudButtonProps> = ({ text }) => {
     <button
       type="button"
       onClick={handleToggleSpeech}
-      className={`read-aloud-btn ${isSpeaking ? "speaking" : ""}`}
-      aria-label={isSpeaking ? "Stop reading aloud" : "Read card summary aloud"}
-      title={isSpeaking ? "Stop speech" : "Read aloud on this device"}
+      className="report-press inline-flex min-h-11 items-center gap-1.5 text-[0.85rem] font-semibold text-mbiu-indigo dark:text-[#a9b0ff]"
+      aria-label={isSpeaking ? "Stop reading aloud" : "Read this card aloud"}
     >
-      <span className="speaker-icon" aria-hidden="true">
-        {isSpeaking ? "⏹" : "🔊"}
-      </span>
+      {isSpeaking ? <Square aria-hidden="true" className="h-4 w-4" /> : <Volume2 aria-hidden="true" className="h-4 w-4" />}
       <span>{isSpeaking ? "Stop reading" : "Read aloud"}</span>
-      {isSpeaking && <span className="speaking-pulse" aria-hidden="true"></span>}
     </button>
   );
 };
@@ -114,6 +113,12 @@ export interface ClauseCardProps {
   onJumpToPdfClause?: (clauseId: string, pageNumber: number) => void;
 }
 
+const LINKS_SHOWN = 3;
+
+const sectionLabel = "text-[0.72rem] font-bold uppercase tracking-[0.08em] text-mbiu-ink/55 dark:text-[#b9c1c5]";
+const linkButton =
+  "report-press inline-flex min-h-11 items-center text-[0.9rem] font-semibold text-mbiu-indigo underline underline-offset-4 dark:text-[#a9b0ff]";
+
 export const ClauseCard: React.FC<ClauseCardProps> = ({
   result,
   clauseNumber,
@@ -125,255 +130,155 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({
   onSelectClause,
   onJumpToPdfClause,
 }) => {
-  const BADGE_CLASS: Record<OutcomeTone, string> = {
-    typical: "badge-better",
-    unusual: "badge-notice",
-    inquiry: "badge-worse",
-    unchecked: "badge-muted",
-  };
-  const getBadgeConfig = (comparison: ClauseResult["comparison"]) => {
-    const { label, tone } = outcomeLabel(comparison);
-    return { label, className: BADGE_CLASS[tone] };
-  };
-
-  const badge = getBadgeConfig(result.comparison);
-  const topicText = topic || clauseHeading || "Contract Term";
+  const [showAllLinks, setShowAllLinks] = useState(false);
+  const { label: outcome } = outcomeLabel(result.comparison);
+  const name = readableClauseName({
+    number: clauseNumber,
+    heading: clauseHeading ?? topic,
+    text: result.original_text,
+  });
   const firstPage = result.pages[0] ?? 1;
-  const locationLabel = `Page ${result.pages.join(", ")}${
-    clauseNumber ? `, clause ${clauseNumber}` : ""
-  }`;
+
+  const sources = result.evidence?.length
+    ? [...new Set(result.evidence.map((ev) => ev.source_title))].join(" · ")
+    : result.standard_template_id;
+  const usualWording = result.standard_excerpt ? cleanReferenceText(result.standard_excerpt) : null;
+  const comparison = result.comparison_note ?? null;
 
   const speechText = [
-    result.headline,
-    `Status: ${badge.label}.`,
-    `Topic: ${topicText}.`,
-    `Location: ${locationLabel}.`,
-    `Your contract says: ${result.what_it_says}.`,
-    result.standard_excerpt ? `Reviewed standard says: ${result.standard_excerpt}.` : "",
-    `What this means for you: ${result.what_it_means}.`,
+    `${name}. ${outcome}.`,
+    `${result.headline}.`,
+    `In simple words: ${result.what_it_says}.`,
+    `Why it matters: ${result.what_it_means}.`,
+    comparison ? `What usual contracts say: ${comparison}.` : "",
+    result.ask_them ? `Ask them this: ${result.ask_them}` : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   const whatsappShareUrl = result.ask_them
     ? `https://wa.me/?text=${encodeURIComponent(
-        `Mbiu Contract Review question for clause ${clauseNumber ? clauseNumber : ""}:\n"${result.ask_them}"`,
+        `A question about ${displayNumber(clauseNumber) ? `clause ${displayNumber(clauseNumber)}` : "my contract"}, from Mbiu:\n${result.ask_them}`,
       )}`
     : "";
 
+  const links = showAllLinks ? linkedClauses : linkedClauses.slice(0, LINKS_SHOWN);
+
   return (
-    <article
+    <ReportCard
+      as="article"
       id={`card-${result.clause_id}`}
-      className={`result-card ${badge.className} ${isHighlighted ? "highlighted" : ""} ${
-        isUpdated ? "card-updated" : ""
-      }`}
-      aria-labelledby={`headline-${result.clause_id}`}
+      aria-labelledby={`heading-${result.clause_id}`}
       data-testid={`card-${result.clause_id}`}
+      className={isHighlighted ? "ring-2 ring-mbiu-indigo ring-offset-2 ring-offset-[#fcf4e5] dark:ring-offset-mbiu-bg-dark" : ""}
     >
-      {/* Whole-contract update notice */}
+      <div className="flex items-start justify-between gap-3" data-testid="clause-header">
+        <p className="min-w-0 break-words text-[0.88rem] font-semibold text-mbiu-ink/70 dark:text-[#d6dadc]">{name}</p>
+        <OutcomePill comparison={result.comparison} />
+      </div>
+
       {isUpdated && (
-        <div
-          className="card-updated-notice"
-          role="status"
-          data-testid="clause-updated-notice"
-        >
-          <span className="updated-dot" aria-hidden="true">
-            ●
-          </span>
-          <span>Result updated based on whole-contract check</span>
+        <p className="mt-2 text-[0.8rem] font-semibold text-mbiu-indigo dark:text-[#a9b0ff]" role="status" data-testid="clause-updated-notice">
+          Result updated based on whole-contract check
+        </p>
+      )}
+
+      <h3
+        id={`heading-${result.clause_id}`}
+        className="mt-2 break-words font-serif text-[1.2rem] font-medium leading-snug text-mbiu-ink dark:text-[#F6F2E9]"
+        data-testid="clause-headline"
+      >
+        {result.headline}
+      </h3>
+
+      <Fold summary="In simple words">
+        <p className="pb-1 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d6dadc]">{result.what_it_says}</p>
+      </Fold>
+
+      {/* Laptops show why it matters; phones fold it to keep the report skimmable */}
+      <div className="mt-2 hidden lg:block" data-testid="why-it-matters-section">
+        <h4 className={sectionLabel}>Why it matters</h4>
+        <p className="mt-1 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d6dadc]">{result.what_it_means}</p>
+      </div>
+      <Fold summary="Why it matters" className="lg:hidden">
+        <p className="pb-1 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d6dadc]">{result.what_it_means}</p>
+      </Fold>
+
+      <ShillingsCalculator inputs={result.impact_inputs} />
+
+      {(comparison || sources) && (
+        <div className="mt-4" data-testid="how-it-compares-section">
+          <h4 className={sectionLabel}>What usual contracts say</h4>
+          {comparison && (
+            <p className="mt-1 text-[0.95rem] leading-relaxed text-mbiu-ink/85 dark:text-[#d6dadc]">{comparison}</p>
+          )}
+          {sources && <p className="mt-1 text-[0.8rem] text-mbiu-ink/55 dark:text-[#b9c1c5]">Compared with: {sources}</p>}
         </div>
       )}
 
-      {/* 1. Headline in artist's terms */}
-      <div className="card-headline-wrapper">
-        <h3
-          id={`headline-${result.clause_id}`}
-          className="card-headline"
-          data-testid="clause-headline"
-        >
-          {result.headline}
-        </h3>
-      </div>
-
-      {/* 2. Status, topic and location (tapping jumps to the clause in the PDF viewer) */}
-      <div className="card-status-topic-location" data-testid="status-topic-location">
-        <button
-          type="button"
-          onClick={() => onJumpToPdfClause?.(result.clause_id, firstPage)}
-          className="jump-to-pdf-trigger"
-          aria-label={`Jump to page ${firstPage} in PDF viewer`}
-          title={`Click to jump to page ${firstPage} in PDF viewer`}
-        >
-          <span className={`status-badge-inline ${badge.className}`}>{badge.label}</span>
-          <span className="meta-separator" aria-hidden="true">
-            ·
-          </span>
-          <span className="meta-topic">{topicText}</span>
-          <span className="meta-separator" aria-hidden="true">
-            ·
-          </span>
-          <span className="meta-location">
-            {locationLabel}
-            <span className="pdf-jump-icon" aria-hidden="true">
-              {" "}
-              ↗
-            </span>
-          </span>
-        </button>
-      </div>
-
-      {/* 3, 4, 5 Comparison Section */}
-      <section className="card-comparison-section" data-testid="contract-vs-standard">
-        {/* 3. Your contract vs the standard, one line each */}
-        <div className="comparison-line your-contract-line">
-          <span className="line-label">Your contract:</span>
-          <p className="line-content text-contract">“{result.what_it_says}”</p>
-        </div>
-
-        {result.standard_excerpt && (
-          <div className="comparison-line standard-line">
-            <span className="line-label">The standard:</span>
-            <p className="line-content text-standard">{result.standard_excerpt}</p>
-          </div>
-        )}
-
-        <div className="card-meaning-box">
-          <span className="meaning-title">What this means for you:</span>
-          <p className="meaning-text">{result.what_it_means}</p>
-        </div>
-
-        {result.comparison_note && (
-          <div className="card-comparison-note" data-testid="clause-comparison-note">
-            <span className="note-icon" aria-hidden="true">
-              ℹ️
-            </span>
-            <p className="note-text">{result.comparison_note}</p>
-          </div>
-        )}
-
-        {/* 4. In shillings: worked example from impact_inputs */}
-        {result.impact_inputs && (
-          <div className="card-shillings-section">
-            <ShillingsCalculator inputs={result.impact_inputs} />
-          </div>
-        )}
-
-        {/* 5. Also affected by */}
-        {linkedClauses && linkedClauses.length > 0 && (
-          <div className="card-affected-by" data-testid="also-affected-by">
-            <span className="affected-label">Also affected by:</span>
-            <div className="affected-links">
-              {linkedClauses.map((link) => (
-                <button
-                  key={link.clauseId}
-                  type="button"
-                  onClick={() => onSelectClause?.(link.clauseId)}
-                  className={`affected-link-btn ${
-                    link.issueKind ? `kind-${link.issueKind}` : ""
-                  }`}
-                  aria-label={`Jump to ${link.label}`}
-                  title={`Jump to ${link.label}`}
-                >
-                  {link.issueKind === "conflict" && (
-                    <span className="kind-icon" aria-hidden="true">
-                      ⚠️{" "}
-                    </span>
-                  )}
-                  {link.issueKind === "override" && (
-                    <span className="kind-icon" aria-hidden="true">
-                      ⚡{" "}
-                    </span>
-                  )}
-                  <span>{link.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 6. Fairer wording from the template with a Copy button (on cards worse than standard) */}
-      {result.comparison === "worse_for_you" && result.fairer_wording && (
-        <section className="card-fairer-section" data-testid="fairer-wording-section">
-          <div className="fairer-header">
-            <div className="fairer-title-row">
-              <span className="fairer-badge-tag">Fairer wording</span>
-              <span className="fairer-hint">Recommended alternative from reviewed standard</span>
-            </div>
-            <CopyButton
-              text={result.fairer_wording}
-              label="📋 Copy"
-              copiedLabel="✓ Copied!"
-              className="copy-btn"
-            />
-          </div>
-          <blockquote className="fairer-quote">“{result.fairer_wording}”</blockquote>
-        </section>
-      )}
-
-      {/* 7. Ask them, with Copy and Share to WhatsApp */}
       {result.ask_them && (
-        <section className="card-ask-them-section" data-testid="ask-them-section">
-          <div className="ask-them-header">
-            <span className="ask-them-badge">Ask them</span>
-            <div className="ask-them-actions">
-              <CopyButton
-                text={result.ask_them}
-                label="📋 Copy"
-                copiedLabel="✓ Copied"
-                className="action-btn copy-action-btn"
-              />
-              <a
-                href={whatsappShareUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="action-btn whatsapp-action-btn"
-                aria-label="Share question to WhatsApp"
-              >
-                <span className="whatsapp-icon" aria-hidden="true">
-                  💬
-                </span>
-                <span>WhatsApp</span>
-              </a>
-            </div>
+        <div className="mt-4 border-l-[3px] border-mbiu-indigo pl-3 dark:border-mbiu-indigo-dark" data-testid="ask-them-section">
+          <h4 className="text-[0.72rem] font-bold uppercase tracking-[0.08em] text-mbiu-indigo dark:text-[#a9b0ff]">Ask them this</h4>
+          <p className="mt-1 break-words text-[0.98rem] text-mbiu-ink dark:text-[#F4EFE6]">{result.ask_them}</p>
+          <div className="mt-1 flex flex-wrap gap-x-5">
+            <CopyButton text={result.ask_them} label="Copy" copiedLabel="Copied" className={linkButton} />
+            <a href={whatsappShareUrl} target="_blank" rel="noopener noreferrer" className={linkButton}>
+              Share on WhatsApp
+            </a>
           </div>
-          <p className="ask-them-text">“{result.ask_them}”</p>
-        </section>
+        </div>
       )}
 
-      {/* 8. Show the exact wording: original clause and template excerpt, collapsed by default */}
-      <section className="card-exact-wording-section" data-testid="exact-wording-section">
-        <details className="exact-wording-details">
-          <summary className="exact-wording-summary">
-            <span className="summary-icon" aria-hidden="true">
-              🔍
-            </span>
-            <span>Show exact wording</span>
-            <span className="summary-hint">(original clause & template excerpt)</span>
-          </summary>
-
-          <div className="exact-wording-body">
-            <div className="wording-block">
-              <span className="wording-sublabel">Original contract clause (unaltered):</span>
-              <blockquote className="exact-text-quote">{result.original_text}</blockquote>
-            </div>
-
-            {result.standard_excerpt && (
-              <div className="wording-block">
-                <span className="wording-sublabel">Reviewed template excerpt:</span>
-                <blockquote className="exact-template-quote">
-                  {result.standard_excerpt}
-                </blockquote>
-              </div>
+      <div className="mt-3 flex flex-wrap items-start gap-x-5" data-testid="exact-wording-section">
+        <Fold summary="See the exact words" className="w-full sm:w-auto">
+          <div className="space-y-3 pb-2 text-[0.9rem] text-mbiu-ink/85 dark:text-[#d6dadc]">
+            <blockquote className="break-words border-l-2 border-[#e9dec9] pl-3 dark:border-white/15">
+              <span className="block text-[0.75rem] font-semibold text-mbiu-ink/55 dark:text-[#b9c1c5]">Your contract</span>
+              “{result.original_text}”
+            </blockquote>
+            {usualWording && (
+              <blockquote className="break-words border-l-2 border-[#e9dec9] pl-3 dark:border-white/15">
+                <span className="block text-[0.75rem] font-semibold text-mbiu-ink/55 dark:text-[#b9c1c5]">Usual contract wording</span>
+                “{usualWording}”
+              </blockquote>
             )}
           </div>
-        </details>
-      </section>
+        </Fold>
+        {onJumpToPdfClause && (
+          <button type="button" onClick={() => onJumpToPdfClause(result.clause_id, firstPage)} className={linkButton}>
+            View on page {firstPage}
+          </button>
+        )}
+      </div>
 
-      {/* 9. Read aloud with the browser's speech synthesis, on the device */}
-      <footer className="card-read-aloud-footer" data-testid="read-aloud-section">
+      {linkedClauses.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 text-[0.85rem] text-mbiu-ink/60 dark:text-[#b9c1c5]" data-testid="also-affected-by">
+          <span>Linked:</span>
+          {links.map((link) => (
+            <button
+              key={link.clauseId}
+              type="button"
+              onClick={() => onSelectClause?.(link.clauseId)}
+              className={linkButton}
+              aria-label={`Go to ${link.label}`}
+            >
+              {link.label}
+            </button>
+          ))}
+          {!showAllLinks && linkedClauses.length > LINKS_SHOWN && (
+            <button type="button" onClick={() => setShowAllLinks(true)} className={linkButton}>
+              +{linkedClauses.length - LINKS_SHOWN}
+            </button>
+          )}
+        </div>
+      )}
+
+      <footer className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#e9dec9] pt-2 dark:border-white/10" data-testid="read-aloud-section">
+        <p className="text-[0.78rem] text-mbiu-ink/55 dark:text-[#b9c1c5]" data-testid="clause-notice">
+          Not legal advice.
+        </p>
         <ReadAloudButton text={speechText} />
       </footer>
-    </article>
+    </ReportCard>
   );
 };

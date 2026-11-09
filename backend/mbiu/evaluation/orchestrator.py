@@ -47,7 +47,7 @@ from mbiu.api.schemas import (
     Versions,
 )
 from mbiu.contract_map import map_contract
-from mbiu.corpus.synthetic import retrieve_simple_evidence
+from mbiu.corpus.synthetic import retrieve_annotated_exemplar, retrieve_simple_evidence
 from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
 from mbiu.documents.segment import segment_document
@@ -129,7 +129,6 @@ def _error_clause_result(
         comparison_note=None,
         impact_inputs=None,
         linked_clauses=links,
-        fairer_wording=None,
         ask_them=None,
         standard_template_id=standard_template_id,
         standard_excerpt=standard_excerpt,
@@ -275,6 +274,7 @@ async def _compare_clauses(
                         provider=provider,
                         model=model,
                         raise_on_error=raise_on_error,
+                        contract_type=contract_type,
                     )
                 except LLMError as err:
                     return err
@@ -379,7 +379,11 @@ async def _run_evaluation_pipeline(
         with tracer.start_as_current_span("mbiu.extract") as span:
             span.set_attribute("mbiu.stage", "extract")
             extracted = await asyncio.to_thread(
-                extract_text_from_pdf, pdf_bytes, page_count=upload_meta.page_count
+                extract_text_from_pdf,
+                pdf_bytes,
+                page_count=upload_meta.page_count,
+                base_timeout_s=settings.EXTRACTION_TIMEOUT_S,
+                per_page_timeout_s=settings.EXTRACTION_TIMEOUT_PER_PAGE_S,
             )
             span.set_attribute("mbiu.extracted_pages", extracted.total_pages)
             span.set_attribute("mbiu.skipped_pages_count", len(extracted.skipped_pages))
@@ -576,6 +580,7 @@ async def _evaluate_single_clause(
     provider: Provider = Provider.GEMINI,
     model: str = settings.GEMINI_MODEL_MAIN,
     raise_on_error: bool = False,
+    contract_type: str | None = None,
 ) -> ClauseResult:
     """Evaluate one clause against the template evidence retrieved for it."""
     links = linked_clauses or []
@@ -596,6 +601,17 @@ async def _evaluate_single_clause(
                 evidence_id=primary_ev.evidence_id,
                 template_id=primary_ev.template_id,
                 source=primary_ev.source_title,
+            )
+        )
+    exemplar = retrieve_annotated_exemplar(clause.text, contract_type=contract_type)
+    if exemplar is not None:
+        content_parts.append(
+            as_data(
+                "annotated_reference_example",
+                exemplar.format_for_prompt(),
+                document_id=exemplar.document_id,
+                clause_id=exemplar.clause_id,
+                outcome=exemplar.comparison_outcome,
             )
         )
     content = "\n\n".join(content_parts)
@@ -659,7 +675,6 @@ async def _evaluate_single_clause(
                 comparison_note=note,
                 impact_inputs=None,
                 linked_clauses=links,
-                fairer_wording=None,
                 ask_them=None,
                 standard_template_id=primary_ev.template_id if primary_ev else None,
                 standard_excerpt=primary_ev.excerpt if primary_ev else None,
@@ -674,8 +689,7 @@ async def _evaluate_single_clause(
         outcome = proposal.comparison
         notes = []
         if note is not None:
-            # Nothing to compare with: keep the explanation, never a verdict
-            outcome = Outcome.CANNOT_COMPARE
+            # Include informational note without forcing cannot_compare
             notes.append(note)
         if context is not None:
             notes.append(context)
@@ -686,12 +700,13 @@ async def _evaluate_single_clause(
             )
         comp_note = " ".join(notes) or None
 
-        fairer = primary_ev.excerpt if outcome == Outcome.WORSE_FOR_YOU and primary_ev else None
         return ClauseResult(
             clause_id=clause.clause_id,
             pages=clause.pages,
             original_text=clause.text,
-            status=ClauseStatus.EVALUATED if note is None else ClauseStatus.CANNOT_COMPARE,
+            status=ClauseStatus.EVALUATED
+            if outcome != Outcome.CANNOT_COMPARE
+            else ClauseStatus.CANNOT_COMPARE,
             comparison=outcome,
             headline=proposal.headline,
             what_it_says=proposal.what_it_says,
@@ -700,7 +715,6 @@ async def _evaluate_single_clause(
             # Verified quotes only; the frontend does the arithmetic
             impact_inputs=proposal.impact_inputs,
             linked_clauses=links,
-            fairer_wording=fairer,
             ask_them=proposal.ask_them,
             standard_template_id=primary_ev.template_id if primary_ev else None,
             standard_excerpt=primary_ev.excerpt if primary_ev else None,

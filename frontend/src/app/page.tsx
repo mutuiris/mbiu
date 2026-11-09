@@ -6,19 +6,17 @@ import {
   Diamond,
   Info,
   Lock,
-  Music,
-  Music2,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FileDropzone } from "@/components/FileDropzone";
+import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
 import { LiveResults } from "@/components/results/LiveResults";
+import { SiteBackdrop } from "@/components/SiteBackdrop";
 import { Turnstile } from "@/components/Turnstile";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import {
@@ -32,10 +30,12 @@ import {
   NOT_SAVED_MESSAGE,
   clearKeptResults,
   forgetResults,
+  getActiveMemorySession,
   keepResults,
   markResultsShown,
   restoreResults,
   resultsWereShown,
+  setActiveMemorySession,
 } from "@/lib/keep-tab";
 import { emptyLog, replay, tracked, unfinishedClauses, withEvent } from "@/lib/results-log";
 import { validateContractFile } from "@/lib/validation";
@@ -51,61 +51,9 @@ const steps = [
 const primaryButton =
   "inline-flex items-center justify-center gap-2.5 rounded-full bg-mbiu-indigo text-white shadow-[0_18px_36px_-18px_rgba(38,41,140,0.85)] transition hover:-translate-y-0.5 hover:bg-mbiu-indigo-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mbiu-indigo dark:bg-mbiu-indigo-dark dark:hover:bg-[#6b74ea] dark:focus-visible:outline-mbiu-indigo-dark";
 
-function Rays({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 84 92" fill="none" className={className}>
-      <path d="M36 88 20 36" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="M54 78V20" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      <path d="m70 84 12-42" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function TribalPattern({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 220 260" fill="none" className={className}>
-      <path d="M-36 252 54 132l94 120" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-62 240 54 96l120 144" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-40 216 54 60l104 156" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M-14 224 54 148l70 76" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <circle cx="54" cy="132" r="3.5" fill="currentColor" />
-      <circle cx="54" cy="96" r="3.5" fill="currentColor" />
-      <circle cx="54" cy="60" r="3.5" fill="currentColor" />
-      <circle cx="118" cy="118" r="3" fill="currentColor" />
-      <circle cx="150" cy="168" r="3" fill="currentColor" />
-    </svg>
-  );
-}
-
-function Backdrop() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-[100svh] min-h-[720px] max-h-[1000px] overflow-hidden"
-    >
-      <Image
-        src="/brand/mbiu-horn-watermark.png"
-        alt=""
-        width={972}
-        height={590}
-        priority
-        className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-45 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[9%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-60 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
-      />
-
-      <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
-      <TribalPattern className="absolute -bottom-8 -left-8 h-[220px] w-[190px] text-mbiu-ink sm:h-[260px] sm:w-[225px] dark:text-white/60" />
-
-      <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />
-      <Music2 className="absolute bottom-[7%] right-[7%] h-10 w-10 rotate-[14deg] text-mbiu-ink/90 dark:text-white/70" />
-      <Music className="absolute bottom-[3%] right-[3%] h-7 w-7 -rotate-[12deg] text-mbiu-ink/80 dark:text-white/60" />
-      <Sparkles className="absolute bottom-[11%] right-[2%] h-5 w-5 text-mbiu-ink/60 dark:text-white/50" />
-    </div>
-  );
-}
-
 function ClausePreviewCard() {
   return (
-    <article className="relative z-10 w-full max-w-[380px] rounded-[24px] border border-white/70 bg-[#fbf1e1]/70 p-5 shadow-[0_36px_90px_-32px_rgba(30,25,15,0.5)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_36px_90px_-34px_rgba(0,0,0,0.9)] sm:rounded-[28px] sm:p-7 lg:mt-8">
+    <article className="relative z-10 w-full max-w-[380px] rounded-[24px] border border-white/70 bg-[#fbf1e1]/70 p-5 shadow-[0_36px_90px_-32px_rgba(30,25,15,0.5)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_36px_90px_-34px_rgba(0,0,0,0.9)] sm:rounded-[28px] sm:p-7 xl:mt-2">
       <div className="flex items-center gap-2.5">
         <Diamond className="h-3.5 w-3.5 fill-[#e98a3f] text-[#e98a3f]" strokeWidth={1} />
         <span className="text-[0.88rem] font-medium text-mbiu-ink dark:text-[#EDE7DB] sm:text-[0.9rem]">
@@ -119,7 +67,7 @@ function ClausePreviewCard() {
 
       <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-mbiu-peach px-3.5 py-1.5 text-[0.82rem] font-bold text-mbiu-warning-text sm:px-4 sm:text-[0.88rem]">
         <TriangleAlert className="h-4 w-4 shrink-0 fill-[#c2410c] text-[#c2410c]" strokeWidth={1.5} />
-        Worth asking about
+        Worth inquiry
       </span>
 
       <p className="mt-4 font-serif text-[0.98rem] italic leading-6 text-mbiu-ink/90 dark:text-[#E7DFD2]/85 sm:text-[1.02rem] sm:leading-7">
@@ -162,6 +110,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [stream, setStream] = useState<EventStream | null>(null);
+  const [isViewingResults, setIsViewingResults] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [log, setLog] = useState(emptyLog);
   const [keptSince, setKeptSince] = useState<number | null>(null);
@@ -183,9 +132,47 @@ export default function Home() {
     setTurnstileKey((key) => key + 1);
   };
 
-  const startStream = useCallback((source: EventStream, resumeIfDropped: boolean) => {
+  const scrollToSection = useCallback((sectionId: string) => {
+    if (typeof window === "undefined") return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
+    if (!sectionId || sectionId === "hero" || sectionId === "#") {
+      window.scrollTo({ top: 0, behavior });
+      return;
+    }
+    const cleanId = sectionId.replace(/^#/, "");
+    const el = window.document.getElementById(cleanId);
+    if (el) {
+      el.scrollIntoView({ behavior, block: "start" });
+    }
+  }, []);
+
+  const handleNavigateSection = useCallback(
+    (sectionId: string) => {
+      const cleanId = sectionId.replace(/^#/, "");
+      if (stream && isViewingResults) {
+        if (typeof window !== "undefined") {
+          const targetUrl =
+            !cleanId || cleanId === "hero" ? "/" : `/#${cleanId}`;
+          window.history.pushState(
+            { mbiuView: "landing", sectionId: cleanId },
+            "",
+            targetUrl,
+          );
+        }
+        setIsViewingResults(false);
+        setTimeout(() => scrollToSection(cleanId), 40);
+      } else {
+        scrollToSection(cleanId);
+      }
+    },
+    [stream, isViewingResults, scrollToSection],
+  );
+
+  const startStream = useCallback((source: EventStream, resumeIfDropped: boolean, showResults = true) => {
     const id = ++generation.current;
     setIsStreaming(true);
+    setIsViewingResults(showResults);
     setStream(
       tracked(
         source,
@@ -205,20 +192,101 @@ export default function Home() {
     );
   }, []);
 
+  const returnToEvaluation = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.history.pushState({ mbiuView: "results" }, "", "/");
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+    if (log.size > 0) {
+      startStream(replay(log.values()), false, true);
+    } else {
+      setIsViewingResults(true);
+    }
+  }, [log, startStream]);
+
+  // Handle global return-to-evaluation events from the floating banner
   useEffect(() => {
-    // sessionStorage exists only in the browser, so this waits until after hydration
+    const handleReturn = () => returnToEvaluation();
+    window.addEventListener("mbiu-return-to-evaluation", handleReturn);
+    return () => window.removeEventListener("mbiu-return-to-evaluation", handleReturn);
+  }, [returnToEvaluation]);
+
+  useEffect(() => {
+    // Restore active in-memory session when returning from /privacy, /terms, or /team,
+    // or restore from sessionStorage if the user enabled "Keep results".
     void Promise.resolve().then(() => {
+      const searchParams =
+        typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const wantsResults = searchParams?.get("view") === "results";
+      const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+      const wantsLandingSection =
+        !wantsResults &&
+        Boolean(hash && ["how-it-works", "about", "upload", "privacy", "hero"].includes(hash));
+
+      const memorySession = getActiveMemorySession();
+      if (memorySession && memorySession.log.size > 0) {
+        setSelectedFile(memorySession.selectedFile);
+        setConsentChecked(memorySession.consentChecked);
+        setKeptSince(memorySession.keptSince);
+        setLog(memorySession.log);
+        const showEval = wantsLandingSection ? false : true;
+        startStream(replay(memorySession.log.values()), false, showEval);
+        if (wantsLandingSection) {
+          setTimeout(() => scrollToSection(hash), 50);
+        }
+        return;
+      }
+
+      if (memorySession) {
+        setSelectedFile(memorySession.selectedFile);
+        setConsentChecked(memorySession.consentChecked);
+      }
+
       const kept = restoreResults();
       if (kept) {
         setKeptSince(kept.keptSince);
         setResumeUnfinished(true);
-        startStream(replay(kept.events), false);
+        const showEval = wantsLandingSection ? false : true;
+        startStream(replay(kept.events), false, showEval);
+        if (wantsLandingSection) {
+          setTimeout(() => scrollToSection(hash), 50);
+        }
       } else if (resultsWereShown()) {
         forgetResults();
         setNotice(NOT_SAVED_MESSAGE);
       }
     });
-  }, [startStream]);
+  }, [startStream, scrollToSection]);
+
+  // Keep in-memory session synchronized for seamless SPA navigation (e.g., to /privacy and Back)
+  useEffect(() => {
+    if (log.size > 0 || selectedFile !== null || consentChecked) {
+      setActiveMemorySession({
+        log,
+        selectedFile,
+        consentChecked,
+        keptSince,
+        isViewingResults,
+      });
+    }
+  }, [log, selectedFile, consentChecked, keptSince, isViewingResults]);
+
+  // Support browser Back/Forward between evaluation view and landing sections (#how-it-works, #about)
+  useEffect(() => {
+    if (!stream) return;
+    const onPopState = (event: PopStateEvent) => {
+      if (event.state?.mbiuOverlay) return;
+      const hash = window.location.hash.replace(/^#/, "");
+      if (event.state?.mbiuView === "landing" || (hash && ["how-it-works", "about", "upload"].includes(hash))) {
+        setIsViewingResults(false);
+        if (hash) setTimeout(() => scrollToSection(hash), 40);
+      } else {
+        setIsViewingResults(true);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [stream, scrollToSection]);
 
   useEffect(() => {
     if (!stream) return;
@@ -317,6 +385,7 @@ export default function Home() {
     generation.current++;
     forgetResults();
     setStream(null);
+    setIsViewingResults(false);
     setIsStreaming(false);
     setLog(emptyLog);
     setKeptSince(null);
@@ -326,59 +395,66 @@ export default function Home() {
     resetTurnstile();
   };
 
-  if (stream) {
+  if (stream && isViewingResults) {
     const isIdle = !isStreaming && !clausesToCheck;
     return (
-      <main className="page-wrapper results-page">
-        <div className="stream-controls">
-          <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
-            Check another contract
-          </button>
-        </div>
-        <KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />
-        <div className="resume-panel" role="status" aria-live="polite">
-          {resultsStatus && <p>{resultsStatus}</p>}
-          {!isStreaming && clausesToCheck && (
-            <>
-              <p>
-                Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
-                again after a quick security check.
-              </p>
-              <Turnstile
-                key={turnstileKey}
-                onSuccess={checkClauses}
-                onError={() =>
-                  setResultsStatus("The security check could not load. Please try again.")
-                }
-              />
-            </>
-          )}
-        </div>
-        {isIdle && unfinished.length > 0 && (
-          <button type="button" className="secondary-btn" onClick={() => setToCheck(unfinished)}>
-            Check the {unfinished.length === 1 ? "unfinished clause" : `${unfinished.length} unfinished clauses`}
-          </button>
-        )}
-        <LiveResults
-          eventStream={stream}
-          onRetryAll={startOver}
-          onRetryClause={isIdle ? retryClause : undefined}
-          file={selectedFile}
+      <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
+        <SiteBackdrop variant="results" />
+        <Navbar
+          basePath="/"
+          onNavigateSection={handleNavigateSection}
+          onUploadClick={() => handleNavigateSection("upload")}
         />
-      </main>
+
+        <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
+          {(resultsStatus || (!isStreaming && clausesToCheck)) && (
+            <div className="resume-panel" role="status" aria-live="polite">
+              {resultsStatus && <p>{resultsStatus}</p>}
+              {!isStreaming && clausesToCheck && (
+                <>
+                  <p>
+                    Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
+                    again after a quick security check.
+                  </p>
+                  <Turnstile
+                    key={turnstileKey}
+                    onSuccess={checkClauses}
+                    onError={() =>
+                      setResultsStatus("The security check could not load. Please try again.")
+                    }
+                  />
+                </>
+              )}
+            </div>
+          )}
+          <LiveResults
+            eventStream={stream}
+            initialLog={log}
+            onRetryAll={startOver}
+            onRetryClause={isIdle ? retryClause : undefined}
+            file={selectedFile}
+            onCheckAnother={startOver}
+            notChecked={isIdle ? unfinished.length : 0}
+            onCheckRest={isIdle && unfinished.length > 0 ? () => setToCheck(unfinished) : undefined}
+            keep={<KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />}
+          />
+        </main>
+
+        <Footer basePath="/" onNavigateSection={handleNavigateSection} />
+      </div>
     );
   }
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
-      <Backdrop />
+      <SiteBackdrop />
 
-      <Navbar />
+      <Navbar onNavigateSection={handleNavigateSection} />
 
-      <main className="relative z-10">
+      <main className="relative z-10" id="hero">
         <section
           id="about"
-          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-10 px-4 pb-12 pt-8 sm:scroll-mt-24 sm:gap-12 sm:px-8 sm:pb-16 sm:pt-14 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-14 xl:pt-20"
+          className="mx-auto grid w-full max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-6 pt-4 sm:scroll-mt-24 sm:gap-10 sm:px-8 sm:pb-8 sm:pt-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8 xl:pb-8 xl:pt-8"
         >
           <div className="mx-auto flex w-full max-w-[720px] flex-col items-center text-center xl:mx-0 xl:items-start xl:text-left">
             <h1 className="font-serif text-[clamp(2.15rem,5.5vw,4.5rem)] font-medium leading-[1.04] tracking-[-0.035em] text-mbiu-ink dark:text-[#F6F2E9] xl:leading-[0.92]">
@@ -405,7 +481,7 @@ export default function Home() {
 
             <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Your contract isn&apos;t stored on our servers.
+              Mbiu does not store your contracts
             </p>
           </div>
 
@@ -416,98 +492,105 @@ export default function Home() {
 
         <section
           id="how-it-works"
-          className="mx-auto w-full max-w-[1280px] scroll-mt-20 px-4 pb-14 sm:scroll-mt-24 sm:px-8 sm:pb-16"
+          className="mx-auto w-full max-w-[1280px] scroll-mt-20 px-4 pb-20 sm:scroll-mt-24 sm:px-8 sm:pb-24"
         >
-          <div className="mx-auto flex max-w-[1120px] items-center gap-3 sm:gap-8">
-            <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
-            <h2 className="whitespace-nowrap font-serif text-[1.5rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.1rem]">
-              How it works
-            </h2>
-            <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
-          </div>
+          <div className="landing-upload w-full rounded-[28px] border border-white/70 bg-white/40 p-6 shadow-[0_36px_90px_-48px_rgba(22,26,38,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:rounded-[36px] sm:p-10 md:p-12">
+            <div className="mx-auto flex max-w-[1120px] items-center gap-3 sm:gap-8">
+              <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
+              <h2 className="whitespace-nowrap font-serif text-[1.5rem] font-semibold italic tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2.1rem]">
+                How it works
+              </h2>
+              <div className="h-px flex-1 bg-mbiu-ink/25 dark:bg-white/20" />
+            </div>
 
-          <ol className="mx-auto mt-8 grid max-w-[980px] gap-6 sm:mt-10 sm:grid-cols-3 sm:gap-0">
-            {steps.map((step, index) => (
-              <li
-                key={step.number}
-                className={`flex items-center gap-4 sm:px-6 md:px-7 ${
-                  index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
-                }`}
-              >
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mbiu-peach-strong text-[1.05rem] font-semibold text-[#1b2430] sm:h-14 sm:w-14 sm:text-[1.15rem]">
-                  {step.number}
-                </span>
-                <div>
-                  <p className="text-[0.98rem] font-semibold leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
-                    {step.title}
-                  </p>
-                  <p className="text-[0.98rem] leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
-                    {step.body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+            <ol className="mx-auto mt-8 grid max-w-[980px] gap-6 sm:mt-10 sm:grid-cols-3 sm:gap-0">
+              {steps.map((step, index) => (
+                <li
+                  key={step.number}
+                  className={`flex items-center gap-4 sm:px-6 md:px-7 ${index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
+                    }`}
+                >
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mbiu-peach-strong text-[1.05rem] font-semibold text-[#1b2430] sm:h-14 sm:w-14 sm:text-[1.15rem]">
+                    {step.number}
+                  </span>
+                  <div>
+                    <p className="text-[0.98rem] font-semibold leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
+                      {step.title}
+                    </p>
+                    <p className="text-[0.98rem] leading-tight text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.02rem]">
+                      {step.body}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
 
-        <section
-          id="upload"
-          className="mx-auto w-full max-w-[880px] scroll-mt-20 px-4 pb-20 sm:scroll-mt-24 sm:px-8 sm:pb-24"
-        >
-          <div className="landing-upload rounded-[24px] border border-white/70 bg-white/40 p-4 shadow-[0_36px_90px_-48px_rgba(22,26,38,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:rounded-[32px] sm:p-8">
-            <h2 className="font-serif text-[1.65rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
-              Upload your contract
-            </h2>
-            <p className="mt-2 text-[0.92rem] text-mbiu-ink/70 dark:text-[#B9C1C5] sm:text-[0.95rem]">
-              We read it once, explain each clause, and give you the questions to ask.
-            </p>
+            <div className="my-10 h-px w-full bg-mbiu-ink/15 dark:bg-white/15 sm:my-12" />
 
-            {notice && (
-              <div className="status-alert info mt-6" role="status">
-                {notice}
-              </div>
-            )}
+            <div id="upload" className="mx-auto w-full max-w-[880px] scroll-mt-28">
+              <h3 className="font-serif text-[1.65rem] font-semibold tracking-[-0.02em] text-mbiu-ink dark:text-[#F6F2E9] sm:text-[2rem]">
+                Upload your contract
+              </h3>
+              <p className="mt-2 text-[0.92rem] text-mbiu-ink/70 dark:text-[#B9C1C5] sm:text-[0.95rem]">
+                We read it once, explain each clause, and give you the questions to ask.
+              </p>
 
-            <form onSubmit={handleUpload} className="mt-6">
-              <div id="privacy" className="scroll-mt-28">
-                <PrivacyNotice consentChecked={consentChecked} onConsentChange={setConsentChecked} />
-              </div>
-
-              <FileDropzone
-                selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
-                onError={setErrorMessage}
-                disabled={isUploading}
-              />
-
-              <div className="turnstile-wrapper">
-                <Turnstile
-                  key={turnstileKey}
-                  onSuccess={setTurnstileToken}
-                  onError={() =>
-                    setErrorMessage("The security check could not load. Please refresh the page.")
-                  }
-                  onExpire={() => setTurnstileToken(null)}
-                />
-              </div>
-
-              {errorMessage && (
-                <div className="status-alert error" role="alert">
-                  <strong>Error: </strong>
-                  {errorMessage}
+              {notice && (
+                <div className="status-alert info mt-6" role="status">
+                  {notice}
                 </div>
               )}
 
-              <div className="action-section">
-                <button type="submit" className="submit-btn" disabled={!isSubmitEnabled}>
-                  {isUploading && <span className="spinner" />}
-                  {isUploading ? "Uploading contract…" : "Check my contract"}
-                </button>
-              </div>
-            </form>
+              <form onSubmit={handleUpload} className="mt-6">
+                <div id="privacy" className="scroll-mt-28">
+                  <PrivacyNotice consentChecked={consentChecked} onConsentChange={setConsentChecked} />
+                </div>
+
+                <FileDropzone
+                  selectedFile={selectedFile}
+                  onFileSelect={handleFileSelect}
+                  onError={setErrorMessage}
+                  disabled={isUploading}
+                />
+
+                <div className="turnstile-wrapper">
+                  <Turnstile
+                    key={turnstileKey}
+                    onSuccess={(token) => {
+                      setTurnstileToken(token);
+                      setErrorMessage((prev) =>
+                        prev && prev.includes("security check") ? null : prev,
+                      );
+                    }}
+                    onError={() =>
+                      setErrorMessage(
+                        "The security check could not load. Tap 'Retry security check' above or refresh the page.",
+                      )
+                    }
+                    onExpire={() => setTurnstileToken(null)}
+                  />
+                </div>
+
+                {errorMessage && (
+                  <div className="status-alert error" role="alert">
+                    <strong>Error: </strong>
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div className="action-section">
+                  <button type="submit" className="submit-btn" disabled={!isSubmitEnabled}>
+                    {isUploading && <span className="spinner" />}
+                    {isUploading ? "Uploading contract…" : "Check my contract"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </section>
       </main>
+
+      <Footer onNavigateSection={handleNavigateSection} />
     </div>
   );
 }

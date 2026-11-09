@@ -26,8 +26,7 @@ jobs:
       DJANGO_ALLOWED_HOSTS: localhost
       # Direct connection (session pooler): migrations and bulk writes, not PgBouncer
       DATABASE_URL: ${{ secrets.DATABASE_DIRECT_URL }}
-      # Required by the settings; the pipeline never checks bot tokens
-      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       # Optional: without it, a second Gemini model gives the second opinion on tags
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

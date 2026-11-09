@@ -1,13 +1,9 @@
-import React from "react";
-import type { DocumentPayload, ClauseResult, ClauseFailure } from "@/lib/api/generated/types.gen";
-import { outcomeLabel, type OutcomeTone } from "@/lib/outcome";
+"use client";
 
-const PILL_CLASS: Record<OutcomeTone, string> = {
-  typical: "match",
-  unusual: "notice",
-  inquiry: "worse",
-  unchecked: "failed",
-};
+import React from "react";
+import type { ClauseFailure, ClauseResult, DocumentPayload } from "@/lib/api/generated/types.gen";
+import { readableClauseName } from "@/lib/report";
+import { OutcomePill } from "./ui";
 
 interface ClauseListProps {
   document: DocumentPayload;
@@ -15,82 +11,51 @@ interface ClauseListProps {
   failedByClauseId: Map<string, ClauseFailure>;
   selectedClauseId?: string | null;
   onSelectClause?: (clauseId: string) => void;
+  isStreaming?: boolean;
 }
 
+const quietPill =
+  "inline-flex shrink-0 whitespace-nowrap rounded-full bg-black/[0.05] px-2.5 py-1 text-[0.75rem] font-bold text-mbiu-ink/60 dark:bg-white/10 dark:text-[#b9c1c5]";
+
+/** Every clause in the contract with its result: the report's index. */
 export const ClauseList: React.FC<ClauseListProps> = ({
   document,
   resultsByClauseId,
   failedByClauseId,
   selectedClauseId,
   onSelectClause,
-}) => {
-  const [isExpanded, setIsExpanded] = React.useState(true);
-
-  return (
-    <section className="clauses-overview-panel" aria-label="Contract Clauses Overview">
-      <div className="overview-header" onClick={() => setIsExpanded(!isExpanded)} role="button" tabIndex={0}>
-        <div>
-          <h2 className="overview-title">
-            Document Clauses ({document.clauses.length} across {document.page_count} pages)
-          </h2>
-          <p className="overview-subtitle">
-            All extracted clauses being checked against reviewed standards.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="toggle-btn"
-          aria-expanded={isExpanded}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(!isExpanded);
-          }}
-        >
-          {isExpanded ? "Hide overview" : "Show overview"}
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div className="clauses-table-wrapper">
-          <ul className="clauses-grid" role="list">
-            {document.clauses.map((clause) => {
-              const result = resultsByClauseId.get(clause.clause_id);
-              const failure = failedByClauseId.get(clause.clause_id);
-
-              let statusBadge = <span className="status-pill pending">Checking…</span>;
-              if (result) {
-                const { label, tone } = outcomeLabel(result.comparison);
-                statusBadge = <span className={`status-pill ${PILL_CLASS[tone]}`}>{label}</span>;
-              } else if (failure) {
-                statusBadge = <span className="status-pill failed">Couldn&apos;t check</span>;
-              }
-
-              const isSelected = selectedClauseId === clause.clause_id;
-
-              return (
-                <li
-                  key={clause.clause_id}
-                  className={`clause-list-item ${isSelected ? "selected" : ""}`}
-                  onClick={() => onSelectClause?.(clause.clause_id)}
-                >
-                  <div className="clause-item-main">
-                    <span className="clause-item-num">
-                      {clause.number ? `Clause ${clause.number}` : "Clause"}
-                    </span>
-                    <span className="clause-item-heading">
-                      {clause.heading || "Untitled clause"}
-                    </span>
-                    <span className="clause-item-pages">
-                      p. {clause.pages.join(", ")}
-                    </span>
-                  </div>
-                  <div className="clause-item-status">{statusBadge}</div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </section>
-  );
-};
+  isStreaming = false,
+}) => (
+  <ul className="pb-2" aria-label="All clauses">
+    {document.clauses.map((clause) => {
+      const result = resultsByClauseId.get(clause.clause_id);
+      const failure = failedByClauseId.get(clause.clause_id);
+      return (
+        <li key={clause.clause_id} id={`clause-item-${clause.clause_id}`}>
+          <button
+            type="button"
+            onClick={() => onSelectClause?.(clause.clause_id)}
+            aria-current={selectedClauseId === clause.clause_id ? "true" : undefined}
+            className="report-press flex min-h-11 w-full items-center justify-between gap-3 border-t border-[#e9dec9] py-2 text-left dark:border-white/10"
+          >
+            <span className="min-w-0 break-words text-[0.9rem] text-mbiu-ink dark:text-[#F4EFE6]">
+              {readableClauseName(clause)}
+              <span className="ml-2 text-[0.78rem] text-mbiu-ink/50 dark:text-[#b9c1c5]">
+                {clause.pages.length === 1 ? "page" : "pages"} {clause.pages.join(", ")}
+              </span>
+            </span>
+            {result ? (
+              <OutcomePill comparison={result.comparison} />
+            ) : failure && failure.reason !== "not_checked" ? (
+              <span className={quietPill}>Couldn&apos;t check</span>
+            ) : isStreaming ? (
+              <span className="status-pill pending">Checking…</span>
+            ) : (
+              <span className={quietPill}>Not checked yet</span>
+            )}
+          </button>
+        </li>
+      );
+    })}
+  </ul>
+);
