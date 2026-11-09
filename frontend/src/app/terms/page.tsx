@@ -69,24 +69,7 @@ export default function TermsPage() {
               </p>
               <p className="mt-2">
                 Mbiu is currently offered as a free public educational tool. We reserve the right to
-                introduce premium or paid subscription tiers in the future. Inquiries may be
-                directed via{" "}
-                <a
-                  href="https://www.kamilimu.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-                >
-                  KamiLimu
-                </a>{" "}
-                at{" "}
-                <a
-                  href="mailto:info@kamilimu.org"
-                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-                >
-                  info@kamilimu.org
-                </a>
-                .
+                introduce premium or paid subscription tiers in the future.
               </p>
             </section>
 
@@ -125,9 +108,9 @@ export default function TermsPage() {
               <p className="mt-2">
                 <strong>No advocate-client relationship:</strong> Using Mbiu does not create an
                 advocate-client, legal, or fiduciary relationship. Mbiu uses automated Large Language
-                Models (Google Gemini API), and outputs may occasionally contain errors or omissions.
-                Musicians should consult licensed entertainment or intellectual property advocates for
-                binding legal advice.
+                Models, and outputs may occasionally contain errors or omissions. Musicians should
+                consult licensed entertainment or intellectual property advocates for binding legal
+                advice.
               </p>
             </section>
 
@@ -143,62 +126,44 @@ export default function TermsPage() {
               </p>
               <p className="mt-2">
                 Submitting a document to Mbiu never transfers, licenses, or assigns any intellectual
-                property or commercial rights to Mbiu or KamiLimu.
+                property or commercial rights to Mbiu.
               </p>
             </section>
 
             {/* Section 5 */}
             <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
               <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                5. Zero-Storage Architecture
-              </h2>
-              <p className="mt-2">
-                Mbiu operates on a strict zero-storage architecture. Your contract is evaluated purely
-                in volatile computer memory (RAM).
-              </p>
-              <p className="mt-2">
-                We never write contract files to databases, permanent disks, or application logs. Once
-                the analysis stream finishes or you close your browser tab, the contract data is
-                completely purged.
-              </p>
-            </section>
-
-            {/* Section 6 */}
-            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
-              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                6. Acceptable Use
+                5. Acceptable Use
               </h2>
               <p className="mt-2">
                 You agree to use Mbiu solely for lawful, authorized contract review. You agree not to:
               </p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.92rem]">
                 <li>Upload malicious software, corrupted files, or non-contract materials.</li>
-                <li>Scrape, automate, or reverse-engineer Mbiu&apos;s prompts, scoring, or APIs.</li>
-                <li>Bypass security checks, rate limits, or Cloudflare Turnstile verification.</li>
                 <li>Use Mbiu to generate deceptive claims or harass counterparties.</li>
               </ul>
             </section>
 
-            {/* Section 7 */}
+            {/* Section 6 */}
             <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
               <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                7. Limitations of Liability (&ldquo;As-Is&rdquo;)
+                6. Limitations of Liability (&ldquo;As-Is&rdquo;)
               </h2>
               <p className="mt-2">
                 Mbiu is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis
                 without warranty of any kind, whether express or implied.
               </p>
               <p className="mt-2">
-                Neither the Mbiu team nor KamiLimu Limited shall be liable for any direct, indirect,
-                incidental, or consequential damages, commercial disputes, financial losses, or
-                unfavourable contract terms entered into following automated analysis.
+                The Mbiu team shall not be liable for any direct, indirect, incidental, or
+                consequential damages, commercial disputes, financial losses, or unfavourable contract
+                terms entered into following automated analysis.
               </p>
             </section>
 
-            {/* Section 8 */}
+            {/* Section 7 */}
             <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
               <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                8. Governing Law &amp; Jurisdiction
+                7. Governing Law &amp; Jurisdiction
               </h2>
               <p className="mt-2">
                 These Terms are governed by and construed in accordance with the Laws of the
