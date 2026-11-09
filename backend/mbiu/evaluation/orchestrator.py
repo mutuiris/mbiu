@@ -47,7 +47,7 @@ from mbiu.api.schemas import (
     Versions,
 )
 from mbiu.contract_map import map_contract
-from mbiu.corpus.synthetic import retrieve_simple_evidence
+from mbiu.corpus.synthetic import retrieve_annotated_exemplar, retrieve_simple_evidence
 from mbiu.documents.extract import extract_text_from_pdf
 from mbiu.documents.segment import Clause as SegmentedClause
 from mbiu.documents.segment import segment_document
@@ -274,6 +274,7 @@ async def _compare_clauses(
                         provider=provider,
                         model=model,
                         raise_on_error=raise_on_error,
+                        contract_type=contract_type,
                     )
                 except LLMError as err:
                     return err
@@ -579,6 +580,7 @@ async def _evaluate_single_clause(
     provider: Provider = Provider.GEMINI,
     model: str = settings.GEMINI_MODEL_MAIN,
     raise_on_error: bool = False,
+    contract_type: str | None = None,
 ) -> ClauseResult:
     """Evaluate one clause against the template evidence retrieved for it."""
     links = linked_clauses or []
@@ -599,6 +601,17 @@ async def _evaluate_single_clause(
                 evidence_id=primary_ev.evidence_id,
                 template_id=primary_ev.template_id,
                 source=primary_ev.source_title,
+            )
+        )
+    exemplar = retrieve_annotated_exemplar(clause.text, contract_type=contract_type)
+    if exemplar is not None:
+        content_parts.append(
+            as_data(
+                "annotated_reference_example",
+                exemplar.format_for_prompt(),
+                document_id=exemplar.document_id,
+                clause_id=exemplar.clause_id,
+                outcome=exemplar.comparison_outcome,
             )
         )
     content = "\n\n".join(content_parts)
