@@ -245,8 +245,8 @@ def extract_and_verify_annotations(md_path: Path) -> list[dict[str, Any]]:
     clause_texts: dict[str, str] = {}
     for cm in clause_pattern.finditer(text):
         cid = cm.group(1).strip()
-        ctitle = cm.group(2).strip()
-        cbody = " ".join(cm.group(3).strip().splitlines())
+        ctitle = strip_md_inline(cm.group(2).strip())
+        cbody = strip_md_inline(" ".join(cm.group(3).strip().splitlines()))
         clause_texts[cid] = f"{cid} {ctitle} {cbody}"
 
     # Extract each [EXPERT LEGAL & MBIU SYSTEM ANNOTATION — CLAUSE X.Y] block
