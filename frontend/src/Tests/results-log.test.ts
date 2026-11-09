@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { Clause, ClauseResult } from "./api/generated/types.gen";
-import type { EvaluationEvent } from "./api/stream";
-import { emptyLog, replay, tracked, unfinishedClauses, withEvent } from "./results-log";
+import type { Clause, ClauseResult } from "@/lib/api/generated/types.gen";
+import type { EvaluationEvent } from "@/lib/api/stream";
+import { emptyLog, replay, tracked, unfinishedClauses, withEvent } from "@/lib/results-log";
 
 function clause(id: string): Clause {
   const text = `Synthetic clause ${id}.`;

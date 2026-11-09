@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PlatformLinks } from "./PlatformLinks";
+import { PlatformLinks } from "@/components/footer/PlatformLinks";
 
 describe("PlatformLinks Component", () => {
   it("renders the Platform heading", () => {

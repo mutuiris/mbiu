@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notCheckedMessage } from "./LiveResults";
+import { notCheckedMessage } from "@/components/results/LiveResults";
 
 describe("notCheckedMessage", () => {
   it("says the most important clauses came first and how many are left", () => {

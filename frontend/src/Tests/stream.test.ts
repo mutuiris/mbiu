@@ -10,8 +10,8 @@ import {
   fetchClauseEvaluations,
   ApiStreamError,
   ServiceUnavailableError,
-} from "./stream";
-import type { Clause, ClauseResult } from "./generated/types.gen";
+} from "@/lib/api/stream";
+import type { Clause, ClauseResult } from "@/lib/api/generated/types.gen";
 
 function createStreamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

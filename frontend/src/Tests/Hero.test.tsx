@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Hero } from "./Hero";
+import { Hero } from "@/components/landing/Hero";
 
 describe("Hero Component", () => {
   it("renders both hero text content and preview card in grid", () => {

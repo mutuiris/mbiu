@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { LegalLinks } from "./LegalLinks";
+import { LegalLinks } from "@/components/footer/LegalLinks";
 
 describe("LegalLinks Component", () => {
   it("renders the Privacy & Legal heading", () => {

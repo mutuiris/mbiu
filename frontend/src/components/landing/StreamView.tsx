@@ -1,5 +1,5 @@
 import React from "react";
-import { Footer } from "@/components/Footer";
+import { Footer } from "@/components/footer/Footer";
 import { Navbar } from "@/components/Navbar";
 import { KeepResultsSwitch } from "@/components/results/KeepResultsSwitch";
 import { LiveResults } from "@/components/results/LiveResults";

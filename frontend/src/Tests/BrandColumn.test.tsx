@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { BrandColumn } from "./BrandColumn";
+import { BrandColumn } from "@/components/footer/BrandColumn";
 
 describe("BrandColumn Component", () => {
   it("renders the brand logo and name linking to home", () => {

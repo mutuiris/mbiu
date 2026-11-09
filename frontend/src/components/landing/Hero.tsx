@@ -1,6 +1,6 @@
 import React from "react";
-import { HeroContent } from "@/components/HeroContent";
-import { PreviewCard } from "@/components/PreviewCard";
+import { HeroContent } from "./HeroContent";
+import { PreviewCard } from "./PreviewCard";
 
 export interface HeroProps {
   id?: string;

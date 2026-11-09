@@ -5,7 +5,7 @@ import {
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_MB,
   validateContractFile,
-} from "./validation";
+} from "@/lib/validation";
 
 function createMockFile(name: string, size: number, type = "application/pdf"): File {
   const buffer = new Uint8Array(size);

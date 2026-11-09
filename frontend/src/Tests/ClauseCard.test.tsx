@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ClauseCard } from "./ClauseCard";
+import { ClauseCard } from "@/components/results/ClauseCard";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
 
 const mockWorseResult: ClauseResult = {
@@ -265,7 +265,7 @@ describe("ClauseCard Component", () => {
     });
 
     it("verifies globals.css includes mobile safety rules for narrow viewports down to 360px", () => {
-      const cssPath = resolve(__dirname, "../../app/globals.css");
+      const cssPath = resolve(__dirname, "../app/globals.css");
       const cssContent = readFileSync(cssPath, "utf-8");
 
       expect(cssContent).toContain("@media (max-width: 380px)");

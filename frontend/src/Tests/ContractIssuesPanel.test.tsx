@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ContractIssuesPanel } from "./ContractIssuesPanel";
-import { ClauseCard } from "./ClauseCard";
-import { parseNDJSONStream } from "../../lib/api/stream";
-import type { ContractIssue, ClauseResult } from "../../lib/api/generated/types.gen";
+import { ContractIssuesPanel } from "@/components/results/ContractIssuesPanel";
+import { ClauseCard } from "@/components/results/ClauseCard";
+import { parseNDJSONStream } from "@/lib/api/stream";
+import type { ContractIssue, ClauseResult } from "@/lib/api/generated/types.gen";
 
 function createStreamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

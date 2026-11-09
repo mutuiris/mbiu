@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { UploadArea } from "./UploadArea";
+import { UploadArea } from "@/components/landing/UploadArea";
 
 describe("UploadArea Component", () => {
   const defaultProps = {

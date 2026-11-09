@@ -5,8 +5,8 @@ import {
   hasClearFormula,
   isHighImpactClause,
   DEFAULT_EXAMPLE_DEDUCTIONS,
-} from "./impact";
-import type { ClauseResult, ImpactInputs } from "./api/generated/types.gen";
+} from "@/lib/impact";
+import type { ClauseResult, ImpactInputs } from "@/lib/api/generated/types.gen";
 
 describe("impact.ts calculations in shillings", () => {
   describe("hasClearFormula", () => {

@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { WorkSteps } from "./WorkSteps";
+import { WorkSteps } from "@/components/landing/WorkSteps";
 
 describe("WorkSteps Component", () => {
   it("renders the How it works heading", () => {

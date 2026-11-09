@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { EvaluationEvent } from "./api/stream";
+import type { EvaluationEvent } from "@/lib/api/stream";
 import {
   KEEP_FOR_MS,
   clearKeptResults,
@@ -9,7 +9,7 @@ import {
   markResultsShown,
   restoreResults,
   resultsWereShown,
-} from "./keep-tab";
+} from "@/lib/keep-tab";
 
 const documentEvent: EvaluationEvent = {
   type: "document",

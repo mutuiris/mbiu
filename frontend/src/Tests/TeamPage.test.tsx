@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import TeamPage from "./page";
+import TeamPage from "@/app/team/page";
 
 describe("TeamPage", () => {
   it("renders the page title and subtitle", () => {

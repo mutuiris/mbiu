@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { EvaluationReportModal } from "./EvaluationReportModal";
+import { EvaluationReportModal } from "@/components/results/EvaluationReportModal";
 import type {
   ClauseResult,
   DocumentPayload,

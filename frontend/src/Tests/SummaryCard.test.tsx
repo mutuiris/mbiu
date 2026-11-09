@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SummaryCard } from "./SummaryCard";
-import type { Summary } from "../../lib/api/generated/types.gen";
+import { SummaryCard } from "@/components/results/SummaryCard";
+import type { Summary } from "@/lib/api/generated/types.gen";
 
 const summary: Summary = {
   top_asks: [],

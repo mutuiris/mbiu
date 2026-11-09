@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Footer } from "./Footer";
+import { Footer } from "@/components/footer/Footer";
 
 describe("Footer Component", () => {
   it("renders the brand logo and name", () => {

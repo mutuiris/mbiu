@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeHtml, highlightedItems, pagePosition } from "./highlight";
+import { escapeHtml, highlightedItems, pagePosition } from "@/lib/highlight";
 
 const CLAUSE =
   "7.2 Royalties. The Label shall pay the Artist a royalty of 12% of net receipts after deducting all recording, marketing and video costs.";

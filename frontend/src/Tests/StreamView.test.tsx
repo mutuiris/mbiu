@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { StreamView } from "./StreamView";
+import { StreamView } from "@/components/landing/StreamView";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import type { EvaluationEvent } from "@/lib/api/stream";
 

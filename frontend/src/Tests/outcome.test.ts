@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { outcomeLabel } from "./outcome";
+import { outcomeLabel } from "@/lib/outcome";
 
 describe("outcomeLabel", () => {
   it("shows every outcome with strict neutral symbols and labels per architecture doc", () => {

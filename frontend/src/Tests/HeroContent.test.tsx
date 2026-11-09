@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { HeroContent } from "./HeroContent";
+import { HeroContent } from "@/components/landing/HeroContent";
 
 describe("HeroContent Component", () => {
   it("renders main headline and core value proposition", () => {

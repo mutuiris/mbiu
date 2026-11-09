@@ -2,13 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Footer } from "@/components/Footer";
-import { Hero } from "@/components/Hero";
+import { Footer } from "@/components/footer/Footer";
+import { Hero } from "@/components/landing/Hero";
 import { Navbar } from "@/components/Navbar";
 import { SiteBackdrop } from "@/components/SiteBackdrop";
-import { StreamView } from "@/components/StreamView";
-import { UploadArea } from "@/components/UploadArea";
-import { WorkSteps } from "@/components/WorkSteps";
+import { StreamView } from "@/components/landing/StreamView";
+import { UploadArea } from "@/components/landing/UploadArea";
+import { WorkSteps } from "@/components/landing/WorkSteps";
 import type { Clause } from "@/lib/api/generated/types.gen";
 import {
   fetchClauseEvaluations,
