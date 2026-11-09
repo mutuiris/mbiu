@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Navbar } from "@/components/Navbar";
+import { Navbar } from "@/components/landing/navbar/Navbar";
 
 describe("Navbar Component", () => {
   it("renders the brand logo and name", () => {

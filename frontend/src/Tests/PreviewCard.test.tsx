@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PreviewCard } from "@/components/landing/PreviewCard";
+import { PreviewCard } from "@/components/landing/hero/PreviewCard";
 
 describe("PreviewCard Component", () => {
   it("renders clause title and badge", () => {
