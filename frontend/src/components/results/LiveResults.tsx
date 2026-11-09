@@ -18,19 +18,17 @@ import {
 import { isHighImpactClause } from "@/lib/impact";
 import { ProgressBar } from "./ProgressBar";
 import { ClauseList } from "./ClauseList";
-import { ClauseCard, type LinkedClauseItem } from "./ClauseCard";
+import { type LinkedClauseItem } from "./ClauseCard";
 import { CollapsedMatches } from "./CollapsedMatches";
-import { ClauseFailedCard } from "./ClauseFailedCard";
 import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
 import { EvaluationReportModal } from "./EvaluationReportModal";
+import { ResultsBar } from "./ResultsBar";
+import { FailuresList, notCheckedMessage } from "./FailuresList";
+import { CardsFeed } from "./CardsFeed";
 
-/** Shown when time or the token budget ran out before every clause was checked. */
-export function notCheckedMessage(count: number): string {
-  const clauses = count === 1 ? "1 clause isn't" : `${count} clauses aren't`;
-  return `Mbiu checked the most important clauses first. ${clauses} checked yet.`;
-}
+export { notCheckedMessage };
 
 // pdf.js needs the browser, so the viewer is never rendered on the server
 const ContractViewer = dynamic(() => import("@/components/viewer/ContractViewer"), { ssr: false });
@@ -344,17 +342,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
 
         {/* Results Actions Bar (Download / Print Report) */}
         {(allResults.length > 0 || isStreaming || document) && (
-          <div className="results-actions-bar">
-            <button
-              type="button"
-              onClick={() => setIsReportOpen(true)}
-              className="download-report-btn"
-              data-testid="download-report-btn"
-              aria-label="Download evaluation report"
-            >
-              📄 Download Report
-            </button>
-          </div>
+          <ResultsBar onOpenReport={() => setIsReportOpen(true)} />
         )}
 
         {/* Progress Bar */}
@@ -394,55 +382,24 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         />
 
         {/* Failed Clauses (if any) */}
-        {notCheckedCount > 0 && (
-          <p className="status-alert info" role="status">
-            {notCheckedMessage(notCheckedCount)}
-          </p>
-        )}
-
-        {failures.length > 0 && (
-          <section
-            className="failed-clauses-section"
-            aria-label="Clauses that could not be checked"
-          >
-            {failures.map((f) => {
-              const extra = clauseLookup.get(f.clause_id);
-              return (
-                <ClauseFailedCard
-                  key={f.clause_id}
-                  failure={f}
-                  clauseNumber={extra?.number}
-                  clauseHeading={extra?.heading}
-                  onRetry={handleRetry}
-                  isRetrying={retryingClauseId === f.clause_id}
-                />
-              );
-            })}
-          </section>
-        )}
+        <FailuresList
+          failures={failures}
+          notCheckedCount={notCheckedCount}
+          clauseLookup={clauseLookup}
+          onRetry={handleRetry}
+          retryingClauseId={retryingClauseId}
+        />
 
         {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
-        <section
-          className="results-cards-feed"
-          aria-label="High-Impact Evaluated Clauses"
-        >
-          {highImpactResults.map((result) => {
-            const extra = clauseLookup.get(result.clause_id);
-            return (
-              <ClauseCard
-                key={result.clause_id}
-                result={result}
-                clauseNumber={extra?.number}
-                clauseHeading={extra?.heading}
-                isHighlighted={selectedClauseId === result.clause_id}
-                isUpdated={updatedClauseIds.has(result.clause_id)}
-                linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
-                onSelectClause={handleSelectClause}
-                onJumpToPdfClause={file ? openInViewer : undefined}
-              />
-            );
-          })}
-        </section>
+        <CardsFeed
+          highImpactResults={highImpactResults}
+          clauseLookup={clauseLookup}
+          selectedClauseId={selectedClauseId}
+          updatedClauseIds={updatedClauseIds}
+          getLinkedClausesFor={getLinkedClausesFor}
+          onSelectClause={handleSelectClause}
+          onJumpToPdfClause={file ? openInViewer : undefined}
+        />
 
         {/* Final Summary Card upon done event */}
         {summary && <SummaryCard summary={summary} />}

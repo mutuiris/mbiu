@@ -157,7 +157,10 @@ describe("ContractIssuesPanel", () => {
     const sectionChildren = React.Children.toArray((element as React.ReactElement<{ children: React.ReactNode }>).props.children);
     const issuesList = sectionChildren[1] as React.ReactElement<{ children: React.ReactNode }>;
     const issueArticles = React.Children.toArray(issuesList.props.children) as React.ReactElement<{ children: React.ReactNode }>[];
-    const firstArticle = issueArticles[0];
+    const firstArticleRaw = issueArticles[0];
+    const firstArticle = (typeof firstArticleRaw.type === "function"
+      ? (firstArticleRaw.type as (props: unknown) => React.ReactElement)(firstArticleRaw.props)
+      : firstArticleRaw) as React.ReactElement<{ children: React.ReactNode }>;
     const articleChildren = React.Children.toArray(firstArticle.props.children);
     const metaDiv = articleChildren[0] as React.ReactElement<{ children: React.ReactNode }>;
     const metaChildren = React.Children.toArray(metaDiv.props.children);
@@ -244,12 +247,24 @@ describe("ClauseCard 'Also affected by' & clause_updated Notice", () => {
     });
 
     const rootChildren = React.Children.toArray((element as React.ReactElement<{ children: React.ReactNode }>).props.children);
-    const comparisonSection = rootChildren.find(
+    let comparisonSection = rootChildren.find(
       (child) => React.isValidElement(child) && (child as React.ReactElement<{ className?: string }>).props.className === "card-comparison-section"
-    ) as React.ReactElement<{ children: React.ReactNode }>;
+    ) as React.ReactElement<{ children: React.ReactNode }> | undefined;
+
+    if (!comparisonSection) {
+      for (const child of rootChildren) {
+        if (React.isValidElement(child) && typeof child.type === "function") {
+          const rendered = (child.type as (props: unknown) => React.ReactElement)(child.props);
+          if (rendered && (rendered.props as { className?: string }).className === "card-comparison-section") {
+            comparisonSection = rendered as React.ReactElement<{ children: React.ReactNode }>;
+            break;
+          }
+        }
+      }
+    }
 
     expect(comparisonSection).toBeDefined();
-    const compChildren = React.Children.toArray(comparisonSection.props.children);
+    const compChildren = React.Children.toArray(comparisonSection!.props.children);
     const affectedDiv = compChildren.find(
       (child) => React.isValidElement(child) && (child as React.ReactElement<{ className?: string }>).props.className === "card-affected-by"
     ) as React.ReactElement<{ children: React.ReactNode }>;

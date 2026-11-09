@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import type { ImpactInputs } from "@/lib/api/generated/types.gen";
 import {
   calculateImpact,
-  formatShillings,
   hasClearFormula,
   DEFAULT_EXAMPLE_GROSS,
   DEFAULT_EXAMPLE_DEDUCTIONS,
 } from "@/lib/impact";
+import { CalcInputs } from "./CalcInputs";
+import { CalcTerms } from "./CalcTerms";
+import { CalcBreakdown } from "./CalcBreakdown";
 
 export interface ShillingsCalculatorProps {
   inputs: ImpactInputs | null | undefined;
@@ -72,121 +74,31 @@ export const ShillingsCalculator: React.FC<ShillingsCalculatorProps> = ({ inputs
       </p>
 
       {/* Interactive Controls */}
-      <div className="calc-controls-grid">
-        <div className="calc-field">
-          <label htmlFor="example-revenue-input" className="calc-label">
-            Example gross revenue (KES)
-            <span className="label-tag">Example</span>
-          </label>
-          <input
-            id="example-revenue-input"
-            type="number"
-            min="0"
-            step="10000"
-            value={grossInput}
-            onChange={handleGrossChange}
-            className="calc-input"
-            aria-describedby="example-revenue-hint"
-          />
-          <span id="example-revenue-hint" className="field-hint">
-            Current: {formatShillings(grossInput)}
-          </span>
-        </div>
-
-        {hasDeductions && (
-          <div className="calc-field">
-            <label htmlFor="example-deductions-input" className="calc-label">
-              Example deductions before royalties (KES)
-              <span className="label-tag">Example</span>
-            </label>
-            <input
-              id="example-deductions-input"
-              type="number"
-              min="0"
-              step="5000"
-              value={deductionsInput}
-              onChange={handleDeductionsChange}
-              className="calc-input"
-              aria-describedby="example-deductions-hint"
-            />
-            <span id="example-deductions-hint" className="field-hint">
-              Current: {formatShillings(deductionsInput)}
-            </span>
-          </div>
-        )}
-      </div>
+      <CalcInputs
+        grossInput={grossInput}
+        deductionsInput={deductionsInput}
+        hasDeductions={hasDeductions}
+        onGrossChange={handleGrossChange}
+        onDeductionsChange={handleDeductionsChange}
+      />
 
       {/* Quoted Terms & Contract Deductions */}
-      <div className="calc-terms-summary">
-        <div className="term-item">
-          <span className="term-name">Royalty rate:</span>
-          <span className="term-value font-semibold">{calc.royaltyRate}%</span>
-          {calc.quotedRateText && (
-            <span className="term-quote" title="Exact wording in contract">
-              (from “{calc.quotedRateText}”)
-            </span>
-          )}
-        </div>
-
-        <div className="term-item">
-          <span className="term-name">Basis:</span>
-          <span className={`term-value basis-badge ${isNet ? "basis-net" : "basis-gross"}`}>
-            {isNet ? "Net (Deductions taken first)" : "Gross (Calculated before deductions)"}
-          </span>
-          {calc.quotedBasisText && (
-            <span className="term-quote" title="Exact wording in contract">
-              (from “{calc.quotedBasisText}”)
-            </span>
-          )}
-        </div>
-
-        {calc.deductionQuotes.length > 0 && (
-          <div className="deductions-list-wrap">
-            <span className="term-name">Deductions stated in contract:</span>
-            <div className="deductions-tags">
-              {calc.deductionQuotes.map((quote, idx) => (
-                <span key={idx} className="deduction-tag">
-                  “{quote}”
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      <CalcTerms
+        royaltyRate={calc.royaltyRate}
+        quotedRateText={calc.quotedRateText}
+        isNet={isNet}
+        quotedBasisText={calc.quotedBasisText}
+        deductionQuotes={calc.deductionQuotes}
+      />
 
       {/* Results Breakdown */}
-      <div className="calc-results-card">
-        <div className="result-row primary-payout">
-          <span className="payout-label">Your calculated earnings:</span>
-          <span className="payout-amount" data-testid="artist-earnings">
-            {formatShillings(calc.artistEarnings)}
-          </span>
-        </div>
-
-        {isNet && (
-          <div className="net-comparison-block" data-testid="net-comparison">
-            <div className="comparison-metric">
-              <span className="metric-label">If calculated on Gross:</span>
-              <span className="metric-val">{formatShillings(calc.earningsUnderGross)}</span>
-            </div>
-            <div className="comparison-metric loss-warning">
-              <span className="metric-label">Loss to deductions:</span>
-              <span className="metric-val">−{formatShillings(calc.lossToDeductions)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="calc-reset-row">
-          <button
-            type="button"
-            onClick={handleReset}
-            className="calc-reset-btn"
-            aria-label="Reset example figures to defaults"
-          >
-            Reset example figures
-          </button>
-        </div>
-      </div>
+      <CalcBreakdown
+        artistEarnings={calc.artistEarnings}
+        isNet={isNet}
+        earningsUnderGross={calc.earningsUnderGross}
+        lossToDeductions={calc.lossToDeductions}
+        onReset={handleReset}
+      />
     </section>
   );
 };
