@@ -84,10 +84,14 @@ def _map_error_to_api_error(exc: Exception) -> tuple[int, ApiError]:
 def _apply_cors[T: HttpResponseBase](response: T, origin: str | None) -> T:
     """Set restrictive CORS headers according to project security rules."""
     allowed_origins = getattr(settings, "CORS_ALLOWED_ORIGINS", ["http://localhost:3000"])
-    if origin and (origin in allowed_origins or "*" in allowed_origins):
+    normalized_allowed = {o.rstrip("/") for o in allowed_origins}
+    normalized_allowed.update({"http://localhost:3000", "http://127.0.0.1:3000"})
+    if origin and (origin.rstrip("/") in normalized_allowed or "*" in normalized_allowed):
         response["Access-Control-Allow-Origin"] = origin
         response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type, traceparent, X-Requested-With"
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, traceparent, X-Requested-With, X-Turnstile-Token"
+        )
         response["Access-Control-Max-Age"] = "86400"
     return response
 
@@ -116,6 +120,7 @@ def _ndjson_response(events: AsyncIterator[StreamEvent], origin: str | None) -> 
     )
     stream_response["Cache-Control"] = "no-store"
     stream_response["X-Content-Type-Options"] = "nosniff"
+    stream_response["X-Accel-Buffering"] = "no"
     return _apply_cors(stream_response, origin)
 
 

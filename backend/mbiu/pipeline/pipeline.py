@@ -5,6 +5,7 @@ import logging
 from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 from mbiu.pipeline.errors import (
     DocumentParseError,
@@ -58,7 +59,7 @@ class CorpusPipeline:
         errors: list[str] = []
 
         for source in sources:
-            self._logger.info("Fetching %s", source.url)
+            self._logger.info("Fetching %s", short_url(source.url))
             try:
                 documents = self._fetcher.fetch(
                     source,
@@ -66,12 +67,14 @@ class CorpusPipeline:
                     timeout_s=self._timeout_s,
                 )
             except FetchError as exc:
-                message = f"fetch failed for {source.url}: {exc}"
+                message = f"fetch failed for {short_url(source.url)}: {exc}"
                 self._logger.warning("%s", message)
                 errors.append(message)
                 continue
 
-            self._logger.info("Fetched %d raw document(s) from %s", len(documents), source.url)
+            self._logger.info(
+                "Fetched %d document(s) from %s", len(documents), short_url(source.url)
+            )
             for document in documents:
                 outcome, error = self._process_document(source, document)
                 if outcome is not None:
@@ -90,7 +93,7 @@ class CorpusPipeline:
         try:
             stored = self._store.put_if_absent(document.content, metadata)
         except StorageError as exc:
-            message = f"storage failed for {document.url}: {exc}"
+            message = f"storage failed for {short_url(document.url)}: {exc}"
             self._logger.warning("%s", message)
             return None, message
 
@@ -112,7 +115,7 @@ class CorpusPipeline:
         try:
             parsed = self._parser.parse(document)
         except DocumentQualityError as exc:
-            self._logger.warning("Rejected %s from %s: %s", document.url, source.url, exc.reason)
+            self._logger.warning("Rejected %s: %s", short_url(document.url), exc.reason)
             return (
                 DocumentOutcome(
                     source_url=source.url,
@@ -126,7 +129,7 @@ class CorpusPipeline:
                 None,
             )
         except DocumentParseError as exc:
-            message = f"parse failed for {document.url}: {exc}"
+            message = f"parse failed for {short_url(document.url)}: {exc}"
             self._logger.warning("%s", message)
             return (
                 DocumentOutcome(
@@ -186,6 +189,15 @@ def read_clauses(clauses_dir: Path) -> list[TemplateClause]:
             except (TypeError, ValueError) as exc:
                 raise PipelineError(f"{path.name} line {number} is not a valid clause") from exc
     return clauses
+
+
+def short_url(url: str) -> str:
+    """Host and file name only. The log filter treats lines of 120+ characters as contract
+    text and hides them, so long URLs would hide the reason a source failed.
+    """
+    parts = urlsplit(url)
+    name = unquote(Path(parts.path).name) or parts.path
+    return f"{parts.netloc}/{name[:60]}"
 
 
 def _metadata_for(source: Source, document: FetchedDocument) -> StorageMetadata:

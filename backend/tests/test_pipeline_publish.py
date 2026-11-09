@@ -1,6 +1,6 @@
 """Tests for the check, tag, embed and publish stage of the corpus pipeline.
 
-Every document here is synthetic. The models, Presidio, Lingua and EmbeddingGemma are
+Every document here is synthetic. The models, Presidio, Lingua and the embedder are
 replaced with small fakes, so the tests need neither network nor the pipeline group.
 """
 
@@ -20,12 +20,12 @@ from pydantic import BaseModel
 
 from mbiu.corpus.loader import active_snapshot, reset_snapshot
 from mbiu.corpus.models import (
-    EMBEDDING_DIM,
     CorpusVersion,
     PipelineCheckResult,
     ReferenceChunk,
     ReferenceSource,
 )
+from mbiu.corpus.snapshot import EMBEDDING_DIM
 from mbiu.llm import ErrorCategory, LLMError, LLMResult
 from mbiu.pipeline.checks import (
     check_english,
@@ -152,7 +152,7 @@ class FailingModel(FakeModel):
 class FakeEmbedder:
     """Bag-of-words vectors: clauses that share words point the same way."""
 
-    model_id = "google/embeddinggemma-2"
+    model_id = "gemini-embedding-2"
     revision = "synthetic-revision"
 
     def encode(self, texts: list[str]) -> npt.NDArray[np.float32]:
@@ -295,9 +295,9 @@ def test_tag_agreement_check_drops_clauses_the_models_disagree_on() -> None:
     ]
 
 
-def test_embedding_text_uses_the_embeddinggemma_document_format() -> None:
-    assert embedding_text(clause("Text.", title="Royalties")) == "title: Royalties | text: Text."
-    assert embedding_text(clause("Text.")) == "title: none | text: Text."
+def test_embedding_text_puts_the_heading_before_the_text() -> None:
+    assert embedding_text(clause("Text.", title="Royalties")) == "Royalties\nText."
+    assert embedding_text(clause("Text.")) == "Text."
 
 
 @pytest.mark.parametrize(
@@ -381,7 +381,7 @@ class TestPublish:
         version = CorpusVersion.objects.get(version_tag="v1")
         assert version.is_active
         assert (version.embedding_model_id, version.embedding_revision) == (
-            "google/embeddinggemma-2",
+            "gemini-embedding-2",
             "synthetic-revision",
         )
         chunks = list(version.chunks.order_by("chunk_key"))

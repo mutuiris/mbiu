@@ -26,17 +26,20 @@ If the Supabase project enters a **PAUSED** state (due to free-tier inactivity, 
 Mbiu configures two distinct database connection URLs:
 1. **`DATABASE_URL` (Port 6543 — Transaction Mode Pooler):**
    * Connects via Supavisor / PgBouncer for API traffic.
-   * **Mandatory Setting:** `CONN_MAX_AGE: 0` in Django settings to ensure connections are released immediately after each query.
+   * **Mandatory Setting:** `CONN_MAX_AGE: 0` in [`backend/config/settings.py`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/backend/config/settings.py) to ensure connections are released immediately after each query. A saturated pooler usually indicates another client holding connections.
 2. **`DATABASE_DIRECT_URL` (Port 5432 — Session Mode / Direct):**
    * Used strictly for running schema migrations (`manage.py migrate`) and heavy corpus batch ingestion scripts.
 
-### Step 2: Check API Health Endpoint
+### Step 2: Check API Health Endpoint & Logs
 Test the database readiness check directly:
 ```bash
+curl -i "$API_URL/readyz"
+# Or locally:
 curl -i http://localhost:8000/readyz
 ```
-* If HTTP `200`: Database is connected and healthy.
-* If HTTP `503`: Database connection failed. Check output for diagnostic message.
+* If HTTP `200`: Database is connected and healthy (`{"status": "ready", "database": true}`).
+* If HTTP `503`: Database connection failed.
+* Check logs in Render: **mbiu-api → Logs** (or `docker compose logs --tail=100 api`).
 
 ---
 
@@ -47,19 +50,18 @@ curl -i http://localhost:8000/readyz
 2. Select the `mbiu` project.
 3. If the project banner displays **"Project is paused"**:
    * Click **"Restore Project"** (or **"Unpause Project"**).
-   * Project restoration takes approximately 60 to 120 seconds while PostgreSQL containers are spun up.
-4. Once the dashboard indicates **"Active"**, test the connection:
+   * Project restoration takes approximately 60 to 120 seconds while PostgreSQL containers spin up.
+4. Once the dashboard indicates **"Active"**, verify logs in Render (**mbiu-api → Logs**) or test connection:
    ```bash
    docker compose exec api python -c "from django.db import connection; connection.cursor(); print('Connected successfully!')"
    ```
 5. Restart the API service:
-   ```bash
-   # Docker Compose
-   docker compose restart api
-
-   # Kubernetes
-   kubectl rollout restart deployment/mbiu-api
-   ```
+   * **In Render:** Render will typically reconnect automatically; trigger manual redeploy if needed.
+   * **In Docker / Kubernetes:**
+     ```bash
+     docker compose restart api
+     # or: kubectl rollout restart deployment/mbiu-api
+     ```
 
 ### Scenario B: Connection Pooler (Supavisor) Exhaustion
 If the database is active but connections are timing out with pooler errors:
@@ -69,17 +71,14 @@ If the database is active but connections are timing out with pooler errors:
    # Must be 0 for transaction-mode poolers
    "CONN_MAX_AGE": 0,
    ```
-   *(A non-zero value holds connections open, exhausting the pooler within minutes).*
 2. **Restart Supavisor Pooler:**
    * Go to **Supabase Dashboard -> Settings -> Database -> Connection Pooler**.
-   * Click **Restart Pooler**.
+   * Under Database, check active connections, then click **Restart Pooler**.
 3. **Emergency Direct Connection (Temporary Workaround):**
-   If the pooler on port 6543 is unresponsive, temporarily route API traffic through the session pooler on port 5432:
-   ```bash
-   # Temporarily set DATABASE_URL to use port 5432 in .env
-   DATABASE_URL=postgresql://postgres.xxx:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
-   ```
-   Restart the API service and monitor recovery.
+   If the pooler on port 6543 remains unresponsive, temporarily point `DATABASE_URL` to the session pooler on port 5432:
+   * **In Render:** Set `DATABASE_URL` in **mbiu-api → Environment** to use port 5432; saving redeploys.
+   * **In Docker / Local:** Update `DATABASE_URL` in `.env` to port 5432 and restart `api`.
+   * **Switch back to port 6543** once connection saturation is resolved.
 
 ### Scenario C: Fallback to Local PostgreSQL (Total Cloud Outage)
 If Supabase is experiencing a protracted multi-region cloud outage:
@@ -106,7 +105,7 @@ If Supabase is experiencing a protracted multi-region cloud outage:
 2. **Run Quick Stream Check:**
    ```bash
    curl -s -X POST http://localhost:8000/api/v1/evaluations \
-     -F "file=@infra/k6/fixtures/contract_40p.pdf" \
+     -F "file=@evals/sample_contracts/pdf/01_brand_partnership_fair_savannah_mobile.pdf" \
      -F "turnstile_token=1x0000000000000000000000000000000AA" \
      | head -n 3
    ```

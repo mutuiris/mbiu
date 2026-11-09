@@ -1,5 +1,9 @@
 import React from "react";
+
 import type { ClauseFailure } from "@/lib/api/generated/types.gen";
+import { readableClauseName } from "@/lib/report";
+
+import { Button } from "./ui";
 
 interface ClauseFailedCardProps {
   failure: ClauseFailure;
@@ -9,49 +13,25 @@ interface ClauseFailedCardProps {
   isRetrying?: boolean;
 }
 
+/** A clause Mbiu tried to check but could not, because of an error. */
 export const ClauseFailedCard: React.FC<ClauseFailedCardProps> = ({
   failure,
   clauseNumber,
   clauseHeading,
   onRetry,
   isRetrying = false,
-}) => {
-  const clauseLabel = `${clauseNumber ? `Clause ${clauseNumber}` : "Clause"}${
-    clauseHeading ? ` (${clauseHeading})` : ""
-  }`;
-
-  return (
-    <article
-      className="clause-failed-card"
-      role="alert"
-      aria-labelledby={`failed-title-${failure.clause_id}`}
-    >
-      <div className="failed-card-icon" aria-hidden="true">
-        ⚠️
-      </div>
-      <div className="failed-card-content">
-        <h4 id={`failed-title-${failure.clause_id}`} className="failed-card-title">
-          {clauseLabel}
-        </h4>
-        <p className="failed-card-message">
-          We couldn&apos;t check this clause just now. Your other results are below.
-        </p>
-        <span className="failed-card-reason">
-          Reason: {failure.reason.replace(/_/g, " ")}
-        </span>
-      </div>
-      {failure.retryable && onRetry && (
-        <div className="failed-card-action">
-          <button
-            type="button"
-            className="retry-btn"
-            disabled={isRetrying}
-            onClick={() => onRetry(failure.clause_id)}
-          >
-            {isRetrying ? "Retrying…" : "Retry"}
-          </button>
-        </div>
-      )}
-    </article>
-  );
-};
+}) => (
+  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1" data-testid={`failed-${failure.clause_id}`}>
+    <div className="min-w-0">
+      <p className="break-words text-[0.92rem] font-semibold text-mbiu-ink dark:text-[#F4EFE6]">
+        {readableClauseName({ number: clauseNumber, heading: clauseHeading })}
+      </p>
+      <p className="text-[0.85rem] text-mbiu-ink/65 dark:text-[#b9c1c5]">Mbiu couldn&apos;t check this clause. Try again.</p>
+    </div>
+    {failure.retryable && onRetry && (
+      <Button disabled={isRetrying} onClick={() => onRetry(failure.clause_id)}>
+        {isRetrying ? "Trying again…" : "Try again"}
+      </Button>
+    )}
+  </div>
+);

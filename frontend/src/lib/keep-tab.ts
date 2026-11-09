@@ -24,6 +24,62 @@ export interface KeptResults {
   events: EvaluationEvent[];
 }
 
+export interface ActiveMemorySession {
+  log: ReadonlyMap<string, EvaluationEvent>;
+  selectedFile: File | null;
+  consentChecked: boolean;
+  keptSince: number | null;
+  isViewingResults: boolean;
+}
+
+let activeMemorySession: ActiveMemorySession | null = null;
+const sessionListeners = new Set<() => void>();
+
+export function subscribeMemorySession(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+function notifySessionListeners(): void {
+  sessionListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {
+      // Ignore listener error
+    }
+  });
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    try {
+      window.dispatchEvent(new Event("mbiu-session-change"));
+    } catch {
+      // Ignore in mock test environments
+    }
+  }
+}
+
+export function getActiveMemorySession(): ActiveMemorySession | null {
+  return activeMemorySession;
+}
+
+export function setActiveMemorySession(session: ActiveMemorySession | null): void {
+  activeMemorySession = session;
+  notifySessionListeners();
+}
+
+export function setIsViewingResults(isViewing: boolean): void {
+  if (activeMemorySession) {
+    activeMemorySession = { ...activeMemorySession, isViewingResults: isViewing };
+    notifySessionListeners();
+  }
+}
+
+export function hasActiveEvaluationSession(): boolean {
+  if (activeMemorySession && activeMemorySession.log.size > 0) return true;
+  return restoreResults() !== null;
+}
+
 const zKeptResults = z.object({ keptSince: z.number(), events: z.array(zStreamEvent) });
 
 function storage(): Storage | null {
@@ -84,6 +140,8 @@ export function resultsWereShown(): boolean {
 
 /** Clears everything this tab holds. */
 export function forgetResults(): void {
+  activeMemorySession = null;
   clearKeptResults();
   storage()?.removeItem(SHOWN_KEY);
+  notifySessionListeners();
 }

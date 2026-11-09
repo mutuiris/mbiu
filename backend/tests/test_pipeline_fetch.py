@@ -999,3 +999,69 @@ def test_cli_writes_split_clauses_and_rerun_gives_same_file(tmp_path: Path) -> N
     assert main(argv, pipeline=cast(CorpusPipeline, stub), env={}) == 0
     assert written.read_text(encoding="utf-8") == first
     assert [p.name for p in out_dir.iterdir()] == [written.name]
+
+
+PDF_SOURCE = Source(
+    url="https://example.org/sites/default/files/downloads/RECORDING-PRODUCER%20AGREEMENT.pdf",
+    licence="CC BY-SA",
+    reviewing_body="Kenya Copyright Board (KECOBO)",
+    contract_type="recording",
+    jurisdiction="KE",
+)
+
+
+def test_a_direct_pdf_link_is_downloaded_as_is_not_crawled() -> None:
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(f"{request.method} {request.url.path}")
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
+        return httpx.Response(200, content=b"%PDF-1.7 synthetic")
+
+    with _client(handler) as client:
+        fetcher = FirecrawlFetcher(api_key="fc-key", client=client, now=lambda: FIXED_NOW)
+        [document] = fetcher.fetch(PDF_SOURCE, max_pages=5, timeout_s=5.0)
+
+    assert document.content == b"%PDF-1.7 synthetic"
+    assert document.content_type == "application/pdf"
+    assert document.filename == "RECORDING-PRODUCER_20AGREEMENT.pdf"
+    # Firecrawl's crawl API is never called for a direct file link
+    assert not any(line.startswith("POST") for line in seen)
+
+
+def test_a_failed_direct_download_is_a_fetch_error_and_robots_still_applies() -> None:
+    def refuse(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
+        return httpx.Response(406)
+
+    with _client(refuse) as client:
+        with pytest.raises(FetchError, match="406"):
+            FirecrawlFetcher(api_key="fc-key", client=client).fetch(
+                PDF_SOURCE, max_pages=1, timeout_s=5.0
+            )
+
+    def disallow(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="User-agent: *\nDisallow: /\n")
+
+    with _client(disallow) as client:
+        assert (
+            FirecrawlFetcher(api_key="fc-key", client=client).fetch(
+                PDF_SOURCE, max_pages=1, timeout_s=5.0
+            )
+            == []
+        )
+
+
+def test_failure_reasons_stay_readable_through_the_log_filter() -> None:
+    from mbiu.pipeline.pipeline import short_url
+
+    stream = io.StringIO()
+    configure_pipeline_logging(logger=logging.getLogger("mbiu.pipeline"), stream=stream)
+    logging.getLogger("mbiu.pipeline.pipeline").warning(
+        "Rejected %s: %s", short_url(PDF_SOURCE.url), "unsupported template type"
+    )
+    output = stream.getvalue()
+    assert "unsupported template type" in output
+    assert "RECORDING-PRODUCER AGREEMENT.pdf" in output

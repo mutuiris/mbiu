@@ -11,6 +11,13 @@
 
 This runbook applies when the primary AI model provider (**Google Gemini**) or secondary provider (**OpenAI**) experiences severe latency, rate-limiting, or an outright service outage.
 
+### Quick Status & Log Checks
+1. **Provider Status Pages:**
+   * Google Cloud / Vertex AI Status: <https://status.cloud.google.com/>
+   * OpenAI Status: <https://status.openai.com/>
+2. **Recent API Logs:** In Render: **mbiu-api → Logs** (or `docker compose logs --tail=100 api`).
+3. **Quota & Billing:** Check quota and billing for the Gemini API key in Google Cloud Console / Google AI Studio.
+
 ### Alert Triggers
 * **PagerDuty / Sentry Alert:** `LLMError: unavailable` or `LLMError: rate_limited` surge.
 * **Grafana Alert:** `mbiu_llm_requests_failed_total` > 5% over 5 minutes.
@@ -31,10 +38,13 @@ This runbook applies when the primary AI model provider (**Google Gemini**) or s
 ### Step 2: Inspect Live Error Logs
 Connect to the API container / cluster and inspect the recent LLM error logs:
 ```bash
-# Docker Compose local / staging
+# Render logs:
+# Go to Render Dashboard -> mbiu-api -> Logs
+
+# Or Docker Compose local / staging:
 docker compose logs --tail=100 api | grep -E "LLMError|circuit_breaker|gemini|openai"
 
-# Kubernetes / Production
+# Or Kubernetes / Production:
 kubectl logs -l app=mbiu-api --tail=100 | grep -E "LLMError|CircuitBreaker"
 ```
 
@@ -47,35 +57,36 @@ Look for the error category:
 
 ## 3. Mitigation & Failover Procedures
 
+> [!NOTE]
+> Changing an environment variable in Render (**mbiu-api → Environment → Save**) automatically triggers a redeploy of the API service.
+
 ### Option A: Enable OpenAI Failover (Gemini Outage)
 If Google Gemini is confirmed down and the circuit breaker is tripping, activate the OpenAI failover provider:
 
-1. **Verify OpenAI Credentials & Quota:**
-   Ensure `OPENAI_API_KEY` and `OPENAI_MODEL` (e.g. `gpt-4o-mini`) are populated in your secrets manager.
+1. **Verify Golden Set & Privacy Guarantees:**
+   Only fail over if OpenAI has passed the golden test set. In accordance with [`docs/data-transfers.md`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/docs/data-transfers.md), contract text is transmitted with `store: false` enforced.
 2. **Enable Failover in Runtime Environment:**
-   Set `FAILOVER_ENABLED=true`:
-   ```bash
-   # In .env or deployment environment variables:
-   FAILOVER_ENABLED=true
-   ```
-3. **Restart API Service:**
-   ```bash
-   # Docker Compose
-   docker compose up -d api
-
-   # Kubernetes
-   kubectl rollout restart deployment/mbiu-api
-   ```
-4. **Confirm Privacy & Storage-Off Guarantee:**
-   Confirm against [`docs/data-transfers.md`](file:///home/mercyline/Desktop/KAMILIMU%20LIMITED/Innovation/MBIU/mbiu/docs/data-transfers.md) that `store: false` is enforced on every call to OpenAI (verified in `mbiu.llm.openai`).
+   * **In Render:** Set `FAILOVER_ENABLED=true` in **mbiu-api → Environment → Save**.
+   * **In Docker / Local:**
+     ```bash
+     # In .env:
+     FAILOVER_ENABLED=true
+     docker compose restart api
+     ```
+   * **In Kubernetes:**
+     ```bash
+     kubectl set env deployment/mbiu-api FAILOVER_ENABLED=true
+     kubectl rollout restart deployment/mbiu-api
+     ```
 
 ### Option B: Switch Gemini to Light Model (Latency / Rate Limit Spike)
 If Gemini Flash (`gemini-3.8-flash`) is hitting rate limits or throttling, switch the primary model to the lighter tier:
-```bash
-# Update environment variable:
-GEMINI_MODEL_MAIN=gemini-3.5-flash-lite
-```
-Restart the API service and monitor latency.
+* **In Render:** Set `GEMINI_MODEL_MAIN=gemini-3.5-flash-lite` in **mbiu-api → Environment → Save**.
+* **In Docker / Local:**
+  ```bash
+  GEMINI_MODEL_MAIN=gemini-3.5-flash-lite
+  docker compose restart api
+  ```
 
 ---
 
@@ -85,9 +96,8 @@ Restart the API service and monitor latency.
    Execute a test evaluation against the running API:
    ```bash
    curl -X POST http://localhost:8000/api/v1/evaluations \
-     -F "file=@infra/k6/fixtures/contract_40p.pdf" \
+     -F "file=@evals/sample_contracts/pdf/01_brand_partnership_fair_savannah_mobile.pdf" \
      -F "turnstile_token=1x0000000000000000000000000000000AA" \
-     --header "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
      | head -n 10
    ```
 2. **Verify Stream Output:**
@@ -98,7 +108,7 @@ Restart the API service and monitor latency.
      "versions": {
        "model": "gpt-4o-mini",
        "prompt": "compare_openai_v1",
-       "corpus": "synthetic-v0"
+       "corpus": "kenyan-music-v1"
      }
      ```
 
@@ -107,7 +117,12 @@ Restart the API service and monitor latency.
 ## 5. Reverting After Provider Restores
 
 Once the primary provider (Gemini) announces resolution:
-1. Revert `FAILOVER_ENABLED=false` in the deployment config.
-2. If `GEMINI_MODEL_MAIN` was temporarily downgraded, revert to `gemini-3.8-flash`.
-3. Restart the API workers.
-4. Verify Gemini circuit breaker resets to `CLOSED`.
+1. Revert settings in Render:
+   * Set `FAILOVER_ENABLED=false` and `GEMINI_MODEL_MAIN=gemini-3.8-flash` in **mbiu-api → Environment → Save**.
+2. If running locally / Docker / Kubernetes, revert `.env` and restart workers:
+   ```bash
+   FAILOVER_ENABLED=false
+   GEMINI_MODEL_MAIN=gemini-3.8-flash
+   docker compose restart api
+   ```
+3. Verify Gemini circuit breaker resets to `CLOSED` and evaluations process via Gemini.
