@@ -280,40 +280,35 @@ export default function Home() {
         <Navbar basePath="/" />
 
         <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
-          <div className="stream-controls">
-          <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
-            Check another contract
-          </button>
-        </div>
-        <KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />
-        <div className="resume-panel" role="status" aria-live="polite">
-          {resultsStatus && <p>{resultsStatus}</p>}
-          {!isStreaming && clausesToCheck && (
-            <>
-              <p>
-                Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
-                again after a quick security check.
-              </p>
-              <Turnstile
-                key={turnstileKey}
-                onSuccess={checkClauses}
-                onError={() =>
-                  setResultsStatus("The security check could not load. Please try again.")
-                }
-              />
-            </>
-          )}
-        </div>
-        {isIdle && unfinished.length > 0 && (
-          <button type="button" className="secondary-btn" onClick={() => setToCheck(unfinished)}>
-            Check the {unfinished.length === 1 ? "unfinished clause" : `${unfinished.length} unfinished clauses`}
-          </button>
+        {(resultsStatus || (!isStreaming && clausesToCheck)) && (
+          <div className="resume-panel" role="status" aria-live="polite">
+            {resultsStatus && <p>{resultsStatus}</p>}
+            {!isStreaming && clausesToCheck && (
+              <>
+                <p>
+                  Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
+                  again after a quick security check.
+                </p>
+                <Turnstile
+                  key={turnstileKey}
+                  onSuccess={checkClauses}
+                  onError={() =>
+                    setResultsStatus("The security check could not load. Please try again.")
+                  }
+                />
+              </>
+            )}
+          </div>
         )}
         <LiveResults
           eventStream={stream}
           onRetryAll={startOver}
           onRetryClause={isIdle ? retryClause : undefined}
           file={selectedFile}
+          onCheckAnother={startOver}
+          notChecked={isIdle ? unfinished.length : 0}
+          onCheckRest={isIdle && unfinished.length > 0 ? () => setToCheck(unfinished) : undefined}
+          keep={<KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />}
         />
         </main>
 
@@ -358,7 +353,7 @@ export default function Home() {
 
             <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Mbiu does not store your contracts on our servers.
+              Mbiu does not store your contracts
             </p>
           </div>
 

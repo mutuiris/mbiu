@@ -89,7 +89,6 @@ export function SiteBackdrop({ variant = "landing" }: { variant?: "landing" | "r
         className="absolute left-1/2 top-[30%] w-[185%] max-w-none -translate-x-1/2 opacity-35 mix-blend-multiply sm:top-[12%] sm:w-[128%] xl:left-auto xl:right-[22%] xl:top-[8%] xl:w-[60%] xl:translate-x-0 xl:opacity-45 dark:opacity-[0.08] dark:invert dark:mix-blend-screen"
       />
 
-      <Rays className="absolute left-[2%] top-[13%] hidden h-[62px] w-[58px] text-mbiu-ink sm:block dark:text-white/70" />
       <TribalPattern className="absolute -bottom-10 -left-10 h-[200px] w-[170px] text-mbiu-ink/15 sm:h-[240px] sm:w-[205px] dark:text-white/20" />
 
       <Music2 className="absolute right-[6%] top-[10%] h-9 w-9 rotate-[10deg] text-mbiu-ink/90 dark:text-white/70 xl:right-[11%] xl:top-[20%]" />

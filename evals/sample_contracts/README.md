@@ -52,3 +52,4 @@ These contracts deliberately incorporate dense music-business and Kenyan legal t
 - **Copyright & IP Jargon:** *Ab Initio*, *In Perpetuity Throughout the Universe*, *Work Made for Hire*, *Master Sound Recording*, *Controlled Composition*, *75% Minimum Statutory Mechanical Rate*, *10-Track Cap*, *Synchronization License*, *Coupling Rights*, *Moral Rights (Paternity and Integrity under Section 32 of the Copyright Act, Cap. 130)*, *Re-Recording Restriction (Holdback)*, *Digital Twin / AI Voice Synthesis*, *Power of Attorney Coupled with an Interest*.
 - **Kenyan Ecosystem Specifics:** *Kenya Copyright Act (Cap. 130)*, *Kenya Copyright Board (KECOBO)*, *Collective Management Organizations (MCSK, KAMP, PRISK, PAVRISK)*, *Safaricom Skiza Tunes / Airtel Hello Tunes (CRBT)*, *KRA Withholding Tax (Income Tax Act, Cap. 470)*, *Nairobi Centre for International Arbitration (NCIA)*.
 
+
