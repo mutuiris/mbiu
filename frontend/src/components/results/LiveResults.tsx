@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import type {
   DocumentPayload,
-  Progress,
   ClauseResult,
   ClauseFailure,
   Summary,
@@ -12,25 +11,21 @@ import type {
 } from "@/lib/api/generated/types.gen";
 import {
   type EvaluationEvent,
-  sortByImpactOrder,
   ServiceUnavailableError,
 } from "@/lib/api/stream";
-import { isHighImpactClause } from "@/lib/impact";
-import { ProgressBar } from "./ProgressBar";
+import { displayNumber, groupResults, readableClauseName } from "@/lib/report";
+import { ClauseSection } from "./ClauseSection";
+import { ReportHeader } from "./ReportHeader";
+import { Button, Fold, ReportCard } from "./ui";
+import { Download } from "lucide-react";
+import { QuestionsToAsk } from "./QuestionsToAsk";
 import { ClauseList } from "./ClauseList";
 import { ClauseCard, type LinkedClauseItem } from "./ClauseCard";
-import { CollapsedMatches } from "./CollapsedMatches";
 import { ClauseFailedCard } from "./ClauseFailedCard";
 import { ServiceUnavailableBanner } from "./ServiceUnavailableBanner";
 import { SummaryCard } from "./SummaryCard";
 import { ContractIssuesPanel } from "./ContractIssuesPanel";
-import { EvaluationReportModal } from "./EvaluationReportModal";
-
-/** Shown when time or the token budget ran out before every clause was checked. */
-export function notCheckedMessage(count: number): string {
-  const clauses = count === 1 ? "1 clause isn't" : `${count} clauses aren't`;
-  return `Mbiu checked the most important clauses first. ${clauses} checked yet.`;
-}
+import { downloadReport, reportData } from "@/components/report-pdf/download";
 
 // pdf.js needs the browser, so the viewer is never rendered on the server
 const ContractViewer = dynamic(() => import("@/components/viewer/ContractViewer"), { ssr: false });
@@ -40,6 +35,11 @@ export interface LiveResultsProps {
    * An optional async generator stream to consume automatically on mount.
    */
   eventStream?: AsyncGenerator<EvaluationEvent, void, unknown> | null;
+  /**
+   * Pre-accumulated evaluation events log from the parent page, allowing
+   * immediate restoration of all cards, maps, and document without waiting.
+   */
+  initialLog?: ReadonlyMap<string, EvaluationEvent> | null;
   /**
    * Callback when a failed clause is retried by the user.
    */
@@ -56,22 +56,64 @@ export interface LiveResultsProps {
    * The artist's uploaded file, shown in the contract viewer. Kept in memory only.
    */
   file?: File | null;
+  /** Starts over with another contract. */
+  onCheckAnother?: () => void;
+  /** Clauses the page can still check; shown as "Check the other N". */
+  notChecked?: number;
+  onCheckRest?: () => void;
+  /** The keep-results switch, owned by the page. */
+  keep?: ReactNode;
 }
+
+const sentenceCase = (text: string) =>
+  text.length > 0 ? text[0].toUpperCase() + text.slice(1).toLowerCase() : text;
 
 export const LiveResults: React.FC<LiveResultsProps> = ({
   eventStream,
+  initialLog = null,
   onRetryClause,
   onRetryAll,
   initialDocument = null,
   file = null,
+  onCheckAnother,
+  notChecked = 0,
+  onCheckRest,
+  keep = null,
 }) => {
-  const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
-  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
-  const [progress, setProgress] = useState<Progress | null>(null);
-  const [allResults, setAllResults] = useState<ClauseResult[]>([]);
-  const [failures, setFailures] = useState<ClauseFailure[]>([]);
+  const [document, setDocument] = useState<DocumentPayload | null>(() => {
+    if (initialDocument) return initialDocument;
+    const docEvent = initialLog?.get("document");
+    return docEvent?.type === "document" ? docEvent.payload : null;
+  });
+  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(() => {
+    const mapEvent = initialLog?.get("contract_map");
+    return mapEvent?.type === "contract_map" ? mapEvent.payload : null;
+  });
+  const [allResults, setAllResults] = useState<ClauseResult[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseResult[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_result" || ev.type === "clause_updated") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
+  const [failures, setFailures] = useState<ClauseFailure[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseFailure[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_failed") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
   const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(() => {
+    const doneEvent = initialLog?.get("done");
+    return doneEvent?.type === "done" ? doneEvent.payload : null;
+  });
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,7 +121,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [downloadState, setDownloadState] = useState<"idle" | "preparing" | "saved" | "failed">("idle");
 
   // Fast clause lookup for numbering, headings, and pages
   const clauseLookup = useMemo(() => {
@@ -106,24 +148,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     return set;
   }, [contractMap]);
 
-  // Partition evaluated clauses into high-impact cards vs collapsed standard/boilerplate
-  const { highImpactResults, lowImpactResults } = useMemo(() => {
-    const high: ClauseResult[] = [];
-    const low: ClauseResult[] = [];
-    for (const r of allResults) {
-      const extra = clauseLookup.get(r.clause_id);
-      const hasIssue = issueClauseIds.has(r.clause_id);
-      if (isHighImpactClause(r, extra?.heading, hasIssue)) {
-        high.push(r);
-      } else {
-        low.push(r);
-      }
-    }
-    return {
-      highImpactResults: sortByImpactOrder(high),
-      lowImpactResults: low,
-    };
-  }, [allResults, clauseLookup, issueClauseIds]);
+  const grouped = useMemo(
+    () => groupResults(allResults, clauseLookup, issueClauseIds),
+    [allResults, clauseLookup, issueClauseIds],
+  );
 
   // Results map for overview badges
   const resultsByClauseId = useMemo(() => {
@@ -143,6 +171,11 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     return map;
   }, [failures]);
 
+  const documentTitle = useMemo(() => {
+    const heading = document?.clauses.find((c) => c.heading)?.heading?.trim();
+    return heading ? sentenceCase(heading) : null;
+  }, [document]);
+
   // Handle single incoming stream event
   const handleEvent = useCallback((event: EvaluationEvent) => {
     switch (event.type) {
@@ -154,37 +187,29 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         setContractMap(event.payload);
         break;
 
-      case "progress":
-        setProgress(event.payload);
-        break;
-
       case "clause_result": {
         const item = event.payload;
         setAllResults((prev) => {
           const exists = prev.some((r) => r.clause_id === item.clause_id);
           return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
         });
-        setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
 
       case "clause_updated": {
         const item = event.payload;
+        setAllResults((prev) =>
+          prev.map((r) => (r.clause_id === item.clause_id ? item : r))
+        );
         setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
-        setAllResults((prev) => {
-          const exists = prev.some((r) => r.clause_id === item.clause_id);
-          return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
-        });
         break;
       }
 
       case "clause_failed": {
-        const failure = event.payload;
+        const item = event.payload;
         setFailures((prev) => {
-          if (prev.some((f) => f.clause_id === failure.clause_id)) {
-            return prev.map((f) => (f.clause_id === failure.clause_id ? failure : f));
-          }
-          return [...prev, failure];
+          const exists = prev.some((f) => f.clause_id === item.clause_id);
+          return exists ? prev.map((f) => (f.clause_id === item.clause_id ? item : f)) : [...prev, item];
         });
         break;
       }
@@ -193,12 +218,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         setSummary(event.payload);
         setIsStreaming(false);
         break;
-
-      default:
-        break;
     }
   }, []);
 
+  // Connect to eventStream when available
   useEffect(() => {
     if (!eventStream) return;
 
@@ -223,7 +246,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           setIsServiceUnavailable(true);
         } else {
           setErrorMessage(
-            err instanceof Error ? err.message : "An error occurred during evaluation."
+            err instanceof Error ? err.message : "An unexpected error occurred during evaluation."
           );
         }
       } finally {
@@ -240,28 +263,49 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     };
   }, [eventStream, handleEvent]);
 
-  const handleRetry = async (clauseId: string) => {
-    setRetryingClauseId(clauseId);
-    try {
-      if (onRetryClause) {
-        await onRetryClause(clauseId);
+  // Overall failure condition: all clauses failed
+  const isEverythingUnavailable = useMemo(() => {
+    if (!document || document.clauses.length === 0) return false;
+    return failures.length === document.clauses.length && allResults.length === 0;
+  }, [document, failures, allResults]);
+
+  const handleRetry = useCallback(
+    async (clauseId: string) => {
+      setRetryingClauseId(clauseId);
+      try {
+        if (onRetryClause) {
+          await onRetryClause(clauseId);
+        }
+      } finally {
+        setRetryingClauseId(null);
       }
-    } finally {
-      setRetryingClauseId(null);
-    }
-  };
+    },
+    [onRetryClause],
+  );
 
   const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
-    const target =
-      window.document.getElementById(`card-${clauseId}`) ??
-      window.document.getElementById(`clause-item-${clauseId}`);
-    if (!target) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-    // Move keyboard and screen-reader focus to the card, not just the viewport
-    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
-    target.focus({ preventScroll: true });
+    const find = () => {
+      const card = window.document.getElementById(`card-${clauseId}`);
+      return card && !card.closest("[hidden]") ? card : window.document.getElementById(`clause-item-${clauseId}`);
+    };
+    const scrollTo = (target: HTMLElement) => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      // Move keyboard and screen-reader focus to the card, not just the viewport
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    };
+    // A clause inside a closed fold: let the fold open (200 ms) before scrolling, or the page is
+    // still too short and the scroll stops early
+    const wasFolded = !!find()?.closest("[hidden]");
+    window.setTimeout(
+      () => {
+        const target = find();
+        if (target) scrollTo(target);
+      },
+      wasFolded ? 260 : 0,
+    );
   }, []);
 
   // Compute linked clauses metadata for each card
@@ -281,9 +325,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
       const items: LinkedClauseItem[] = [];
       for (const targetId of set) {
         const extra = clauseLookup.get(targetId);
-        const label = extra?.number
-          ? `Clause ${extra.number}${extra.heading ? ` (${extra.heading})` : ""}`
-          : `Clause ${targetId}`;
+        const label = displayNumber(extra?.number) ?? readableClauseName(extra);
 
         const relatedIssue = contractMap?.issues.find(
           (i) => i.clause_ids.includes(clauseId) && i.clause_ids.includes(targetId)
@@ -295,20 +337,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           issueKind: relatedIssue?.kind ?? null,
         });
       }
-
       return items;
     },
-    [contractMap, clauseLookup]
+    [contractMap, clauseLookup],
   );
-
-  const totalEvaluated = allResults.length + failures.length;
-  const notCheckedCount = failures.filter((f) => f.reason === "not_checked").length;
-  // Every clause failed because no provider was reachable: same message as a failed upload
-  const isEverythingUnavailable =
-    !!document &&
-    document.clauses.length > 0 &&
-    failures.length === document.clauses.length &&
-    failures.every((f) => f.reason === "unavailable");
 
   const viewerClause = useMemo(() => {
     const clause = document?.clauses.find((c) => c.clause_id === viewerClauseId);
@@ -326,8 +358,49 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     if (viewerClauseId) handleSelectClause(viewerClauseId);
   }, [viewerClauseId, handleSelectClause]);
 
+  const handleDownload = useCallback(async () => {
+    if (downloadState === "preparing") return;
+    setDownloadState("preparing");
+    try {
+      await downloadReport(
+        reportData({
+          document,
+          results: allResults,
+          cards: grouped.writeUps,
+          contractMap,
+          summary,
+          clauseLookup,
+          isStreaming,
+          today: new Date(),
+        }),
+      );
+      setDownloadState("saved");
+    } catch (error) {
+      console.error("Report PDF failed", error);
+      setDownloadState("failed");
+    }
+    setTimeout(() => setDownloadState("idle"), 2500);
+  }, [downloadState, document, allResults, grouped.writeUps, contractMap, summary, clauseLookup, isStreaming]);
+
+  const downloadLabel = {
+    idle: "Download report (PDF)",
+    preparing: "Preparing…",
+    saved: "Saved",
+    failed: "Couldn't make the PDF. Try again",
+  }[downloadState];
+
+  const notCheckedNames = useMemo(() => {
+    if (!document) return [];
+    return failures
+      .filter((f) => f.reason === "not_checked")
+      .map((f) => {
+        const clause = document.clauses.find((c) => c.clause_id === f.clause_id);
+        return clause ? readableClauseName(clause) : "Clause";
+      });
+  }, [document, failures]);
+
   return (
-    <div className={`live-results-layout${file ? " has-viewer" : ""}`}>
+    <div className={`live-results-layout pb-24 lg:pb-0${file ? " has-viewer" : ""}`}>
       <div className="live-results-container">
         {/* Service Unavailable Banner */}
         {(isServiceUnavailable || isEverythingUnavailable) && (
@@ -342,41 +415,31 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           </div>
         )}
 
-        {/* Results Actions Bar (Download / Print Report) */}
-        {(allResults.length > 0 || isStreaming || document) && (
-          <div className="results-actions-bar">
-            <button
-              type="button"
-              onClick={() => setIsReportOpen(true)}
-              className="download-report-btn"
-              data-testid="download-report-btn"
-              aria-label="Download evaluation report"
-            >
-              📄 Download Report
-            </button>
-          </div>
-        )}
-
-        {/* Progress Bar */}
-        <ProgressBar
-          progress={progress}
-          isStreaming={isStreaming}
-          totalClauses={document?.clauses.length}
-          evaluatedCount={totalEvaluated}
-        />
-
-        {/* Document Clause Overview (Visible as soon as document event arrives) */}
-        {document && (
-          <ClauseList
-            document={document}
-            resultsByClauseId={resultsByClauseId}
-            failedByClauseId={failedByClauseId}
-            selectedClauseId={selectedClauseId}
-            onSelectClause={handleSelectClause}
+        {(document || isStreaming) && (
+          <ReportHeader
+            documentTitle={documentTitle}
+            pageCount={document?.page_count ?? null}
+            checked={allResults.length}
+            total={document?.clauses.length ?? 0}
+            isStreaming={isStreaming}
+            counts={grouped.counts}
+            notChecked={notChecked}
+            onCheckRest={onCheckRest}
+            onDownload={handleDownload}
+            downloadLabel={downloadLabel}
+            onCheckAnother={onCheckAnother ?? (() => onRetryAll?.())}
+            keep={keep}
           />
         )}
 
-        {/* Contract-Wide Issues Panel (Sits above all cards, highest danger first) */}
+        {summary && summary.top_asks.length > 0 && (
+          <QuestionsToAsk
+            asks={summary.top_asks}
+            clauseLookup={clauseLookup}
+            onView={file ? openInViewer : handleSelectClause}
+          />
+        )}
+
         {contractMap && contractMap.issues && contractMap.issues.length > 0 && (
           <ContractIssuesPanel
             issues={contractMap.issues}
@@ -385,27 +448,32 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           />
         )}
 
-        {/* Collapsed Standard & Boilerplate Matches Banner */}
-        <CollapsedMatches
-          matches={lowImpactResults}
-          clauseLookup={clauseLookup}
-          onSelectClause={handleSelectClause}
-          selectedClauseId={selectedClauseId}
-        />
-
-        {/* Failed Clauses (if any) */}
-        {notCheckedCount > 0 && (
-          <p className="status-alert info" role="status">
-            {notCheckedMessage(notCheckedCount)}
-          </p>
-        )}
-
-        {failures.length > 0 && (
-          <section
-            className="failed-clauses-section"
-            aria-label="Clauses that could not be checked"
-          >
-            {failures.map((f) => {
+        <ClauseSection
+          grouped={grouped}
+          renderCard={(result, index) => {
+            const extra = clauseLookup.get(result.clause_id);
+            return (
+              <div
+                key={result.clause_id}
+                className="report-arrive"
+                style={{ "--arrive-index": Math.min(index, 8) } as React.CSSProperties}
+              >
+                <ClauseCard
+                  result={result}
+                  clauseNumber={extra?.number}
+                  clauseHeading={extra?.heading}
+                  isHighlighted={selectedClauseId === result.clause_id}
+                  isUpdated={updatedClauseIds.has(result.clause_id)}
+                  linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
+                  onSelectClause={handleSelectClause}
+                  onJumpToPdfClause={file ? openInViewer : undefined}
+                />
+              </div>
+            );
+          }}
+          failedCards={failures
+            .filter((f) => f.reason !== "not_checked")
+            .map((f) => {
               const extra = clauseLookup.get(f.clause_id);
               return (
                 <ClauseFailedCard
@@ -418,34 +486,37 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
                 />
               );
             })}
-          </section>
-        )}
-
-        {/* Evaluated Clause Cards (Shown in strict impact order: highest risk first) */}
-        <section
-          className="results-cards-feed"
-          aria-label="High-Impact Evaluated Clauses"
-        >
-          {highImpactResults.map((result) => {
-            const extra = clauseLookup.get(result.clause_id);
-            return (
-              <ClauseCard
-                key={result.clause_id}
-                result={result}
-                clauseNumber={extra?.number}
-                clauseHeading={extra?.heading}
-                isHighlighted={selectedClauseId === result.clause_id}
-                isUpdated={updatedClauseIds.has(result.clause_id)}
-                linkedClauses={getLinkedClausesFor(result.clause_id, result.linked_clauses)}
-                onSelectClause={handleSelectClause}
-                onJumpToPdfClause={file ? openInViewer : undefined}
-              />
-            );
-          })}
-        </section>
+          notCheckedNames={notCheckedNames}
+          onCheckRest={onCheckRest}
+          selectedClauseId={selectedClauseId}
+        />
 
         {/* Final Summary Card upon done event */}
-        {summary && <SummaryCard summary={summary} />}
+        {summary && (
+          <SummaryCard
+            summary={summary}
+            typicalCount={grouped.counts.typical}
+            unusualCount={grouped.counts.unusual}
+          />
+        )}
+
+        {document && (
+          <ReportCard>
+            <Fold
+              summary={`All ${document.clauses.length} clauses`}
+              forceOpen={!!selectedClauseId && !resultsByClauseId.has(selectedClauseId)}
+            >
+              <ClauseList
+                document={document}
+                resultsByClauseId={resultsByClauseId}
+                failedByClauseId={failedByClauseId}
+                selectedClauseId={selectedClauseId}
+                onSelectClause={handleSelectClause}
+                isStreaming={isStreaming}
+              />
+            </Fold>
+          </ReportCard>
+        )}
       </div>
       {file && (
         <ContractViewer
@@ -456,18 +527,15 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         />
       )}
 
-      {/* Downloadable / Printable Evaluation Report Modal */}
-      <EvaluationReportModal
-        isOpen={isReportOpen}
-        onClose={() => setIsReportOpen(false)}
-        document={document}
-        allResults={allResults}
-        highImpactResults={highImpactResults}
-        contractMap={contractMap}
-        summary={summary}
-        clauseLookup={clauseLookup}
-        isStreaming={isStreaming}
-      />
+      {document && !isViewerOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-[#fcf4e5] via-[#fcf4e5]/95 to-transparent px-4 pb-4 pt-6 lg:hidden dark:from-mbiu-bg-dark dark:via-mbiu-bg-dark/95">
+          <Button variant="primary" className="w-full" onClick={handleDownload} aria-live="polite">
+            <Download aria-hidden="true" className="h-4 w-4" />
+            {downloadLabel}
+          </Button>
+        </div>
+      )}
+
     </div>
   );
 };

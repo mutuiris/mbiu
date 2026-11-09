@@ -1,144 +1,117 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+
 import type { ContractIssue } from "@/lib/api/generated/types.gen";
+import { readableClauseName } from "@/lib/report";
+
+import { Fold, ReportCard } from "./ui";
 
 export interface ContractIssuesPanelProps {
   issues: ContractIssue[];
-  /**
-   * Fast lookup to resolve clause numbers and headings by clause_id.
-   */
+  /** Resolves clause numbers, headings and pages by clause_id. */
   clauseLookup?: Map<string, { number?: string | null; heading?: string | null; pages?: number[] }>;
-  /**
-   * Callback invoked when a user taps a clause link to navigate to its card.
-   */
+  /** Called when the artist taps "See both". */
   onSelectClause?: (clauseId: string) => void;
 }
+
+const KIND_LABEL: Record<ContractIssue["kind"], string> = {
+  override: "One clause cancels another",
+  conflict: "Two clauses disagree",
+};
+
+const FIRST_SHOWN = 3;
+
+// The rules append the disclaimer to every explanation; the panel says it once instead
+const withoutDisclaimer = (text: string) => text.replace(/\s*Mbiu reports that one clause[^.]*\./g, "").trim();
 
 export const ContractIssuesPanel: React.FC<ContractIssuesPanelProps> = ({
   issues,
   clauseLookup,
   onSelectClause,
 }) => {
-  if (!issues || issues.length === 0) {
-    return null;
-  }
+  const [showAll, setShowAll] = useState(false);
+  if (!issues || issues.length === 0) return null;
 
-  const getClauseLabel = (clauseId: string) => {
-    const meta = clauseLookup?.get(clauseId);
-    if (meta?.number) {
-      return `clause ${meta.number}`;
-    }
-    return `clause ${clauseId}`;
-  };
-
-  const getClausePage = (clauseId: string, defaultPages: number[]) => {
-    const meta = clauseLookup?.get(clauseId);
-    if (meta?.pages && meta.pages.length > 0) {
-      return `Page ${meta.pages[0]}`;
-    }
-    if (defaultPages && defaultPages.length > 0) {
-      return `Page ${defaultPages[0]}`;
-    }
-    return "Page 1";
-  };
+  const shown = showAll ? issues : issues.slice(0, FIRST_SHOWN);
+  const name = (clauseId: string) => readableClauseName(clauseLookup?.get(clauseId));
+  const page = (clauseId: string, index: number, issue: ContractIssue) =>
+    clauseLookup?.get(clauseId)?.pages?.[0] ?? issue.pages[index] ?? issue.pages[0];
 
   return (
-    <section
-      className="contract-issues-panel"
-      aria-labelledby="contract-issues-title"
-      data-testid="contract-issues-panel"
-    >
-      <header className="issues-panel-header">
-        <div className="issues-title-row">
-          <span className="issues-alert-icon" aria-hidden="true">⚠️</span>
-          <div>
-            <h2 id="contract-issues-title" className="issues-panel-title">
-              Contract-Wide Issues ({issues.length})
-            </h2>
-            <p className="issues-panel-subtitle">
-              These clauses contradict or override each other across pages. Check these carefully before signing.
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <div className="issues-list">
-        {issues.map((issue, idx) => {
-          const idA = issue.clause_ids[0];
-          const idB = issue.clause_ids[1];
-          const labelA = getClauseLabel(idA);
-          const labelB = getClauseLabel(idB);
-          const pageA = getClausePage(idA, issue.pages);
-          const pageB = getClausePage(idB, issue.pages);
-          const isConflict = issue.kind === "conflict";
-
-          return (
-            <article
-              key={`${idA}-${idB}-${idx}`}
-              className={`issue-item ${isConflict ? "issue-conflict" : "issue-override"}`}
-              data-testid={`issue-item-${idx}`}
-            >
-              <div className="issue-item-meta">
-                <span
-                  className={`issue-kind-badge ${
-                    isConflict ? "badge-conflict" : "badge-override"
-                  }`}
-                >
-                  {isConflict ? "Contradiction / Conflict" : "Override Claim"}
-                </span>
-
-                <div className="issue-locations" data-testid="issue-locations">
-                  <button
-                    type="button"
-                    onClick={() => onSelectClause?.(idA)}
-                    className="clause-location-btn"
-                    title={`Jump to ${labelA}`}
-                    aria-label={`Jump to ${pageA}, ${labelA}`}
-                  >
-                    {pageA}, {labelA}
-                  </button>
-                  <span className="locations-separator"> and </span>
-                  <button
-                    type="button"
-                    onClick={() => onSelectClause?.(idB)}
-                    className="clause-location-btn"
-                    title={`Jump to ${labelB}`}
-                    aria-label={`Jump to ${pageB}, ${labelB}`}
-                  >
-                    {pageB}, {labelB}
-                  </button>
-                </div>
-              </div>
-
-              <p className="issue-explanation">{issue.explanation}</p>
-
-              {issue.quotes && issue.quotes.length === 2 && (
-                <details className="issue-quotes-wrapper">
-                  <summary className="toggle-quotes-btn">
-                    View exact contract wording
-                  </summary>
-
-                  <div className="issue-quotes-content" data-testid="issue-quotes-content">
-                    <div className="quote-block">
-                      <span className="quote-label">{labelA}:</span>
-                      <blockquote className="quote-text">“{issue.quotes[0]}”</blockquote>
-                    </div>
-                    <div className="quote-block">
-                      <span className="quote-label">{labelB}:</span>
-                      <blockquote className="quote-text">“{issue.quotes[1]}”</blockquote>
-                    </div>
-                  </div>
-                </details>
-              )}
-
-              <footer className="issue-impartial-note">
-                Mbiu reports that one clause claims to override another; it never decides which a court would apply.
-              </footer>
-            </article>
-          );
-        })}
+    <ReportCard aria-labelledby="clashes-title" data-testid="contract-issues-panel">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          id="clashes-title"
+          className="font-serif text-[1.3rem] font-medium leading-tight text-mbiu-ink dark:text-[#F6F2E9]"
+        >
+          Clauses that clash
+        </h2>
+        <span className="text-[0.9rem] text-mbiu-ink/60 dark:text-[#b9c1c5]">{issues.length}</span>
       </div>
-    </section>
+      <p className="mt-1 text-[0.82rem] text-mbiu-ink/60 dark:text-[#b9c1c5]">
+        Mbiu shows where one clause claims to override another. It never decides which a court would apply.
+      </p>
+
+      <ul className="mt-3">
+        {shown.map((issue, index) => (
+          <li
+            key={`${issue.clause_ids.join("-")}-${index}`}
+            className="border-t border-[#e9dec9] py-3 dark:border-white/10"
+          >
+            <span className="inline-flex whitespace-nowrap rounded-full bg-mbiu-ink/[0.07] px-2.5 py-1 text-[0.75rem] font-bold text-mbiu-ink dark:bg-white/10 dark:text-[#F4EFE6]">
+              {KIND_LABEL[issue.kind]}
+            </span>
+            <p className="mt-2 break-words text-[0.96rem] leading-snug text-mbiu-ink dark:text-[#F4EFE6]">
+              {withoutDisclaimer(issue.explanation)}
+            </p>
+            <p className="mt-1 break-words text-[0.8rem] text-mbiu-ink/60 dark:text-[#b9c1c5]">
+              {issue.clause_ids
+                .map((id, i) => {
+                  const p = page(id, i, issue);
+                  return p != null ? `${name(id)} (page ${p})` : name(id);
+                })
+                .join(" and ")}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-5">
+              {onSelectClause && (
+                <button
+                  type="button"
+                  onClick={() => onSelectClause(issue.clause_ids[0])}
+                  className="report-press min-h-11 text-[0.9rem] font-semibold text-mbiu-indigo underline underline-offset-4 dark:text-[#a9b0ff]"
+                >
+                  See both
+                </button>
+              )}
+              <Fold summary="See the exact words">
+                <div className="space-y-2 pb-1 text-[0.88rem] text-mbiu-ink/80 dark:text-[#d6dadc]">
+                  {issue.quotes.map((quote, i) => (
+                    <blockquote key={i} className="border-l-2 border-[#e9dec9] pl-3 dark:border-white/15">
+                      <span className="block text-[0.75rem] font-semibold text-mbiu-ink/55 dark:text-[#b9c1c5]">
+                        {name(issue.clause_ids[i])}
+                      </span>
+                      “{quote}”
+                    </blockquote>
+                  ))}
+                </div>
+              </Fold>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {issues.length > FIRST_SHOWN && !showAll && (
+        <div className="flex items-center justify-between border-t border-[#e9dec9] pt-2 text-[0.88rem] text-mbiu-ink/60 dark:border-white/10 dark:text-[#b9c1c5]">
+          <span>{issues.length - FIRST_SHOWN} more</span>
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="report-press min-h-11 font-semibold text-mbiu-indigo underline underline-offset-4 dark:text-[#a9b0ff]"
+          >
+            Show all {issues.length}
+          </button>
+        </div>
+      )}
+    </ReportCard>
   );
 };

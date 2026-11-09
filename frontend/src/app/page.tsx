@@ -30,10 +30,12 @@ import {
   NOT_SAVED_MESSAGE,
   clearKeptResults,
   forgetResults,
+  getActiveMemorySession,
   keepResults,
   markResultsShown,
   restoreResults,
   resultsWereShown,
+  setActiveMemorySession,
 } from "@/lib/keep-tab";
 import { emptyLog, replay, tracked, unfinishedClauses, withEvent } from "@/lib/results-log";
 import { validateContractFile } from "@/lib/validation";
@@ -108,6 +110,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [stream, setStream] = useState<EventStream | null>(null);
+  const [isViewingResults, setIsViewingResults] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [log, setLog] = useState(emptyLog);
   const [keptSince, setKeptSince] = useState<number | null>(null);
@@ -129,9 +132,47 @@ export default function Home() {
     setTurnstileKey((key) => key + 1);
   };
 
-  const startStream = useCallback((source: EventStream, resumeIfDropped: boolean) => {
+  const scrollToSection = useCallback((sectionId: string) => {
+    if (typeof window === "undefined") return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
+    if (!sectionId || sectionId === "hero" || sectionId === "#") {
+      window.scrollTo({ top: 0, behavior });
+      return;
+    }
+    const cleanId = sectionId.replace(/^#/, "");
+    const el = window.document.getElementById(cleanId);
+    if (el) {
+      el.scrollIntoView({ behavior, block: "start" });
+    }
+  }, []);
+
+  const handleNavigateSection = useCallback(
+    (sectionId: string) => {
+      const cleanId = sectionId.replace(/^#/, "");
+      if (stream && isViewingResults) {
+        if (typeof window !== "undefined") {
+          const targetUrl =
+            !cleanId || cleanId === "hero" ? "/" : `/#${cleanId}`;
+          window.history.pushState(
+            { mbiuView: "landing", sectionId: cleanId },
+            "",
+            targetUrl,
+          );
+        }
+        setIsViewingResults(false);
+        setTimeout(() => scrollToSection(cleanId), 40);
+      } else {
+        scrollToSection(cleanId);
+      }
+    },
+    [stream, isViewingResults, scrollToSection],
+  );
+
+  const startStream = useCallback((source: EventStream, resumeIfDropped: boolean, showResults = true) => {
     const id = ++generation.current;
     setIsStreaming(true);
+    setIsViewingResults(showResults);
     setStream(
       tracked(
         source,
@@ -151,20 +192,101 @@ export default function Home() {
     );
   }, []);
 
+  const returnToEvaluation = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.history.pushState({ mbiuView: "results" }, "", "/");
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+    if (log.size > 0) {
+      startStream(replay(log.values()), false, true);
+    } else {
+      setIsViewingResults(true);
+    }
+  }, [log, startStream]);
+
+  // Handle global return-to-evaluation events from the floating banner
   useEffect(() => {
-    // sessionStorage exists only in the browser, so this waits until after hydration
+    const handleReturn = () => returnToEvaluation();
+    window.addEventListener("mbiu-return-to-evaluation", handleReturn);
+    return () => window.removeEventListener("mbiu-return-to-evaluation", handleReturn);
+  }, [returnToEvaluation]);
+
+  useEffect(() => {
+    // Restore active in-memory session when returning from /privacy, /terms, or /team,
+    // or restore from sessionStorage if the user enabled "Keep results".
     void Promise.resolve().then(() => {
+      const searchParams =
+        typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const wantsResults = searchParams?.get("view") === "results";
+      const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+      const wantsLandingSection =
+        !wantsResults &&
+        Boolean(hash && ["how-it-works", "about", "upload", "privacy", "hero"].includes(hash));
+
+      const memorySession = getActiveMemorySession();
+      if (memorySession && memorySession.log.size > 0) {
+        setSelectedFile(memorySession.selectedFile);
+        setConsentChecked(memorySession.consentChecked);
+        setKeptSince(memorySession.keptSince);
+        setLog(memorySession.log);
+        const showEval = wantsLandingSection ? false : true;
+        startStream(replay(memorySession.log.values()), false, showEval);
+        if (wantsLandingSection) {
+          setTimeout(() => scrollToSection(hash), 50);
+        }
+        return;
+      }
+
+      if (memorySession) {
+        setSelectedFile(memorySession.selectedFile);
+        setConsentChecked(memorySession.consentChecked);
+      }
+
       const kept = restoreResults();
       if (kept) {
         setKeptSince(kept.keptSince);
         setResumeUnfinished(true);
-        startStream(replay(kept.events), false);
+        const showEval = wantsLandingSection ? false : true;
+        startStream(replay(kept.events), false, showEval);
+        if (wantsLandingSection) {
+          setTimeout(() => scrollToSection(hash), 50);
+        }
       } else if (resultsWereShown()) {
         forgetResults();
         setNotice(NOT_SAVED_MESSAGE);
       }
     });
-  }, [startStream]);
+  }, [startStream, scrollToSection]);
+
+  // Keep in-memory session synchronized for seamless SPA navigation (e.g., to /privacy and Back)
+  useEffect(() => {
+    if (log.size > 0 || selectedFile !== null || consentChecked) {
+      setActiveMemorySession({
+        log,
+        selectedFile,
+        consentChecked,
+        keptSince,
+        isViewingResults,
+      });
+    }
+  }, [log, selectedFile, consentChecked, keptSince, isViewingResults]);
+
+  // Support browser Back/Forward between evaluation view and landing sections (#how-it-works, #about)
+  useEffect(() => {
+    if (!stream) return;
+    const onPopState = (event: PopStateEvent) => {
+      if (event.state?.mbiuOverlay) return;
+      const hash = window.location.hash.replace(/^#/, "");
+      if (event.state?.mbiuView === "landing" || (hash && ["how-it-works", "about", "upload"].includes(hash))) {
+        setIsViewingResults(false);
+        if (hash) setTimeout(() => scrollToSection(hash), 40);
+      } else {
+        setIsViewingResults(true);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [stream, scrollToSection]);
 
   useEffect(() => {
     if (!stream) return;
@@ -263,6 +385,7 @@ export default function Home() {
     generation.current++;
     forgetResults();
     setStream(null);
+    setIsViewingResults(false);
     setIsStreaming(false);
     setLog(emptyLog);
     setKeptSince(null);
@@ -272,52 +395,52 @@ export default function Home() {
     resetTurnstile();
   };
 
-  if (stream) {
+  if (stream && isViewingResults) {
     const isIdle = !isStreaming && !clausesToCheck;
     return (
       <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
         <SiteBackdrop variant="results" />
-        <Navbar basePath="/" />
+        <Navbar
+          basePath="/"
+          onNavigateSection={handleNavigateSection}
+          onUploadClick={() => handleNavigateSection("upload")}
+        />
 
         <main className="results-page relative z-10 mx-auto w-full max-w-[880px] px-5 pb-20 pt-8 sm:px-8">
-          <div className="stream-controls">
-          <button type="button" className="secondary-btn restart-btn" onClick={startOver}>
-            Check another contract
-          </button>
-        </div>
-        <KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />
-        <div className="resume-panel" role="status" aria-live="polite">
-          {resultsStatus && <p>{resultsStatus}</p>}
-          {!isStreaming && clausesToCheck && (
-            <>
-              <p>
-                Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
-                again after a quick security check.
-              </p>
-              <Turnstile
-                key={turnstileKey}
-                onSuccess={checkClauses}
-                onError={() =>
-                  setResultsStatus("The security check could not load. Please try again.")
-                }
-              />
-            </>
+          {(resultsStatus || (!isStreaming && clausesToCheck)) && (
+            <div className="resume-panel" role="status" aria-live="polite">
+              {resultsStatus && <p>{resultsStatus}</p>}
+              {!isStreaming && clausesToCheck && (
+                <>
+                  <p>
+                    Checking {clausesToCheck.length === 1 ? "1 clause" : `${clausesToCheck.length} clauses`}{" "}
+                    again after a quick security check.
+                  </p>
+                  <Turnstile
+                    key={turnstileKey}
+                    onSuccess={checkClauses}
+                    onError={() =>
+                      setResultsStatus("The security check could not load. Please try again.")
+                    }
+                  />
+                </>
+              )}
+            </div>
           )}
-        </div>
-        {isIdle && unfinished.length > 0 && (
-          <button type="button" className="secondary-btn" onClick={() => setToCheck(unfinished)}>
-            Check the {unfinished.length === 1 ? "unfinished clause" : `${unfinished.length} unfinished clauses`}
-          </button>
-        )}
-        <LiveResults
-          eventStream={stream}
-          onRetryAll={startOver}
-          onRetryClause={isIdle ? retryClause : undefined}
-          file={selectedFile}
-        />
+          <LiveResults
+            eventStream={stream}
+            initialLog={log}
+            onRetryAll={startOver}
+            onRetryClause={isIdle ? retryClause : undefined}
+            file={selectedFile}
+            onCheckAnother={startOver}
+            notChecked={isIdle ? unfinished.length : 0}
+            onCheckRest={isIdle && unfinished.length > 0 ? () => setToCheck(unfinished) : undefined}
+            keep={<KeepResultsSwitch kept={keptSince !== null} onChange={setKeep} />}
+          />
         </main>
 
-        <Footer basePath="/" />
+        <Footer basePath="/" onNavigateSection={handleNavigateSection} />
       </div>
     );
   }
@@ -326,7 +449,7 @@ export default function Home() {
     <div className="relative min-h-screen overflow-x-clip bg-mbiu-cream font-sans text-mbiu-ink dark:bg-mbiu-bg-dark dark:text-[#F4EFE6]">
       <SiteBackdrop />
 
-      <Navbar />
+      <Navbar onNavigateSection={handleNavigateSection} />
 
       <main className="relative z-10" id="hero">
         <section
@@ -358,7 +481,7 @@ export default function Home() {
 
             <p className="mt-4 flex items-center justify-center gap-2 text-[0.82rem] font-medium text-mbiu-ink/70 dark:text-[#B9C1C5] sm:mt-5 sm:text-[0.85rem] xl:justify-start">
               <Lock className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Mbiu does not store your contracts on our servers.
+              Mbiu does not store your contracts
             </p>
           </div>
 
@@ -384,9 +507,8 @@ export default function Home() {
               {steps.map((step, index) => (
                 <li
                   key={step.number}
-                  className={`flex items-center gap-4 sm:px-6 md:px-7 ${
-                    index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
-                  }`}
+                  className={`flex items-center gap-4 sm:px-6 md:px-7 ${index > 0 ? "sm:border-l sm:border-mbiu-ink/20 dark:sm:border-white/15" : ""
+                    }`}
                 >
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mbiu-peach-strong text-[1.05rem] font-semibold text-[#1b2430] sm:h-14 sm:w-14 sm:text-[1.15rem]">
                     {step.number}
@@ -434,9 +556,16 @@ export default function Home() {
                 <div className="turnstile-wrapper">
                   <Turnstile
                     key={turnstileKey}
-                    onSuccess={setTurnstileToken}
+                    onSuccess={(token) => {
+                      setTurnstileToken(token);
+                      setErrorMessage((prev) =>
+                        prev && prev.includes("security check") ? null : prev,
+                      );
+                    }}
                     onError={() =>
-                      setErrorMessage("The security check could not load. Please refresh the page.")
+                      setErrorMessage(
+                        "The security check could not load. Tap 'Retry security check' above or refresh the page.",
+                      )
                     }
                     onExpire={() => setTurnstileToken(null)}
                   />
@@ -461,7 +590,7 @@ export default function Home() {
         </section>
       </main>
 
-      <Footer />
+      <Footer onNavigateSection={handleNavigateSection} />
     </div>
   );
 }
