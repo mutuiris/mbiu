@@ -114,9 +114,18 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     const doneEvent = initialLog?.get("done");
     return doneEvent?.type === "done" ? doneEvent.payload : null;
   });
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [isStreaming, setIsStreaming] = useState<boolean>(() => Boolean(eventStream));
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [prevEventStream, setPrevEventStream] = useState(eventStream);
+
+  // Reset stream status during render when a new stream is provided
+  if (eventStream !== prevEventStream) {
+    setPrevEventStream(eventStream);
+    setIsStreaming(Boolean(eventStream));
+    setIsServiceUnavailable(false);
+    setErrorMessage(null);
+  }
   const [retryingClauseId, setRetryingClauseId] = useState<string | null>(null);
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const [viewerClauseId, setViewerClauseId] = useState<string | null>(null);
@@ -230,10 +239,6 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     const readStream = async () => {
       await Promise.resolve();
       if (cancelled) return;
-
-      setIsStreaming(true);
-      setErrorMessage(null);
-      setIsServiceUnavailable(false);
 
       try {
         for await (const event of eventStream) {
