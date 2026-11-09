@@ -9,14 +9,26 @@
 #   jurisdiction: KE
 
 sources:
+  # ---------------------------------------------------------------------------
+  # 1. WIPO International Music Industry Guides & Model Agreements
+  # ---------------------------------------------------------------------------
   - url: https://www.wipo.int/edocs/pubdocs/en/wipo-pub-939-2024-en-how-to-make-a-living-from-music.pdf
     licence: CC BY 4.0
     reviewing_body: World Intellectual Property Organization (WIPO)
     contract_type: management
     jurisdiction: international
 
+  - url: https://www.wipo.int/edocs/pubdocs/en/copyright/869/wipo_pub_869.pdf
+    licence: CC BY 4.0
+    reviewing_body: World Intellectual Property Organization (WIPO)
+    contract_type: publishing
+    jurisdiction: international
+
+  # ---------------------------------------------------------------------------
+  # 2. Kenya Copyright Board (KECOBO) Standard Music Agreement Templates
+  # ---------------------------------------------------------------------------
   # KECOBO states CC BY-SA without a version. Confirm the version and whether
-  # ShareAlike covers adapted text before publishing these three to the corpus.
+  # ShareAlike covers adapted text before publishing these to the corpus.
   - url: https://copyright.go.ke/sites/default/files/downloads/MUSIC%20LICENSE%20AGREEMENT%20.pdf
     licence: CC BY-SA
     reviewing_body: Kenya Copyright Board (KECOBO)
@@ -34,3 +46,57 @@ sources:
     reviewing_body: Kenya Copyright Board (KECOBO)
     contract_type: assignment
     jurisdiction: KE
+
+  - url: https://copyright.go.ke/media-resources/downloads/
+    licence: CC BY-SA
+    reviewing_body: Kenya Copyright Board (KECOBO)
+    contract_type: brand_partnership
+    jurisdiction: KE
+
+  # ---------------------------------------------------------------------------
+  # 3. Laws of Kenya — Primary Statutory Acts (National Council for Law Reporting)
+  # ---------------------------------------------------------------------------
+  - url: http://kenyalaw.org:8181/exist/kenyalex/actview.xql?actid=CAP.%20130
+    licence: Kenya Law Open Access Policy (Public Statutory Text)
+    reviewing_body: National Council for Law Reporting (Kenya Law) / Parliament of Kenya
+    contract_type: statutory_copyright
+    jurisdiction: KE
+
+  - url: http://kenyalaw.org:8181/exist/kenyalex/actview.xql?actid=CAP.%20229A
+    licence: Kenya Law Open Access Policy (Public Statutory Text)
+    reviewing_body: National Council for Law Reporting (Kenya Law) / Parliament of Kenya
+    contract_type: statutory_performers
+    jurisdiction: KE
+
+  - url: http://kenyalaw.org:8181/exist/kenyalex/actview.xql?actid=CAP.%20470
+    licence: Kenya Law Open Access Policy (Public Statutory Text)
+    reviewing_body: National Council for Law Reporting (Kenya Law) / Kenya Revenue Authority (KRA)
+    contract_type: statutory_tax
+    jurisdiction: KE
+
+  - url: http://kenyalaw.org:8181/exist/kenyalex/actview.xql?actid=No.%2024%20of%202019
+    licence: Kenya Law Open Access Policy (Public Statutory Text)
+    reviewing_body: National Council for Law Reporting (Kenya Law) / Office of the Data Protection Commissioner
+    contract_type: statutory_data_protection
+    jurisdiction: KE
+
+  # ---------------------------------------------------------------------------
+  # 4. International Fair-Terms Benchmarks (CISAC, Musicians' Union, MMF)
+  # ---------------------------------------------------------------------------
+  - url: https://www.cisac.org/services/governance/resolutions-and-binding-decisions
+    licence: Public Governance Rules
+    reviewing_body: International Confederation of Societies of Authors and Composers (CISAC)
+    contract_type: publishing
+    jurisdiction: international
+
+  - url: https://musiciansunion.org.uk/working-performing/contracts-and-agreements/specimen-agreements
+    licence: Public Educational Guidance
+    reviewing_body: Musicians' Union (UK)
+    contract_type: live_performance
+    jurisdiction: GB
+
+  - url: https://themmf.net/guides/
+    licence: Public Educational Guidance
+    reviewing_body: Music Managers Forum (MMF)
+    contract_type: management
+    jurisdiction: international

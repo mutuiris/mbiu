@@ -8,6 +8,7 @@ import httpx
 import pybreaker
 from django.conf import settings
 from google import genai
+from google.genai import errors as genai_sdk_errors
 from google.genai import types
 from google.genai._gaos.lib import compat_errors as gemini_errors
 from opentelemetry import trace
@@ -32,10 +33,13 @@ def _classify(exc: BaseException) -> LLMError:
         return LLMError(ErrorCategory.TIMEOUT, retryable=True, outage=True)
     if isinstance(exc, gemini_errors.APIConnectionError):
         return LLMError(ErrorCategory.UNAVAILABLE, retryable=True, outage=True)
-    if isinstance(exc, gemini_errors.APIStatusError):
-        status = exc.status_code or 0
+    if isinstance(exc, (gemini_errors.APIStatusError, genai_sdk_errors.APIError)):
+        raw_status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+        status = int(raw_status) if isinstance(raw_status, int) else 0
         if status == 429:
-            retry_after = exc.response.headers.get("retry-after")
+            resp = getattr(exc, "response", None)
+            headers = getattr(resp, "headers", None)
+            retry_after = headers.get("retry-after") if headers is not None else None
             delay = float(retry_after) if retry_after and retry_after.isdigit() else None
             return LLMError(
                 ErrorCategory.RATE_LIMITED, retryable=True, outage=True, retry_after_s=delay
@@ -160,7 +164,10 @@ class Gemini:
                         system_instruction=instructions,
                         input=content,
                         response_format={"mime_type": "application/json", "schema": schema},
-                        generation_config={"temperature": temperature},
+                        generation_config={
+                            "temperature": temperature,
+                            "thinking_level": settings.GEMINI_THINKING_LEVEL,
+                        },
                         store=False,  # never let the provider keep contract text
                         timeout=min(self._timeout_s, remaining),
                     )

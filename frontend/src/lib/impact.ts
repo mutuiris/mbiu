@@ -1,37 +1,4 @@
-import type { ClauseResult, ImpactInputs, MoneyBasis } from "./api/generated/types.gen";
-
-export interface ImpactCalculation {
-  /** The example gross revenue used for calculation in Kenyan Shillings */
-  revenueGross: number;
-  /** Royalty rate percentage (e.g. 15 for 15%) */
-  royaltyRate: number;
-  /** Money basis: "gross" or "net" */
-  basis: MoneyBasis;
-  /** Total example deductions applied in Kenyan Shillings */
-  totalDeductions: number;
-  /** Net revenue available after deductions (min 0) */
-  netRevenue: number;
-  /** The calculated artist payout in whole Kenyan Shillings for the active contract terms */
-  artistEarnings: number;
-  /** What the artist would have received if royalties were calculated on Gross */
-  earningsUnderGross: number;
-  /** What the artist receives when royalties are calculated on Net after deductions */
-  earningsUnderNet: number;
-  /** The monetary amount lost to deductions (earningsUnderGross - earningsUnderNet) */
-  lossToDeductions: number;
-  /** Quoted basis quote text from contract if available */
-  quotedBasisText?: string | null;
-  /** Quoted rate quote text from contract if available */
-  quotedRateText?: string | null;
-  /** Quoted deduction names from contract */
-  deductionQuotes: string[];
-}
-
-/** Default example gross revenue in Kenyan Shillings (KES 100,000) */
-export const DEFAULT_EXAMPLE_GROSS = 100_000;
-
-/** Default example deduction amount in Kenyan Shillings (KES 40,000) */
-export const DEFAULT_EXAMPLE_DEDUCTIONS = 40_000;
+import type { ClauseResult, ImpactInputs } from "./api/generated/types.gen";
 
 /**
  * A clear formula needs a stated royalty rate. Without one there is nothing to calculate,
@@ -54,68 +21,6 @@ export function formatShillings(amount: number): string {
   const rounded = Math.round(amount);
   const normalized = Object.is(rounded, -0) || rounded === 0 ? 0 : rounded;
   return `KES ${normalized.toLocaleString("en-KE")}`;
-}
-
-/**
- * Calculates a worked example in Kenyan Shillings based on impact_inputs and optional user adjustments.
- *
- * Rules:
- * 1. Gross vs Net: Under Gross, royalty rate applies directly to gross revenue.
- *    Under Net, deductions are subtracted before the royalty rate applies.
- * 2. Deductions before royalties: Net revenue cannot be negative (floored at 0).
- * 3. Zero and very large values: Handles 0, very large numbers safely without NaN.
- * 4. Rounding: All currency amounts are strictly rounded to whole shillings (Math.round).
- */
-export function calculateImpact(
-  inputs: ImpactInputs | null | undefined,
-  customGross: number = DEFAULT_EXAMPLE_GROSS,
-  customDeductions?: number,
-): ImpactCalculation | null {
-  if (!hasClearFormula(inputs)) {
-    return null;
-  }
-
-  // Ensure gross revenue is a non-negative finite number
-  const safeGross = Math.max(0, Number.isFinite(customGross) ? customGross : 0);
-
-  const safeRate = Math.max(0, inputs?.royalty_rate_percent?.value ?? 0);
-
-  // Basis: "net" if money_basis says net or if deductions are defined; otherwise "gross"
-  const rawBasis = inputs?.money_basis?.value;
-  const basis: MoneyBasis = rawBasis === "gross" ? "gross" : "net";
-
-  // Deductions: if custom specified, use that; otherwise use default or proportional
-  const deductionCount = inputs?.deductions?.length ?? 0;
-  const defaultDed = deductionCount > 0 ? DEFAULT_EXAMPLE_DEDUCTIONS : 0;
-  const rawDeductions = customDeductions !== undefined ? customDeductions : defaultDed;
-  const safeDeductions = Math.max(0, Number.isFinite(rawDeductions) ? rawDeductions : 0);
-
-  // Net revenue cannot fall below 0
-  const netRevenue = Math.max(0, safeGross - safeDeductions);
-
-  // Earnings calculations rounded to whole shillings
-  const earningsUnderGross = Math.round(safeGross * (safeRate / 100));
-  const earningsUnderNet = Math.round(netRevenue * (safeRate / 100));
-
-  const artistEarnings = basis === "gross" ? earningsUnderGross : earningsUnderNet;
-  const lossToDeductions = Math.max(0, earningsUnderGross - earningsUnderNet);
-
-  const deductionQuotes = inputs?.deductions?.map((d) => d.quote || d.value) || [];
-
-  return {
-    revenueGross: Math.round(safeGross),
-    royaltyRate: safeRate,
-    basis,
-    totalDeductions: Math.round(safeDeductions),
-    netRevenue: Math.round(netRevenue),
-    artistEarnings,
-    earningsUnderGross,
-    earningsUnderNet,
-    lossToDeductions,
-    quotedBasisText: inputs?.money_basis?.quote,
-    quotedRateText: inputs?.royalty_rate_percent?.quote,
-    deductionQuotes,
-  };
 }
 
 /**
@@ -203,4 +108,63 @@ export function isHighImpactClause(
   }
 
   return false;
+}
+
+/** Example amount the label receives in the shillings steps (KES 1,000,000). */
+export const EXAMPLE_GROSS = 1_000_000;
+
+export interface DeductionStep {
+  label: string;
+  quote: string;
+  percent: number | null;
+  amount: number | null;
+}
+
+export interface ShillingSteps {
+  gross: number;
+  steps: DeductionStep[];
+  base: number;
+  /** True when a quoted deduction has no stated amount, so the real base is lower. */
+  baseIsCeiling: boolean;
+  ratePercent: number | null;
+  ratePhrase: string | null;
+  youReceive: number | null;
+}
+
+const PERCENT = /(\d+(?:\.\d+)?)\s*%/;
+
+const sentenceCase = (text: string) => (text ? text[0].toUpperCase() + text.slice(1) : text);
+
+/**
+ * Shows what quoted deductions take from an example amount. Only figures the contract quotes
+ * are used: a deduction without a stated percentage is listed without an amount, and
+ * "You receive" appears only when the contract states the royalty rate.
+ */
+export function shillingSteps(
+  inputs: ImpactInputs | null | undefined,
+  gross: number,
+): ShillingSteps | null {
+  if (!inputs) return null;
+  const rate = inputs.royalty_rate_percent;
+  const ratePercent = rate != null && Number.isFinite(rate.value) ? rate.value : null;
+  let left = Math.max(0, Math.round(gross));
+  const start = left;
+  const steps = inputs.deductions.map((d): DeductionStep => {
+    const match = d.value.match(PERCENT) ?? d.quote.match(PERCENT);
+    const percent = match ? Number(match[1]) : null;
+    const amount = percent == null ? null : Math.min(left, Math.round((left * percent) / 100));
+    if (amount != null) left -= amount;
+    const label = sentenceCase(d.value.replace(PERCENT, "").replace(/\s+/g, " ").trim()) || d.value;
+    return { label, quote: d.quote, percent, amount };
+  });
+  if (ratePercent == null && steps.every((s) => s.percent == null)) return null;
+  return {
+    gross: start,
+    steps,
+    base: left,
+    baseIsCeiling: steps.some((s) => s.amount == null),
+    ratePercent,
+    ratePhrase: rate?.quote ?? null,
+    youReceive: ratePercent == null ? null : Math.round((left * ratePercent) / 100),
+  };
 }
