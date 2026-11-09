@@ -683,6 +683,167 @@ SYNTHETIC_CORPUS: Final[tuple[SyntheticTemplateClause, ...]] = (
         contract_type="general_music",
         drafted_for="artist",
     ),
+    SyntheticTemplateClause(
+        template_id="tpl-kecobo-sync-endorsement",
+        source_title=(
+            "KECOBO Standard Synchronization & Brand Endorsement Guidelines / "
+            "Kenya Data Protection Act (2019)"
+        ),
+        jurisdiction="KE",
+        topic="rights",
+        excerpt=(
+            "Brand endorsement and synchronization licenses shall be strictly limited to the "
+            "agreed Campaign Term, Territory, and specified media channels. The Artist retains "
+            "100% copyright ownership of all musical works, and any artificial intelligence (AI) "
+            "voice cloning or biometric likeness synthesis is prohibited without separate written "
+            "consent under the Kenya Data Protection Act, 2019."
+        ),
+        keywords=(
+            "endorsement",
+            "ambassador",
+            "campaign",
+            "synchronization",
+            "likeness",
+            "biometric",
+            "cloning",
+            "brand",
+        ),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-cap130-moral-rights-reversion",
+        source_title="Kenya Copyright Act (Cap. 130, Sections 32 & 33) — Moral Rights & Assignment",
+        jurisdiction="KE",
+        topic="rights",
+        excerpt=(
+            "Under Section 32 of the Kenya Copyright Act (Cap. 130), the author's moral rights "
+            "to claim authorship (paternity) and object to derogatory distortion (integrity) are "
+            "inalienable during the author's lifetime. Under Section 33, any assignment must be "
+            "in writing and unexploited works should revert to the Artist upon written notice."
+        ),
+        keywords=(
+            "moral",
+            "paternity",
+            "integrity",
+            "reversion",
+            "revert",
+            "section 32",
+            "section 33",
+            "unreleased",
+        ),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-cap130-cmos-direct-share",
+        source_title="Kenya Copyright Act (Cap. 130, Sec. 30A) & CISAC Writer's Share Rules",
+        jurisdiction="KE / International",
+        topic="royalties",
+        excerpt=(
+            "In any co-publishing or administration agreement, at least 50% of all public "
+            "performance and broadcast royalties (the Writer's Share) shall be paid directly "
+            "to the Songwriter by KECOBO-licensed CMOs (such as KAMP, PRISK, or PAVRISK) and "
+            "shall never be assigned to or recouped by the Publisher."
+        ),
+        keywords=(
+            "publishing",
+            "publisher",
+            "songwriter",
+            "cmo",
+            "pavrisk",
+            "prisk",
+            "kamp",
+            "cisac",
+        ),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-cap229a-performers-rights",
+        source_title="Performers Protection Act (Cap. 229A, Laws of Kenya)",
+        jurisdiction="KE",
+        topic="rights",
+        excerpt=(
+            "Under the Performers Protection Act (Cap. 229A), no person shall broadcast, "
+            "record, or make a commercial fixation of a Performer's live performance without "
+            "the Performer's express written consent and separate equitable remuneration."
+        ),
+        keywords=("fixation", "broadcast", "livestream", "filming", "performer", "229a"),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-wipo-management-sunset",
+        source_title="WIPO & Music Managers Forum (MMF) Standard Management Agreement",
+        jurisdiction="KE / International",
+        topic="compensation",
+        excerpt=(
+            "The Manager's commission shall be 15% to 20% of Net Artist Earnings after deducting "
+            "third-party touring, sound, and recording costs. All Artist funds shall be held in a "
+            "separate trust account, and post-term sunset commissions shall step down to 10% in "
+            "Year 1 and 5% in Year 2 before expiring completely."
+        ),
+        keywords=(
+            "manager",
+            "management",
+            "commission",
+            "sunset",
+            "trust",
+            "power of attorney",
+            "fiduciary",
+        ),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-kecobo-producer-splits",
+        source_title="KECOBO Standard Recording-Producer Agreement & Split-Sheet",
+        jurisdiction="KE",
+        topic="rights",
+        excerpt=(
+            "Where a Studio Producer contributes original musical composition (the Beat), the "
+            "Producer and Artist shall execute a written Split Sheet recognizing the Producer's "
+            "50% underlying composition share alongside a 3% to 4% PPD producer royalty on the "
+            "master sound recording."
+        ),
+        keywords=("producer", "beat", "split", "stems", "trackouts", "instrumental", "ppd"),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-kecobo-digital-skiza-distribution",
+        source_title="KECOBO Digital Aggregator & Skiza Ringback Distribution Standard",
+        jurisdiction="KE",
+        topic="royalties",
+        excerpt=(
+            "Under a standard digital distribution and Skiza ringback tune agreement, the Artist "
+            "retains 100% ownership of the Masters and ISRC codes, receives 80% to 85% of net "
+            "platform receipts, and may issue a 30-day takedown notice upon termination."
+        ),
+        keywords=("aggregator", "skiza", "ringback", "dsp", "takedown", "isrc", "ussd"),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-kra-cap470-withholding-tax",
+        source_title="Kenya Income Tax Act (Cap. 470, Sec. 35) — Withholding Tax Standard",
+        jurisdiction="KE",
+        topic="payment",
+        excerpt=(
+            "Where statutory resident Withholding Tax (5% on professional/performance fees or "
+            "royalties under the Kenya Income Tax Act, Cap. 470) is deducted, the payer shall "
+            "remit the tax to the Kenya Revenue Authority (KRA) and furnish the official iTax "
+            "Withholding Tax Certificate to the Artist within thirty (30) days."
+        ),
+        keywords=("withholding", "kra", "itax", "tax", "cap. 470", "pin", "vat"),
+    ),
+    SyntheticTemplateClause(
+        template_id="tpl-ncia-mediation-disputes",
+        source_title="KECOBO & Nairobi Centre for International Arbitration (NCIA) Dispute Clause",
+        jurisdiction="KE",
+        topic="boilerplate",
+        excerpt=(
+            "This Agreement shall be governed by the laws of Kenya. Any dispute shall first be "
+            "referred to good-faith mediation in Nairobi before KECOBO or the Nairobi Centre for "
+            "International Arbitration (NCIA) prior to litigation in the Courts of Kenya."
+        ),
+        keywords=(
+            "arbitration",
+            "mediation",
+            "ncia",
+            "dispute",
+            "governing",
+            "jurisdiction",
+            "courts",
+        ),
+    ),
 )
 
 

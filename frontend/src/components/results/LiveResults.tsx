@@ -36,6 +36,11 @@ export interface LiveResultsProps {
    */
   eventStream?: AsyncGenerator<EvaluationEvent, void, unknown> | null;
   /**
+   * Pre-accumulated evaluation events log from the parent page, allowing
+   * immediate restoration of all cards, maps, and document without waiting.
+   */
+  initialLog?: ReadonlyMap<string, EvaluationEvent> | null;
+  /**
    * Callback when a failed clause is retried by the user.
    */
   onRetryClause?: (clauseId: string) => Promise<void> | void;
@@ -65,6 +70,7 @@ const sentenceCase = (text: string) =>
 
 export const LiveResults: React.FC<LiveResultsProps> = ({
   eventStream,
+  initialLog = null,
   onRetryClause,
   onRetryAll,
   initialDocument = null,
@@ -74,12 +80,40 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
   onCheckRest,
   keep = null,
 }) => {
-  const [document, setDocument] = useState<DocumentPayload | null>(initialDocument);
-  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(null);
-  const [allResults, setAllResults] = useState<ClauseResult[]>([]);
-  const [failures, setFailures] = useState<ClauseFailure[]>([]);
+  const [document, setDocument] = useState<DocumentPayload | null>(() => {
+    if (initialDocument) return initialDocument;
+    const docEvent = initialLog?.get("document");
+    return docEvent?.type === "document" ? docEvent.payload : null;
+  });
+  const [contractMap, setContractMap] = useState<ContractMapPayload | null>(() => {
+    const mapEvent = initialLog?.get("contract_map");
+    return mapEvent?.type === "contract_map" ? mapEvent.payload : null;
+  });
+  const [allResults, setAllResults] = useState<ClauseResult[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseResult[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_result" || ev.type === "clause_updated") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
+  const [failures, setFailures] = useState<ClauseFailure[]>(() => {
+    if (!initialLog) return [];
+    const list: ClauseFailure[] = [];
+    for (const ev of initialLog.values()) {
+      if (ev.type === "clause_failed") {
+        list.push(ev.payload);
+      }
+    }
+    return list;
+  });
   const [updatedClauseIds, setUpdatedClauseIds] = useState<Set<string>>(new Set());
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(() => {
+    const doneEvent = initialLog?.get("done");
+    return doneEvent?.type === "done" ? doneEvent.payload : null;
+  });
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -159,27 +193,23 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           const exists = prev.some((r) => r.clause_id === item.clause_id);
           return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
         });
-        setFailures((prev) => prev.filter((f) => f.clause_id !== item.clause_id));
         break;
       }
 
       case "clause_updated": {
         const item = event.payload;
+        setAllResults((prev) =>
+          prev.map((r) => (r.clause_id === item.clause_id ? item : r))
+        );
         setUpdatedClauseIds((prev) => new Set(prev).add(item.clause_id));
-        setAllResults((prev) => {
-          const exists = prev.some((r) => r.clause_id === item.clause_id);
-          return exists ? prev.map((r) => (r.clause_id === item.clause_id ? item : r)) : [...prev, item];
-        });
         break;
       }
 
       case "clause_failed": {
-        const failure = event.payload;
+        const item = event.payload;
         setFailures((prev) => {
-          if (prev.some((f) => f.clause_id === failure.clause_id)) {
-            return prev.map((f) => (f.clause_id === failure.clause_id ? failure : f));
-          }
-          return [...prev, failure];
+          const exists = prev.some((f) => f.clause_id === item.clause_id);
+          return exists ? prev.map((f) => (f.clause_id === item.clause_id ? item : f)) : [...prev, item];
         });
         break;
       }
@@ -188,12 +218,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         setSummary(event.payload);
         setIsStreaming(false);
         break;
-
-      default:
-        break;
     }
   }, []);
 
+  // Connect to eventStream when available
   useEffect(() => {
     if (!eventStream) return;
 
@@ -218,7 +246,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           setIsServiceUnavailable(true);
         } else {
           setErrorMessage(
-            err instanceof Error ? err.message : "An error occurred during evaluation."
+            err instanceof Error ? err.message : "An unexpected error occurred during evaluation."
           );
         }
       } finally {
@@ -235,16 +263,25 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     };
   }, [eventStream, handleEvent]);
 
-  const handleRetry = async (clauseId: string) => {
-    setRetryingClauseId(clauseId);
-    try {
-      if (onRetryClause) {
-        await onRetryClause(clauseId);
+  // Overall failure condition: all clauses failed
+  const isEverythingUnavailable = useMemo(() => {
+    if (!document || document.clauses.length === 0) return false;
+    return failures.length === document.clauses.length && allResults.length === 0;
+  }, [document, failures, allResults]);
+
+  const handleRetry = useCallback(
+    async (clauseId: string) => {
+      setRetryingClauseId(clauseId);
+      try {
+        if (onRetryClause) {
+          await onRetryClause(clauseId);
+        }
+      } finally {
+        setRetryingClauseId(null);
       }
-    } finally {
-      setRetryingClauseId(null);
-    }
-  };
+    },
+    [onRetryClause],
+  );
 
   const handleSelectClause = useCallback((clauseId: string) => {
     setSelectedClauseId(clauseId);
@@ -300,25 +337,10 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
           issueKind: relatedIssue?.kind ?? null,
         });
       }
-
       return items;
     },
-    [contractMap, clauseLookup]
+    [contractMap, clauseLookup],
   );
-
-  const notCheckedNames = useMemo(() => {
-    if (!document || isStreaming) return [];
-    const realFailures = new Set(failures.filter((f) => f.reason !== "not_checked").map((f) => f.clause_id));
-    return document.clauses
-      .filter((c) => !resultsByClauseId.has(c.clause_id) && !realFailures.has(c.clause_id))
-      .map((c) => readableClauseName(c));
-  }, [document, isStreaming, failures, resultsByClauseId]);
-  // Every clause failed because no provider was reachable: same message as a failed upload
-  const isEverythingUnavailable =
-    !!document &&
-    document.clauses.length > 0 &&
-    failures.length === document.clauses.length &&
-    failures.every((f) => f.reason === "unavailable");
 
   const viewerClause = useMemo(() => {
     const clause = document?.clauses.find((c) => c.clause_id === viewerClauseId);
@@ -366,6 +388,16 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
     saved: "Saved",
     failed: "Couldn't make the PDF. Try again",
   }[downloadState];
+
+  const notCheckedNames = useMemo(() => {
+    if (!document) return [];
+    return failures
+      .filter((f) => f.reason === "not_checked")
+      .map((f) => {
+        const clause = document.clauses.find((c) => c.clause_id === f.clause_id);
+        return clause ? readableClauseName(clause) : "Clause";
+      });
+  }, [document, failures]);
 
   return (
     <div className={`live-results-layout pb-24 lg:pb-0${file ? " has-viewer" : ""}`}>
@@ -460,7 +492,13 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
         />
 
         {/* Final Summary Card upon done event */}
-        {summary && <SummaryCard summary={summary} />}
+        {summary && (
+          <SummaryCard
+            summary={summary}
+            typicalCount={grouped.counts.typical}
+            unusualCount={grouped.counts.unusual}
+          />
+        )}
 
         {document && (
           <ReportCard>
@@ -474,6 +512,7 @@ export const LiveResults: React.FC<LiveResultsProps> = ({
                 failedByClauseId={failedByClauseId}
                 selectedClauseId={selectedClauseId}
                 onSelectClause={handleSelectClause}
+                isStreaming={isStreaming}
               />
             </Fold>
           </ReportCard>

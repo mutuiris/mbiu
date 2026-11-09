@@ -686,7 +686,16 @@ body {
   font-weight: 600;
 }
 
-.status-pill.pending { background-color: var(--border-color); color: var(--text-secondary); }
+.status-pill.pending {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+  animation: pendingPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
 .status-pill.match,
 .status-pill.typical { background-color: var(--typical-solid); color: #ffffff; border: 1px solid transparent; }
 .status-pill.notice,

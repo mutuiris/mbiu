@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import "@fontsource-variable/fraunces/wght.css";
 import "@fontsource-variable/fraunces/wght-italic.css";
 import "@fontsource-variable/manrope/wght.css";
+import { EvaluationFloatingBanner } from "@/components/EvaluationFloatingBanner";
 import "./globals.css";
 
 const title = "Mbiu - Understand your contract before you sign it";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <EvaluationFloatingBanner />
         {children}
       </body>
     </html>

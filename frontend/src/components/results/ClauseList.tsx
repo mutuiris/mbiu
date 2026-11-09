@@ -1,8 +1,8 @@
-import React from "react";
+"use client";
 
+import React from "react";
 import type { ClauseFailure, ClauseResult, DocumentPayload } from "@/lib/api/generated/types.gen";
 import { readableClauseName } from "@/lib/report";
-
 import { OutcomePill } from "./ui";
 
 interface ClauseListProps {
@@ -11,6 +11,7 @@ interface ClauseListProps {
   failedByClauseId: Map<string, ClauseFailure>;
   selectedClauseId?: string | null;
   onSelectClause?: (clauseId: string) => void;
+  isStreaming?: boolean;
 }
 
 const quietPill =
@@ -23,6 +24,7 @@ export const ClauseList: React.FC<ClauseListProps> = ({
   failedByClauseId,
   selectedClauseId,
   onSelectClause,
+  isStreaming = false,
 }) => (
   <ul className="pb-2" aria-label="All clauses">
     {document.clauses.map((clause) => {
@@ -44,8 +46,12 @@ export const ClauseList: React.FC<ClauseListProps> = ({
             </span>
             {result ? (
               <OutcomePill comparison={result.comparison} />
+            ) : failure && failure.reason !== "not_checked" ? (
+              <span className={quietPill}>Couldn&apos;t check</span>
+            ) : isStreaming ? (
+              <span className="status-pill pending">Checking…</span>
             ) : (
-              <span className={quietPill}>{failure && failure.reason !== "not_checked" ? "Couldn't check" : "Not checked yet"}</span>
+              <span className={quietPill}>Not checked yet</span>
             )}
           </button>
         </li>
