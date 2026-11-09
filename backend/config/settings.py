@@ -33,7 +33,6 @@ class Env(BaseSettings):
     embedding_model_id: str = "gemini-embedding-2"
     failover_enabled: bool = False
     active_corpus_version: str = "synthetic-v0"
-    token_budget_per_contract: int = Field(default=400000, gt=0)
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
     llm_concurrency: int = Field(default=4, gt=0)
