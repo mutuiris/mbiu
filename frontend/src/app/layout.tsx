@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 // Fonts ship with the app, so builds never fetch from Google and visitors never contact it
@@ -8,10 +8,21 @@ import "@fontsource-variable/manrope/wght.css";
 import { EvaluationFloatingBanner } from "@/components/EvaluationFloatingBanner";
 import "./globals.css";
 
+const title = "Mbiu - Understand your contract before you sign it";
+const description =
+  "Upload your music contract and understand what you're agreeing to, what could affect you, and what questions to ask before signing.";
+
+// The share picture is app/opengraph-image.png: the header logo, unchanged, over the site's own words
 export const metadata: Metadata = {
-  title: "Mbiu - Understand your contract before you sign it",
-  description:
-    "Upload your music contract and understand what you're agreeing to, what could affect you, and what questions to ask before signing.",
+  metadataBase: new URL("https://mbiu-music.vercel.app"),
+  title,
+  description,
+  openGraph: { type: "website", siteName: "Mbiu", title, description },
+  twitter: { card: "summary_large_image", title, description },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#fcf4e5",
 };
 
 // Applies the saved theme before first paint so dark mode never flashes.

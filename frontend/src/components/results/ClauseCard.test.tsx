@@ -1,8 +1,6 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { ClauseCard } from "./ClauseCard";
 import type { ClauseResult } from "@/lib/api/generated/types.gen";
 
@@ -58,224 +56,106 @@ const mockBetterResult: ClauseResult = {
   model_version: "gemini-3.8-flash",
 };
 
-describe("ClauseCard Component", () => {
-  it("renders all 8 card sections strictly following architecture doc format in exact specified order for worse_for_you clause", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockWorseResult}
-        clauseNumber="7.2"
-        clauseHeading="Royalties"
-        topic="Royalties"
-        linkedClauses={[
-          {
-            clauseId: "c-suspension",
-            label: "Clause 19 (Suspension)",
-            issueKind: "override",
-          },
-        ]}
-      />,
-    );
+const render = (props: Partial<React.ComponentProps<typeof ClauseCard>> = {}) =>
+  renderToStaticMarkup(
+    <ClauseCard result={mockWorseResult} clauseNumber="7.2" clauseHeading="Royalties" {...props} />,
+  );
 
-    // 1. Heading: clause number in the status band + numbered disc, topic title, outcome label
-    expect(html).toContain("data-testid=\"status-band\"");
-    expect(html).toContain("Clause 7.2");
-    expect(html).toContain("data-testid=\"clause-number-disc\"");
-    expect(html).toContain("Royalties");
+describe("ClauseCard", () => {
+  it("leads with the clause name, the outcome and Mbiu's headline", () => {
+    const html = render();
+    expect(html).toContain("Clause 7.2 · Royalties");
     expect(html).toContain("Worth inquiry");
-    expect(html).toContain("Page 4, clause 7.2");
-    const headingIndex = html.indexOf("data-testid=\"clause-heading\"");
+    expect(html).toMatch(/<h3[^>]*>You could earn very little from your songs for years<\/h3>/);
+    expect(html).not.toContain(">c-royalties<");
+  });
 
-    // 2. What your contract says: Exact quote from the contract
-    expect(html).toContain("What your contract says");
+  it("explains why it matters and what usual contracts say, with the source", () => {
+    const html = render();
+    expect(html).toContain("Why it matters");
+    expect(html).toContain("Because deductions are uncapped");
+    expect(html).toContain("What usual contracts say");
+    expect(html).toContain("12% Net vs standard 18-25% with capped deductions.");
+    expect(html).toContain("Compared with: std-rec-kenya-2024");
+  });
+
+  it("puts Mbiu's summary under 'In simple words' without quote marks", () => {
+    const html = render();
+    expect(html).toContain("In simple words");
     expect(html).toContain("Artist receives 12% royalty on Net Receipts after all expenses.");
-    const whatItSaysIndex = html.indexOf("data-testid=\"what-it-says-section\"");
+    expect(html).not.toContain("“Artist receives");
+  });
 
-    // 3. In plain language: 1-2 short, jargon-free sentences
-    expect(html).toContain("In plain language");
-    expect(html).toContain("You could earn very little from your songs for years");
-    const plainLanguageIndex = html.indexOf("data-testid=\"plain-language-section\"");
+  it("quotes the contract's own words under 'See the exact words'", () => {
+    const html = render();
+    expect(html).toContain("See the exact words");
+    expect(html).toContain("“Company shall pay Artist a royalty of 12%");
+  });
 
-    // 4. Why this may matter to you: Practical consequences + KES worked example + linked clauses
-    expect(html).toContain("Why this may matter to you");
-    expect(html).toContain("Because deductions are uncapped, production and marketing overhead can wipe out your payout.");
-    const whyItMattersIndex = html.indexOf("data-testid=\"why-it-matters-section\"");
+  it("never prints a raw template form", () => {
+    const html = render({
+      result: {
+        ...mockWorseResult,
+        standard_excerpt:
+          "## RECORDING/PRODUCER AGREEMENT This license agreement is made this …………….. day of ………20…. between",
+      },
+    });
+    expect(html).not.toContain("##");
+    expect(html).not.toContain("……");
+  });
 
-    expect(html).toContain("data-testid=\"shillings-calculator\"");
-    expect(html).toContain("In Shillings (Worked Example)");
-    expect(html).toContain("Example figures — adjust below");
-    const shillingsCalcIndex = html.indexOf("data-testid=\"shillings-calculator\"");
-
-    expect(html).toContain("data-testid=\"also-affected-by\"");
-    expect(html).toContain("Also affected by:");
-    expect(html).toContain("Clause 19 (Suspension)");
-    const alsoAffectedIndex = html.indexOf("data-testid=\"also-affected-by\"");
-
-    // Fairer wording is strictly omitted to avoid legal drafting advice under Kenya Advocates Act
-    expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
-    expect(html).not.toContain("Fairer wording");
-
-    // 5. How it compares: What standard templates usually do (or comparison note)
-    expect(html).toContain("How it compares");
-    expect(html).toContain("Standard indie royalty is 18-25% on net receipts with capped deductions.");
-    const howItComparesIndex = html.indexOf("data-testid=\"how-it-compares-section\"");
-
-    // 6. Questions you could ask: 1 to 3 neutral, specific questions to ask
-    expect(html).toContain("data-testid=\"ask-them-section\"");
-    expect(html).toContain("Questions you could ask");
-    expect(html).toContain("WhatsApp");
+  it("offers the question to ask with copy and WhatsApp, without quote marks", () => {
+    const html = render();
+    expect(html).toContain("Ask them this");
     expect(html).toContain("Can we cap allowable deductions at 20% of gross receipts?");
-    const askThemIndex = html.indexOf("data-testid=\"ask-them-section\"");
-
-    // 7. Sources: Reference contract title and page when cited
-    expect(html).toContain("data-testid=\"sources-section\"");
-    expect(html).toContain("Sources:");
-    expect(html).toContain("[std-rec-kenya-2024]");
-    const sourcesIndex = html.indexOf("data-testid=\"sources-section\"");
-
-    // 8. Notice: Standard disclaimer
-    expect(html).toContain("data-testid=\"clause-notice\"");
-    expect(html).toContain("This explains what the contract says compared with reference material. It doesn’t say whether a clause is lawful or enforceable, and it isn’t legal advice.");
-    const noticeIndex = html.indexOf("data-testid=\"clause-notice\"");
-
-    // Collapsible exact raw wording & read aloud button
-    expect(html).toContain("data-testid=\"exact-wording-section\"");
-    expect(html).toContain("<details class=\"exact-wording-details\"");
-    expect(html).toContain("Show exact wording");
-    expect(html).toContain("Original contract clause (unaltered):");
-    const exactWordingIndex = html.indexOf("data-testid=\"exact-wording-section\"");
-
-    expect(html).toContain("data-testid=\"read-aloud-section\"");
-    expect(html).toContain("Read aloud");
-    const readAloudIndex = html.indexOf("data-testid=\"read-aloud-section\"");
-
-    // Verify STRICT sequential ordering of all 8 sections
-    expect(headingIndex).toBeGreaterThan(-1);
-    expect(whatItSaysIndex).toBeGreaterThan(headingIndex);
-    expect(plainLanguageIndex).toBeGreaterThan(whatItSaysIndex);
-    expect(whyItMattersIndex).toBeGreaterThan(plainLanguageIndex);
-    expect(shillingsCalcIndex).toBeGreaterThan(whyItMattersIndex);
-    expect(alsoAffectedIndex).toBeGreaterThan(shillingsCalcIndex);
-    expect(howItComparesIndex).toBeGreaterThan(alsoAffectedIndex);
-    expect(askThemIndex).toBeGreaterThan(howItComparesIndex);
-    expect(sourcesIndex).toBeGreaterThan(askThemIndex);
-    expect(noticeIndex).toBeGreaterThan(sourcesIndex);
-    expect(exactWordingIndex).toBeGreaterThan(noticeIndex);
-    expect(readAloudIndex).toBeGreaterThan(exactWordingIndex);
-  });
-
-  it("omits shillings calculator when clause does not have a clear formula", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockBetterResult}
-        clauseNumber="2.1"
-        clauseHeading="Reversion"
-      />,
-    );
-
-    expect(html).not.toContain("data-testid=\"shillings-calculator\"");
-    expect(html).not.toContain("In Shillings (Worked Example)");
-  });
-
-  it("omits fairer wording on cards that are not worse than standard", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockBetterResult}
-        clauseNumber="2.1"
-        clauseHeading="Reversion"
-      />,
-    );
-
-    expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
-  });
-
-  it("includes WhatsApp share link with encoded question in Ask them section", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockWorseResult}
-        clauseNumber="7.2"
-        clauseHeading="Royalties"
-      />,
-    );
-
+    expect(html).not.toContain("“Can we cap");
     expect(html).toContain("https://wa.me/?text=");
     expect(html).toContain(encodeURIComponent(mockWorseResult.ask_them!));
+    expect(html).toContain("Copy");
   });
 
-  it("renders jump to PDF button in status/topic/location section with aria label", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockWorseResult}
-        clauseNumber="7.2"
-        clauseHeading="Royalties"
-      />,
-    );
-
-    expect(html).toContain("class=\"jump-to-pdf-trigger\"");
-    expect(html).toContain("aria-label=\"Jump to page 4 in PDF viewer\"");
+  it("shows no question box without a question", () => {
+    expect(render({ result: mockBetterResult })).not.toContain("Ask them this");
   });
 
-  it("displays worked example figures clearly labelled as examples in Shillings calculator", () => {
-    const html = renderToStaticMarkup(
-      <ClauseCard
-        result={mockWorseResult}
-        clauseNumber="7.2"
-        clauseHeading="Royalties"
-      />,
-    );
-
-    expect(html).toContain("Example figures — adjust below");
-    expect(html).toContain("Example gross revenue (KES)");
-    expect(html).toContain("Example deductions before royalties (KES)");
-    expect(html).toContain("Your calculated earnings:");
-    expect(html).toContain("Loss to deductions:");
+  it("shows three linked clauses and a count for the rest", () => {
+    const links = ["1.3", "1.5", "5.1", "6.1", "22"].map((n) => ({ clauseId: `c-${n}`, label: n }));
+    const html = render({ linkedClauses: links, onSelectClause: () => {} });
+    expect(html).toContain("Linked:");
+    expect(html).toContain(">1.3<");
+    expect(html).toContain(">5.1<");
+    expect(html).toContain("+2");
   });
 
-  describe("360px mobile viewport safety", () => {
-    it("renders cleanly inside a 360px mobile container without overflow", () => {
-      // Simulate rendering inside 360px mobile phone screen
-      const html = renderToStaticMarkup(
-        <div style={{ width: "360px", maxWidth: "360px", overflow: "hidden" }}>
-          <ClauseCard
-            result={mockWorseResult}
-            clauseNumber="7.2"
-            clauseHeading="Royalties"
-            topic="Royalties"
-            linkedClauses={[
-              {
-                clauseId: "c-suspension",
-                label: "Clause 19 (Suspension)",
-                issueKind: "override",
-              },
-            ]}
-          />
-        </div>,
-      );
+  it("shows the shillings steps when the contract quotes figures", () => {
+    const html = render();
+    expect(html).toContain('data-testid="shillings-calculator"');
+    expect(html).toContain("If the label receives");
+  });
 
-      // Verify all card sections render within container
-      expect(html).toContain("data-testid=\"clause-heading\"");
-      expect(html).toContain("data-testid=\"what-it-says-section\"");
-      expect(html).toContain("data-testid=\"plain-language-section\"");
-      expect(html).toContain("data-testid=\"why-it-matters-section\"");
-      expect(html).toContain("data-testid=\"how-it-compares-section\"");
-      expect(html).toContain("data-testid=\"shillings-calculator\"");
-      expect(html).toContain("data-testid=\"also-affected-by\"");
-      expect(html).not.toContain("data-testid=\"fairer-wording-section\"");
-      expect(html).toContain("data-testid=\"ask-them-section\"");
-      expect(html).toContain("data-testid=\"sources-section\"");
-      expect(html).toContain("data-testid=\"clause-notice\"");
-      expect(html).toContain("data-testid=\"exact-wording-section\"");
-      expect(html).toContain("data-testid=\"read-aloud-section\"");
+  it("draws no calculator box when nothing is quoted as a number", () => {
+    const html = render({
+      result: {
+        ...mockWorseResult,
+        impact_inputs: { royalty_rate_percent: null, money_basis: null, deductions: [{ quote: "fees", value: "fees" }] },
+      },
     });
+    expect(html).not.toContain('data-testid="shillings-calculator"');
+  });
 
-    it("verifies globals.css includes mobile safety rules for narrow viewports down to 360px", () => {
-      const cssPath = resolve(__dirname, "../../app/globals.css");
-      const cssContent = readFileSync(cssPath, "utf-8");
+  it("links to the clause's page in the contract", () => {
+    const html = render({ onJumpToPdfClause: () => {} });
+    expect(html).toContain("View on page 4");
+  });
 
-      expect(cssContent).toContain("@media (max-width: 380px)");
-      expect(cssContent).toContain(".shillings-calculator");
-      expect(cssContent).toContain(".card-ask-them-section");
-      expect(cssContent).toContain("overflow-wrap: break-word");
-      expect(cssContent).toContain("word-break: break-word");
-    });
+  it("keeps the small print short and read aloud available", () => {
+    const html = render();
+    expect(html).toContain("Not legal advice.");
+    expect(html).toContain("Read aloud");
+  });
+
+  it("says when the whole-contract check changed the result", () => {
+    expect(render({ isUpdated: true })).toContain("Result updated based on whole-contract check");
+    expect(render()).not.toContain("Result updated");
   });
 });

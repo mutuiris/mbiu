@@ -80,15 +80,6 @@ export default function PrivacyPage() {
               </p>
               <p className="mt-2">
                 <strong>Registered Address:</strong> Nairobi, Kenya.
-                <br />
-                <strong>Data Protection Inquiries:</strong>{" "}
-                <a
-                  href="mailto:info@kamilimu.org"
-                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-                >
-                  info@kamilimu.org
-                </a>
-                .
               </p>
               <p className="mt-2 text-[0.88rem] text-mbiu-ink/60 dark:text-[#9aa5aa]">
                 <em>Regulatory notice:</em> As an early-stage civic initiative engineered around a strict
@@ -117,11 +108,6 @@ export default function PrivacyPage() {
                   <strong>No tracking cookies:</strong> We do not track you across the web or deploy
                   advertising pixels.
                 </li>
-                <li>
-                  <strong>Anonymous telemetry only:</strong> Error monitoring (Sentry) and server logs
-                  record only aggregate operational metrics (durations, error categories). They never
-                  capture contract text or artist names.
-                </li>
               </ul>
             </section>
 
@@ -130,68 +116,21 @@ export default function PrivacyPage() {
               <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
                 3. Zero-Storage Evaluation
               </h2>
-              <p className="mt-2">
-                Your uploaded PDF contract is processed entirely in temporary volatile memory (RAM).
-              </p>
-              <p className="mt-2">
-                We <strong>never</strong> save your contract to a database, hard drive, or application
-                log. We never sell your data, share your agreements with record labels, or train
-                artificial intelligence models on your creative works.
-              </p>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[0.92rem]">
+                <li>
+                  We <strong>never</strong> save your contract.
+                </li>
+                <li>
+                  We never sell your data, share your agreements with record labels, or train
+                  artificial intelligence models on your creative works.
+                </li>
+              </ul>
             </section>
 
             {/* Section 4 */}
             <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
               <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                4. Instant Memory Purge &amp; Client Browser Storage
-              </h2>
-              <p className="mt-2">
-                <strong>Server-side:</strong> As soon as the analysis stream completes, server memory
-                allocated to your contract is released immediately.
-              </p>
-              <p className="mt-2">
-                <strong>Client-side:</strong> Results live in your browser tab. If you enable the
-                optional &ldquo;Keep results&rdquo; toggle, results are cached in your device&apos;s
-                temporary browser session for up to 60 minutes to prevent loss on page refresh. Closing
-                the tab or clicking &ldquo;Check another contract&rdquo; purges them immediately.
-              </p>
-            </section>
-
-            {/* Section 5 */}
-            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
-              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                5. Cross-Border Data Transfers (KDPA Sections 48 &amp; 49)
-              </h2>
-              <p className="mt-2">
-                To evaluate clauses, Mbiu uses secure third-party processing. Under Kenya&apos;s Data
-                Protection Act 2019, these are treated as cross-border data transfers:
-              </p>
-              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[0.92rem]">
-                <li>
-                  <strong>Google Gemini API (Paid Tier):</strong> Receives clause text, linked clauses,
-                  and template excerpts for comparison. Storage is disabled (<code>store=False</code>),
-                  and Google does not use prompts to train AI models.
-                </li>
-                <li>
-                  <strong>OpenAI API (Failover Only):</strong> An emergency backup called only if
-                  Gemini is unavailable, with persistent storage disabled on every call (
-                  <code>store: false</code>).
-                </li>
-                <li>
-                  <strong>Cloudflare Turnstile:</strong> Receives a single-use verification token to
-                  prevent bot abuse. Never touches contract text.
-                </li>
-                <li>
-                  <strong>Supabase:</strong> Hosts standard public reference templates only. Holds zero
-                  user contracts.
-                </li>
-              </ul>
-            </section>
-
-            {/* Section 6 */}
-            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
-              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                6. Artist Rights &amp; Past Document Retrieval
+                4. Artist Rights &amp; Past Document Retrieval
               </h2>
               <p className="mt-2">
                 Under the Kenya Data Protection Act 2019 (Sections 26–40), data subjects possess rights
@@ -200,34 +139,7 @@ export default function PrivacyPage() {
               <p className="mt-3 rounded-xl border border-mbiu-ink/10 bg-mbiu-peach/30 p-4 text-[0.95rem] leading-[1.7] text-mbiu-ink dark:border-white/10 dark:bg-white/[0.04] dark:text-[#F6F2E9]">
                 <strong>Important notice regarding past contracts:</strong> Because Mbiu operates on a
                 strict zero-storage model and never stores your agreements, Mbiu cannot retrieve,
-                provide copies of, or delete past contracts because none are ever saved in any database
-                or disk.
-              </p>
-            </section>
-
-            {/* Section 7 */}
-            <section className="border-t border-mbiu-ink/10 pt-5 dark:border-white/10">
-              <h2 className="font-serif text-[1.08rem] font-semibold text-mbiu-ink dark:text-[#F6F2E9] sm:text-[1.15rem]">
-                7. Contact
-              </h2>
-              <p className="mt-2">
-                For questions regarding this Privacy Policy or data protection at Mbiu, contact{" "}
-                <a
-                  href="https://www.kamilimu.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-                >
-                  KamiLimu
-                </a>{" "}
-                at{" "}
-                <a
-                  href="mailto:info@kamilimu.org"
-                  className="font-medium underline decoration-mbiu-ink/30 underline-offset-2 hover:text-mbiu-indigo dark:hover:text-white"
-                >
-                  info@kamilimu.org
-                </a>
-                , Nairobi, Kenya.
+                provide copies of, or delete past contracts because none are ever saved in any database.
               </p>
             </section>
           </div>
