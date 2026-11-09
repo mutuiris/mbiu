@@ -32,6 +32,7 @@ class Env(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     embedding_model_id: str = "gemini-embedding-2"
     failover_enabled: bool = False
+    active_corpus_version: str = "synthetic-v0"
     batch_timeout_s: float = Field(default=30, gt=0)
     batch_size: int = Field(default=6, gt=0)
     llm_concurrency: int = Field(default=4, gt=0)
@@ -90,6 +91,8 @@ OPENAI_API_KEY = env.openai_api_key.get_secret_value()
 OPENAI_MODEL = env.openai_model
 EMBEDDING_MODEL_ID = env.embedding_model_id
 FAILOVER_ENABLED = env.failover_enabled
+ACTIVE_CORPUS_VERSION = env.active_corpus_version
+TOKEN_BUDGET_PER_CONTRACT = env.token_budget_per_contract
 BATCH_TIMEOUT_S = env.batch_timeout_s
 BATCH_SIZE = env.batch_size
 LLM_CONCURRENCY = env.llm_concurrency

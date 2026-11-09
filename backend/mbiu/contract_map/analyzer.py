@@ -35,8 +35,8 @@ class IssueProposal(BaseModel):
     """Proposal for a contract-wide issue returned by the LLM."""
 
     kind: Literal["conflict", "override"]
-    clause_ids: list[str] = Field(min_length=2, max_length=2)
-    quotes: list[str] = Field(min_length=2, max_length=2)
+    clause_ids: list[str]
+    quotes: list[str]
     explanation: str
 
 
@@ -64,6 +64,9 @@ def verify_issue_quotes(
 
     Code verification ensures hallucinated quotes are never admitted.
     """
+    if len(proposal.clause_ids) != 2 or len(proposal.quotes) != 2:
+        return False
+
     id_1, id_2 = proposal.clause_ids[0], proposal.clause_ids[1]
     if id_1 == id_2:
         return False
@@ -122,16 +125,17 @@ async def analyze_contract_issues(
     if llm is None or not candidate_pairs:
         return deterministic_issues
 
-    # 2. Model overview pass
+    # 2. Model overview pass (capped timeout so it never stalls clause evaluation)
     system_prompt = load_contract_map_prompt()
-    effective_deadline = deadline if deadline is not None else time.monotonic() + 30.0
+    now = time.monotonic()
+    effective_deadline = min(deadline, now + 15.0) if deadline is not None else now + 15.0
 
     # Build context for the candidate pairs
     prompt_lines: list[str] = [
         "Analyze the following candidate clause pairs from the contract "
         "for conflicts or overrides:\n"
     ]
-    for idx, pair in enumerate(candidate_pairs[:20], start=1):
+    for idx, pair in enumerate(candidate_pairs[:10], start=1):
         prompt_lines.append(f"Candidate pair {idx} (reasons: {', '.join(pair.reasons)}):")
         # Contract text is untrusted, so it goes in data blocks the prompt treats as data
         for clause in (pair.clause_a, pair.clause_b):

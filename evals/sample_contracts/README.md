@@ -1,10 +1,9 @@
 # Mbiu Evaluation Sample Contract Suite (`John Doe`)
 
-> **Synthetic test contracts.** Written to test the **Mbiu** contract analysis pipeline. They are not real
-> agreements and are not legal advice.
+> **Legal Expert Review & Dummy Contract Disclaimer**
+> All sample contracts and evaluation notes in this directory were prepared and reviewed by a legal expert specializing in Kenyan and international music and copyright law for evaluating the **Mbiu** contract analysis pipeline.
 >
-> All people, companies, labels, brands, studios and festivals are invented or have nothing to do with these
-> contracts. The artist alias **John Doe** (`p/k/a "John Doe"`) and every signatory do not exist.
+> **Dummy Contracts Notice:** All contracts in this repository are **dummy contracts** used strictly for evaluation and benchmarking purposes. All personal names have been switched out, the people mentioned (including the artist alias **John Doe** / `p/k/a "John Doe"` and all listed signatories or representatives) **do not exist**, and the companies, labels, brands, studios, and festivals mentioned **either do not exist or have nothing to do with the contracts**.
 
 ---
 
@@ -32,7 +31,7 @@ The suite spans **four contract categories** that frequently expose Kenyan music
 
 ---
 
-## Planted cross-clause conflicts and overrides
+## Planted Cross-Clause Conflicts & Overrides (MB-14 / MB-15 Verification)
 
 | Contract | Primary Clause | Overriding / Conflicting Clause | Nature of Conflict / Override |
 | :--- | :--- | :--- | :--- |
@@ -46,10 +45,11 @@ The suite spans **four contract categories** that frequently expose Kenyan music
 
 ---
 
-## Music-business and legal jargon planted to test plain-language explanations
+## Music Industry & Legal Jargon Planted for Plain-Language Verification (MB-17)
 
 These contracts deliberately incorporate dense music-business and Kenyan legal terminology to test Mbiu's plain-language explanations:
 - **Financial & Royalty Jargon:** *Gross Receipts*, *Net Receipts*, *All-In Royalty*, *Recoupable Advance*, *Double-Dip Recoupment*, *Cross-Collateralization*, *Container / Packaging and Infrastructure Charge*, *Free Goods Allowance*, *Reserves Against Returns*, *Sunset Commission*, *Passive 360 Share*, *Net-90 Payment*, *Liquidated Damages*, *Hall Fee / Merch Concession*.
 - **Copyright & IP Jargon:** *Ab Initio*, *In Perpetuity Throughout the Universe*, *Work Made for Hire*, *Master Sound Recording*, *Controlled Composition*, *75% Minimum Statutory Mechanical Rate*, *10-Track Cap*, *Synchronization License*, *Coupling Rights*, *Moral Rights (Paternity and Integrity under Section 32 of the Copyright Act, Cap. 130)*, *Re-Recording Restriction (Holdback)*, *Digital Twin / AI Voice Synthesis*, *Power of Attorney Coupled with an Interest*.
 - **Kenyan Ecosystem Specifics:** *Kenya Copyright Act (Cap. 130)*, *Kenya Copyright Board (KECOBO)*, *Collective Management Organizations (MCSK, KAMP, PRISK, PAVRISK)*, *Safaricom Skiza Tunes / Airtel Hello Tunes (CRBT)*, *KRA Withholding Tax (Income Tax Act, Cap. 470)*, *Nairobi Centre for International Arbitration (NCIA)*.
+
 
